@@ -12,6 +12,7 @@ enum EMapImageEntityLayerType
 	MAP_IMAGE_ENTITY_LAYER_TYPE_SWITCH,
 	MAP_IMAGE_ENTITY_LAYER_TYPE_TELE,
 	MAP_IMAGE_ENTITY_LAYER_TYPE_TUNE,
+	MAP_IMAGE_ENTITY_LAYER_TYPE_MATERIAL,
 
 	MAP_IMAGE_ENTITY_LAYER_TYPE_COUNT,
 };
@@ -47,6 +48,7 @@ class CMapImages : public CComponent
 	bool HasSwitchLayer(EMapImageModType ModType);
 	bool HasTeleLayer(EMapImageModType ModType);
 	bool HasTuneLayer(EMapImageModType ModType);
+	bool HasMaterialLayer(EMapImageModType ModType);
 
 public:
 	CMapImages();
