@@ -76,7 +76,9 @@ versionsrv
 generated
 target
 
+# Build files
 /build*
+cmake-build*/
 
 # IDE project files
 .cache
