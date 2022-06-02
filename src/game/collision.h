@@ -115,16 +115,7 @@ public:
 	class CTuneTile *TuneLayer() { return m_pTune; }
 	class CMaterialTile *MaterialLayer() { return m_pMaterial; }
 	class CLayers *Layers() { return m_pLayers; }
-	int m_NumSwitchers;
-
-	struct SSwitchers
-	{
-		bool m_Status[MAX_CLIENTS];
-		bool m_Initial;
-		int m_EndTick[MAX_CLIENTS];
-		int m_Type[MAX_CLIENTS];
-	};
-	SSwitchers *m_pSwitchers;
+	int m_HighestSwitchNumber;
 
 private:
 	class CTeleTile *m_pTele;

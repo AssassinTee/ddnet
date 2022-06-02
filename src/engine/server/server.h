@@ -4,7 +4,6 @@
 #define ENGINE_SERVER_SERVER_H
 
 #include <base/hash.h>
-#include <base/math.h>
 
 #include <engine/engine.h>
 #include <engine/server.h>
@@ -20,8 +19,6 @@
 #include <engine/shared/protocol.h>
 #include <engine/shared/snapshot.h>
 #include <engine/shared/uuid_manager.h>
-
-#include <base/tl/array.h>
 
 #include <list>
 #include <vector>
@@ -41,6 +38,14 @@ class CSnapIDPool
 	enum
 	{
 		MAX_IDS = 32 * 1024,
+	};
+
+	// State of a Snap ID
+	enum
+	{
+		ID_FREE = 0,
+		ID_ALLOCATED = 1,
+		ID_TIMED = 2,
 	};
 
 	class CID
@@ -98,6 +103,7 @@ class CServer : public IServer
 	class IConsole *m_pConsole;
 	class IStorage *m_pStorage;
 	class IEngineAntibot *m_pAntibot;
+	class IRegister *m_pRegister;
 
 #if defined(CONF_UPNP)
 	CUPnP m_UPnP;
@@ -159,7 +165,7 @@ public:
 		int m_Latency;
 		int m_SnapRate;
 
-		float m_Traffic;
+		double m_Traffic;
 		int64_t m_TrafficSince;
 
 		int m_LastAckedSnapshot;
@@ -252,8 +258,6 @@ public:
 	unsigned int m_aCurrentMapSize[NUM_MAP_TYPES];
 
 	CDemoRecorder m_aDemoRecorder[MAX_CLIENTS + 1];
-	CRegister m_Register;
-	CRegister m_RegSixup;
 	CAuthManager m_AuthManager;
 
 	int64_t m_ServerInfoFirstRequest;
@@ -261,7 +265,7 @@ public:
 
 	char m_aErrorShutdownReason[128];
 
-	array<CNameBan> m_aNameBans;
+	std::vector<CNameBan> m_vNameBans;
 
 	CServer();
 	~CServer();
@@ -362,6 +366,7 @@ public:
 	void GetServerInfoSixup(CPacker *pPacker, int Token, bool SendClients);
 	bool RateLimitServerInfoConnless();
 	void SendServerInfoConnless(const NETADDR *pAddr, int Token, int Type);
+	void UpdateRegisterServerInfo();
 	void UpdateServerInfo(bool Resend = false);
 
 	void PumpNetwork(bool PacketWaiting);
@@ -375,7 +380,6 @@ public:
 	void StopRecord(int ClientID) override;
 	bool IsRecording(int ClientID) override;
 
-	void InitRegister(CNetServer *pNetServer, IEngineMasterServer *pMasterServer, CConfig *pConfig, IConsole *pConsole);
 	int Run();
 
 	static void ConTestingCommands(IConsole::IResult *pResult, void *pUser);
