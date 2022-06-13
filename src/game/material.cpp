@@ -50,7 +50,7 @@ CMatDefault &CMaterials::operator[](int Index) const
 {
 	switch(Index)
 	{
-	case MAT_PLACEHOLDER: return const_cast<CMatDefault &>(ms_aMaterials[1]);
+	case MAT_ICE: return const_cast<CMatDefault &>(ms_aMaterials[1]);
 	}
 	return const_cast<CMatDefault &>(ms_aMaterials[0]);
 }
