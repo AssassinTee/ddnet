@@ -99,8 +99,8 @@ void CCharacterCore::Tick(bool UseInput)
 
 	//material handling
 	int CenterMaterialID = m_pCollision->GetMaterial(m_Pos.x, m_Pos.y);
-	CMatDefault AirMaterial = m_Material[CenterMaterialID];
-	CMatDefault DefaultMaterial = m_Material[MAT_DEFAULT];
+	CMatDefault &AirMaterial = m_Material[CenterMaterialID];
+	CMatDefault &DefaultMaterial = m_Material[MAT_DEFAULT];
 
 	m_Vel.y += AirMaterial.m_Gravity;
 
@@ -194,10 +194,12 @@ void CCharacterCore::Tick(bool UseInput)
 	}
 
 	// add the speed modification according to players wanted direction
+	const float MinSpeed = 1.0f;
+	float DefaultAccel = Grounded ? DefaultMaterial.m_GroundControlAccel : DefaultMaterial.m_AirControlAccel;
 	if(m_Direction < 0)
-		m_Vel.x = SaturatedAdd(-MaxSpeed, MaxSpeed, m_Vel.x, -Accel);
+		m_Vel.x = SaturatedAdd(-MaxSpeed, 0.0f, m_Vel.x, (m_Vel.x > MinSpeed ? -DefaultAccel : -Accel));
 	if(m_Direction > 0)
-		m_Vel.x = SaturatedAdd(-MaxSpeed, MaxSpeed, m_Vel.x, Accel);
+		m_Vel.x = SaturatedAdd(0.0f, MaxSpeed, m_Vel.x, (m_Vel.x < MinSpeed ? DefaultAccel : Accel));
 	if(m_Direction == 0)
 		m_Vel.x *= Friction;
 
@@ -434,8 +436,14 @@ void CCharacterCore::Tick(bool UseInput)
 void CCharacterCore::Move()
 {
 	//material handling
-	CMatDefault DefaultMaterial = m_Material[MAT_DEFAULT];
-	float RampValue = VelocityRamp(length(m_Vel) * 50, DefaultMaterial.m_VelrampStart, DefaultMaterial.m_VelrampRange, DefaultMaterial.m_VelrampCurvature);
+	int GroundMaterial = MAT_DEFAULT;
+	if(m_pCollision->CheckPoint(m_Pos.x, m_Pos.y + PhysicalSize() / 2 + 5))
+	{
+		GroundMaterial = m_pCollision->GetMaterial(m_Pos.x, m_Pos.y + PhysicalSize() / 2 + 5);
+	}
+	CMatDefault &DefaultMaterial = m_Material[MAT_DEFAULT];
+	CMatDefault &BottomMaterial = m_Material[GroundMaterial];
+	float RampValue = VelocityRamp(length(m_Vel) * 50, BottomMaterial.m_VelrampStart, BottomMaterial.m_VelrampRange, BottomMaterial.m_VelrampCurvature);
 
 	m_Vel.x = m_Vel.x * RampValue;
 

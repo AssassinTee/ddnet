@@ -187,6 +187,8 @@ enum
 	//Material Controllers
 	MAT_DEFAULT = 0, //Note: default is not air
 	MAT_ICE,
+	MAT_SAND,
+	MAT_PENALTY,
 	NUM_MATERIALS,
 	//End of materials
 	//Layers

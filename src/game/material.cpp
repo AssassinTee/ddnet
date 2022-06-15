@@ -51,6 +51,8 @@ CMatDefault &CMaterials::operator[](int Index) const
 	switch(Index)
 	{
 	case MAT_ICE: return const_cast<CMatDefault &>(ms_aMaterials[1]);
+	case MAT_SAND: return const_cast<CMatDefault &>(ms_aMaterials[2]);
+	case MAT_PENALTY: return const_cast<CMatDefault &>(ms_aMaterials[3]);
 	}
 	return const_cast<CMatDefault &>(ms_aMaterials[0]);
 }

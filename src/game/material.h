@@ -53,6 +53,8 @@ public:
 	int m_SkidSound = SOUND_PLAYER_SKID;
 	int m_SkidThreshold = 500.0f;
 
+	virtual float GetDynamicAcceleration(float Velocity) { return m_GroundControlAccel; }
+
 	static int Num()
 	{
 		return sizeof(CMatDefault) / sizeof(CTuneParam);
@@ -79,6 +81,37 @@ public:
 	}
 };
 
+class CMatSand : public CMatDefault
+{
+public:
+	CMatSand()
+	{
+		m_GroundFriction = 0.7f; //lower friction
+		m_GroundControlSpeed = 10.0f; //TODO check this
+		m_GroundControlAccel = 50.0f / ms_TicksPerSecond; //low acceleration
+		m_SkidSound = SOUND_PLAYER_SKID; //TODO add sand skid sound
+		m_SkidThreshold = 100.0f;
+	}
+};
+
+class CMatPenalty : public CMatDefault
+{
+public:
+	CMatPenalty()
+	{
+		m_GroundFriction = 0.3f; //high friction
+		m_GroundControlSpeed = 5.0f; //low max speed
+		m_GroundControlAccel = -20.0f / ms_TicksPerSecond; //penalty low accell!
+		// m_VelrampStart = 0; //begin slow down on contact
+		// m_VelrampRange = 200;
+		// m_VelrampCurvature = 3.0f;
+		m_SkidSound = SOUND_PLAYER_SKID;
+		m_SkidThreshold = 700.0f; //high friction, late skids
+	}
+
+	float GetDynamicAcceleration(float Velocity) override {}
+};
+
 /* Material handling ---------------------------------------------------------------------------- */
 
 class CMaterials
@@ -100,6 +133,8 @@ private:
 	static const inline std::vector<CMatDefault> ms_aMaterials{
 		CMatDefault(),
 		CMatIce(),
+		CMatSand(),
+		CMatPenalty(),
 	};
 };
 
