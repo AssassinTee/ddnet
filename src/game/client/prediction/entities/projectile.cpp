@@ -47,7 +47,7 @@ vec2 CProjectile::GetPos(float Time)
 {
 	float Curvature = 0;
 	float Speed = 0;
-	CMatDefault *pTuning = GetTuning(m_TuneZone);
+	CTuneParams *pTuning = GetTuning(m_TuneZone);
 
 	switch(m_Type)
 	{

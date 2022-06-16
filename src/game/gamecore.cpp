@@ -28,7 +28,8 @@ void CCharacterCore::Init(CWorldCore *pWorld, CCollision *pCollision, CTeamsCore
 
 	m_pMaterial = CMaterials::GetInstance();
 	// fail safe, if core's tuning didn't get updated at all, just fallback to world tuning.
-	m_pMaterial->At(MAT_DEFAULT) = m_pWorld->m_Tuning[g_Config.m_ClDummy];
+	// also update default tunings on demand
+	m_pMaterial->GetTuning(MAT_DEFAULT) = m_pWorld->m_Tuning[g_Config.m_ClDummy];
 	Reset();
 }
 
@@ -103,11 +104,11 @@ void CCharacterCore::Tick(bool UseInput)
 	CMatDefault &AirMaterial = m_pMaterial->At(CenterMaterialID);
 	CMatDefault &DefaultMaterial = m_pMaterial->At(MAT_DEFAULT);
 
-	m_Vel.y += AirMaterial.m_Gravity;
+	m_Vel.y += AirMaterial.GetTuning().m_Gravity;
 
-	float MaxSpeed = Grounded ? m_pMaterial->GetGroundControlSpeed(GroundedLeft, GroundedRight, GroundMaterialLeftID, GroundMaterialRightID) : AirMaterial.m_AirControlSpeed;
-	float Accel = Grounded ? m_pMaterial->GetGroundControlAccel(GroundedLeft, GroundedRight, GroundMaterialLeftID, GroundMaterialRightID) : AirMaterial.m_AirControlAccel;
-	float Friction = Grounded ? m_pMaterial->GetGroundFriction(GroundedLeft, GroundedRight, GroundMaterialLeftID, GroundMaterialRightID) : AirMaterial.m_AirFriction;
+	float MaxSpeed = Grounded ? m_pMaterial->GetGroundControlSpeed(GroundedLeft, GroundedRight, GroundMaterialLeftID, GroundMaterialRightID) : AirMaterial.GetTuning().m_AirControlSpeed;
+	float Accel = Grounded ? m_pMaterial->GetGroundControlAccel(GroundedLeft, GroundedRight, GroundMaterialLeftID, GroundMaterialRightID, m_Vel.x, m_Direction) : AirMaterial.GetDynamicAirAccel(m_Vel.x, m_Direction);
+	float Friction = Grounded ? m_pMaterial->GetGroundFriction(GroundedLeft, GroundedRight, GroundMaterialLeftID, GroundMaterialRightID) : AirMaterial.GetTuning().m_AirFriction;
 
 	// handle input
 	if(UseInput)
@@ -153,7 +154,7 @@ void CCharacterCore::Tick(bool UseInput)
 				else if(!(m_Jumped & 2))
 				{
 					m_TriggeredEvents |= COREEVENT_AIR_JUMP;
-					m_Vel.y = -AirMaterial.m_AirJumpImpulse;
+					m_Vel.y = -AirMaterial.GetTuning().m_AirJumpImpulse;
 					m_Jumped |= 3;
 					m_JumpedTotal++;
 				}
@@ -173,7 +174,7 @@ void CCharacterCore::Tick(bool UseInput)
 				m_HookPos = m_Pos + TargetDirection * PhysicalSize() * 1.5f;
 				m_HookDir = TargetDirection;
 				SetHookedPlayer(-1);
-				m_HookTick = (float)SERVER_TICK_SPEED * (1.25f - AirMaterial.m_HookDuration);
+				m_HookTick = (float)SERVER_TICK_SPEED * (1.25f - AirMaterial.GetTuning().m_HookDuration);
 				m_TriggeredEvents |= COREEVENT_HOOK_LAUNCH;
 			}
 		}
@@ -195,10 +196,11 @@ void CCharacterCore::Tick(bool UseInput)
 	}
 
 	// add the speed modification according to players wanted direction
-	if(m_Direction < 0)
+	/*if(m_Direction < 0)
 		m_Vel.x = SaturatedAdd(-MaxSpeed, MaxSpeed, m_Vel.x, -Accel);
 	if(m_Direction > 0)
-		m_Vel.x = SaturatedAdd(-MaxSpeed, MaxSpeed, m_Vel.x, Accel);
+		m_Vel.x = SaturatedAdd(-MaxSpeed, MaxSpeed, m_Vel.x, Accel);*/
+	m_Vel.x = SaturatedAdd(-MaxSpeed, MaxSpeed, m_Vel.x, Accel);
 	if(m_Direction == 0)
 		m_Vel.x *= Friction;
 
@@ -220,11 +222,11 @@ void CCharacterCore::Tick(bool UseInput)
 	}
 	else if(m_HookState == HOOK_FLYING)
 	{
-		vec2 NewPos = m_HookPos + m_HookDir * AirMaterial.m_HookFireSpeed;
-		if((!m_NewHook && distance(m_Pos, NewPos) > AirMaterial.m_HookLength) || (m_NewHook && distance(m_HookTeleBase, NewPos) > AirMaterial.m_HookLength))
+		vec2 NewPos = m_HookPos + m_HookDir * AirMaterial.GetTuning().m_HookFireSpeed;
+		if((!m_NewHook && distance(m_Pos, NewPos) > AirMaterial.GetTuning().m_HookLength) || (m_NewHook && distance(m_HookTeleBase, NewPos) > AirMaterial.GetTuning().m_HookLength))
 		{
 			m_HookState = HOOK_RETRACT_START;
-			NewPos = m_Pos + normalize(NewPos - m_Pos) * AirMaterial.m_HookLength;
+			NewPos = m_Pos + normalize(NewPos - m_Pos) * AirMaterial.GetTuning().m_HookLength;
 			m_pReset = true;
 		}
 
@@ -249,7 +251,7 @@ void CCharacterCore::Tick(bool UseInput)
 		}
 
 		// Check against other players first
-		if(!this->m_NoHookHit && m_pWorld && DefaultMaterial.m_PlayerHooking)
+		if(!this->m_NoHookHit && m_pWorld && DefaultMaterial.GetTuning().m_PlayerHooking)
 		{
 			float Distance = 0.0f;
 			for(int i = 0; i < MAX_CLIENTS; i++)
@@ -330,7 +332,7 @@ void CCharacterCore::Tick(bool UseInput)
 		// don't do this hook rutine when we are hook to a player
 		if(m_HookedPlayer == -1 && distance(m_HookPos, m_Pos) > 46.0f)
 		{
-			vec2 HookVel = normalize(m_HookPos - m_Pos) * AirMaterial.m_HookDragAccel;
+			vec2 HookVel = normalize(m_HookPos - m_Pos) * AirMaterial.GetTuning().m_HookDragAccel;
 			// the hook as more power to drag you up then down.
 			// this makes it easier to get on top of an platform
 			if(HookVel.y > 0)
@@ -346,7 +348,7 @@ void CCharacterCore::Tick(bool UseInput)
 			vec2 NewVel = m_Vel + HookVel;
 
 			// check if we are under the legal limit for the hook
-			if(length(NewVel) < AirMaterial.m_HookDragSpeed || length(NewVel) < length(m_Vel))
+			if(length(NewVel) < AirMaterial.GetTuning().m_HookDragSpeed || length(NewVel) < length(m_Vel))
 				m_Vel = NewVel; // no problem. apply
 		}
 
@@ -383,7 +385,7 @@ void CCharacterCore::Tick(bool UseInput)
 			{
 				vec2 Dir = normalize(m_Pos - pCharCore->m_Pos);
 
-				bool CanCollide = (m_Super || pCharCore->m_Super) || (!m_NoCollision && !pCharCore->m_NoCollision && DefaultMaterial.m_PlayerCollision);
+				bool CanCollide = (m_Super || pCharCore->m_Super) || (!m_NoCollision && !pCharCore->m_NoCollision && DefaultMaterial.GetTuning().m_PlayerCollision);
 
 				if(CanCollide && Distance < PhysicalSize() * 1.25f && Distance > 0.0f)
 				{
@@ -400,12 +402,12 @@ void CCharacterCore::Tick(bool UseInput)
 				}
 
 				// handle hook influence
-				if(!m_NoHookHit && m_HookedPlayer == i && DefaultMaterial.m_PlayerHooking)
+				if(!m_NoHookHit && m_HookedPlayer == i && DefaultMaterial.GetTuning().m_PlayerHooking)
 				{
 					if(Distance > PhysicalSize() * 1.50f) // TODO: fix tweakable variable
 					{
-						float HookAccel = AirMaterial.m_HookDragAccel * (Distance / AirMaterial.m_HookLength);
-						float DragSpeed = AirMaterial.m_HookDragSpeed;
+						float HookAccel = AirMaterial.GetTuning().m_HookDragAccel * (Distance / AirMaterial.GetTuning().m_HookLength);
+						float DragSpeed = AirMaterial.GetTuning().m_HookDragSpeed;
 
 						vec2 Temp;
 						// add force to the hooked player
@@ -435,8 +437,17 @@ void CCharacterCore::Tick(bool UseInput)
 void CCharacterCore::Move()
 {
 	//material handling
+	int MaterialID = MAT_DEFAULT;
+
+	// ground material
+	if(m_pCollision->CheckPoint(m_Pos.x, m_Pos.y + PhysicalSize() / 2 + 5))
+		MaterialID = m_pCollision->GetMaterial(m_Pos.x, m_Pos.y + PhysicalSize() / 2 + 5);
+	else
+		MaterialID = m_pCollision->GetMaterial(m_Pos.x, m_Pos.y);
+	CMatDefault &VelrampMat = m_pMaterial->At(MaterialID);
 	CMatDefault &DefaultMaterial = m_pMaterial->At(MAT_DEFAULT);
-	float RampValue = VelocityRamp(length(m_Vel) * 50, DefaultMaterial.m_VelrampStart, DefaultMaterial.m_VelrampRange, DefaultMaterial.m_VelrampCurvature);
+
+	float RampValue = VelocityRamp(length(m_Vel) * 50, VelrampMat.GetTuning().m_VelrampStart, VelrampMat.GetTuning().m_VelrampRange, VelrampMat.GetTuning().m_VelrampCurvature);
 
 	m_Vel.x = m_Vel.x * RampValue;
 
@@ -458,7 +469,7 @@ void CCharacterCore::Move()
 
 	m_Vel.x = m_Vel.x * (1.0f / RampValue);
 
-	if(m_pWorld && (m_Super || (DefaultMaterial.m_PlayerCollision && !m_NoCollision && !m_Solo)))
+	if(m_pWorld && (m_Super || (DefaultMaterial.GetTuning().m_PlayerCollision && !m_NoCollision && !m_Solo)))
 	{
 		// check player collision
 		float Distance = distance(m_Pos, NewPos);

@@ -5,67 +5,32 @@
 #include "material.h"
 #include <base/math.h>
 
-const char *CMatDefault::ms_apNames[] =
-	{
-#define MACRO_TUNING_PARAM(Name, ScriptName, Value, Description) #ScriptName,
-#include "tuning.h"
-#undef MACRO_TUNING_PARAM
-};
-
-bool CMatDefault::Set(int Index, float Value)
+CMaterials::CMaterials()
 {
-	if(Index < 0 || Index >= Num())
-		return false;
-	((CTuneParam *)this)[Index] = Value;
-	return true;
+	m_apMaterials = std::vector<CMatDefault *>(
+		{
+			&m_MatDefault,
+			&m_MatIce,
+			&m_MatSand,
+			&m_MatPenalty,
+			&m_MatSlime,
+			&m_MatSlimeV,
+			&m_MatSlimeH,
+			&m_MatSlimeWeak,
+			&m_MatSlimeWeakV,
+			&m_MatSlimeWeakH,
+			&m_MatBoosterBidirect,
+			&m_MatBoosterRight,
+			&m_MatBoosterLeft,
+			&m_MatBoosterWeakBidirect,
+			&m_MatBoosterWeakRight,
+			&m_MatBoosterWeakLeft,
+		});
 }
-
-bool CMatDefault::Get(int Index, float *pValue) const
-{
-	if(Index < 0 || Index >= Num())
-		return false;
-	*pValue = (float)((CTuneParam *)this)[Index];
-	return true;
-}
-
-bool CMatDefault::Set(const char *pName, float Value)
-{
-	for(int i = 0; i < Num(); i++)
-		if(str_comp_nocase(pName, ms_apNames[i]) == 0)
-			return Set(i, Value);
-	return false;
-}
-
-bool CMatDefault::Get(const char *pName, float *pValue) const
-{
-	for(int i = 0; i < Num(); i++)
-		if(str_comp_nocase(pName, ms_apNames[i]) == 0)
-			return Get(i, pValue);
-
-	return false;
-}
-
-CMaterials::CMaterials() :
-	m_apMaterials{{new CMatDefault(),
-		new CMatIce(),
-		new CMatSand()}}
-{
-}
-/*new CMatPenalty(),
-		new CMatSlime(),
-		new CMatSlimeV(),
-		new CMatSlimeH(),
-		new CMatSlimeWeak(),
-		new CMatSlimeWeakV(),
-		new CMatSlimeWeakH()};*/
 
 CMaterials::~CMaterials()
 {
-	for(CMatDefault *Mat : m_apMaterials)
-	{
-		delete Mat;
-	}
-	//m_apMaterials.clear();
+	m_apMaterials.clear();
 }
 
 CMatDefault &CMaterials::operator[](int Index)
@@ -73,49 +38,54 @@ CMatDefault &CMaterials::operator[](int Index)
 	switch(Index)
 	{
 	case MAT_ICE: return *m_apMaterials[1];
-	case MAT_SAND:
-		return *m_apMaterials[2];
-		/*case MAT_PENALTY_GRAS: return *m_apMaterials[3];
+	case MAT_SAND: return *m_apMaterials[2];
+	case MAT_PENALTY_GRAS: return *m_apMaterials[3];
 	case MAT_SLIME: return *m_apMaterials[4];
 	case MAT_SLIME_V: return *m_apMaterials[5];
 	case MAT_SLIME_H: return *m_apMaterials[6];
 	case MAT_SLIME_WEAK: return *m_apMaterials[7];
 	case MAT_SLIME_WEAK_V: return *m_apMaterials[8];
-	case MAT_SLIME_WEAK_H: return *m_apMaterials[9];*/
+	case MAT_SLIME_WEAK_H: return *m_apMaterials[9];
+	case MAT_BOOSTER_BIDIRECT: return *m_apMaterials[10];
+	case MAT_BOOSTER_RIGHT: return *m_apMaterials[11];
+	case MAT_BOOSTER_LEFT: return *m_apMaterials[12];
+	case MAT_BOOSTER_WEAK_BIDIRECT: return *m_apMaterials[13];
+	case MAT_BOOSTER_WEAK_RIGHT: return *m_apMaterials[14];
+	case MAT_BOOSTER_WEAK_LEFT: return *m_apMaterials[15];
 	}
 	return *m_apMaterials[MAT_DEFAULT];
 }
 
 float CMaterials::GetGroundControlSpeed(bool GroundedLeft, bool GroundedRight, int MaterialLeft, int MaterialRight)
 {
-	return HandleMaterialInteraction(GroundedLeft, GroundedRight, At(MaterialLeft).m_GroundControlSpeed, At(MaterialRight).m_GroundControlSpeed, [](float a, float b) { return minimum(a, b); });
+	return HandleMaterialInteraction(GroundedLeft, GroundedRight, GetTuning(MaterialLeft).m_GroundControlSpeed, GetTuning(MaterialRight).m_GroundControlSpeed, [](float a, float b) { return minimum(a, b); });
 }
 
-float CMaterials::GetGroundControlAccel(bool GroundedLeft, bool GroundedRight, int MaterialLeft, int MaterialRight)
+float CMaterials::GetGroundControlAccel(bool GroundedLeft, bool GroundedRight, int MaterialLeft, int MaterialRight, float Vel, int Dir)
 {
-	return HandleMaterialInteraction(GroundedLeft, GroundedRight, At(MaterialLeft).m_GroundControlAccel, At(MaterialRight).m_GroundControlAccel, [](float a, float b) { return maximum(a, b); });
+	return HandleMaterialInteraction(GroundedLeft, GroundedRight, At(MaterialLeft).GetDynamicGroundAccel(Vel, Dir), At(MaterialRight).GetDynamicGroundAccel(Vel, Dir), [](float a, float b) { return maximum(a, b); });
 }
 
 float CMaterials::GetGroundFriction(bool GroundedLeft, bool GroundedRight, int MaterialLeft, int MaterialRight)
 {
 	// Note: Higher friction VALUE means LOWER physical friction
-	return HandleMaterialInteraction(GroundedLeft, GroundedRight, At(MaterialLeft).m_GroundFriction, At(MaterialRight).m_GroundFriction, [](float a, float b) { return minimum(a, b); });
+	return HandleMaterialInteraction(GroundedLeft, GroundedRight, GetTuning(MaterialLeft).m_GroundFriction, GetTuning(MaterialRight).m_GroundFriction, [](float a, float b) { return minimum(a, b); });
 }
 
 float CMaterials::GetGroundJumpImpulse(bool GroundedLeft, bool GroundedRight, int MaterialLeft, int MaterialRight)
 {
 	// you sticked to something with one leg, average it?
-	return HandleMaterialInteraction(GroundedLeft, GroundedRight, At(MaterialLeft).m_GroundJumpImpulse, At(MaterialRight).m_GroundJumpImpulse, [](float a, float b) { return (a + b) / 2; });
+	return HandleMaterialInteraction(GroundedLeft, GroundedRight, GetTuning(MaterialLeft).m_GroundJumpImpulse, GetTuning(MaterialRight).m_GroundJumpImpulse, [](float a, float b) { return (a + b) / 2; });
 }
 
 float CMaterials::GetElasticityX(bool GroundedTop, bool GroundedBottom, int MaterialTop, int MaterialBottom, float Offset)
 {
-	return HandleMaterialInteraction(GroundedTop, GroundedBottom, At(MaterialTop).m_GroundElasticityX, At(MaterialBottom).m_GroundElasticityX, [Offset](float a, float b) { return Offset > 0.5 ? a : b; });
+	return HandleMaterialInteraction(GroundedTop, GroundedBottom, GetTuning(MaterialTop).m_GroundElasticityX, GetTuning(MaterialBottom).m_GroundElasticityX, [Offset](float a, float b) { return Offset > 0.5 ? a : b; });
 }
 
 float CMaterials::GetElasticityY(bool GroundedLeft, bool GroundedRight, int MaterialLeft, int MaterialRight, float Offset)
 {
-	return HandleMaterialInteraction(GroundedLeft, GroundedRight, At(MaterialLeft).m_GroundElasticityY, At(MaterialRight).m_GroundElasticityY, [Offset](float a, float b) { return Offset > 0.5 ? a : b; });
+	return HandleMaterialInteraction(GroundedLeft, GroundedRight, GetTuning(MaterialLeft).m_GroundElasticityY, GetTuning(MaterialRight).m_GroundElasticityY, [Offset](float a, float b) { return Offset > 0.5 ? a : b; });
 }
 
 float CMaterials::HandleMaterialInteraction(bool GroundedLeft, bool GroundedRight, float ValueLeft, float ValueRight, const std::function<float(float, float)> &function)

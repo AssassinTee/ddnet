@@ -449,8 +449,8 @@ void CPlayers::RenderPlayer(
 	// do skidding
 	if(!InAir && WantOtherDir)
 	{
-		float LeftFriction = Material()->At(LeftMat).m_GroundFriction;
-		float RightFriction = Material()->At(RightMat).m_GroundFriction;
+		float LeftFriction = Material()->GetTuning(LeftMat).m_GroundFriction;
+		float RightFriction = Material()->GetTuning(RightMat).m_GroundFriction;
 		int SkidMaterialID = MAT_DEFAULT;
 		if((LeftGround && !RightGround) || LeftFriction > RightFriction)
 			SkidMaterialID = LeftMat;

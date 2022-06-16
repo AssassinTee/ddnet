@@ -300,7 +300,7 @@ void CGameWorld::ReleaseHooked(int ClientID)
 	}
 }
 
-CMatDefault *CGameWorld::Tuning()
+CTuneParams *CGameWorld::Tuning()
 {
 	return &m_Core.m_Tuning[g_Config.m_ClDummy];
 }

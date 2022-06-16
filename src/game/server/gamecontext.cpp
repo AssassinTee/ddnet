@@ -137,7 +137,7 @@ void CGameContext::Clear()
 	CVoteOptionServer *pVoteOptionFirst = m_pVoteOptionFirst;
 	CVoteOptionServer *pVoteOptionLast = m_pVoteOptionLast;
 	int NumVoteOptions = m_NumVoteOptions;
-	CMatDefault Tuning = m_Tuning;
+	CTuneParams Tuning = m_Tuning;
 
 	m_Resetting = true;
 	this->~CGameContext();
@@ -718,7 +718,7 @@ void CGameContext::CheckPureTuning()
 		str_comp(m_pController->m_pGameType, "TDM") == 0 ||
 		str_comp(m_pController->m_pGameType, "CTF") == 0)
 	{
-		CMatDefault p;
+		CTuneParams p;
 		if(mem_comp(&p, &m_Tuning, sizeof(p)) != 0)
 		{
 			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", "resetting tuning due to pure server");
@@ -2639,7 +2639,7 @@ void CGameContext::ConTuneDumpZone(IConsole::IResult *pResult, void *pUserData)
 void CGameContext::ConTuneResetZone(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
-	CMatDefault TuningParams;
+	CTuneParams TuningParams;
 	if(pResult->NumArguments())
 	{
 		int List = pResult->GetInteger(0);
@@ -3214,7 +3214,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	//players = new CPlayer[MAX_CLIENTS];
 
 	// Reset Tunezones
-	CMatDefault TuningParams;
+	CTuneParams TuningParams;
 	for(int i = 0; i < NUM_TUNEZONES; i++)
 	{
 		TuningList()[i] = TuningParams;
@@ -3685,8 +3685,8 @@ void CGameContext::LoadMapSettings()
 void CGameContext::OnSnap(int ClientID)
 {
 	// add tuning to demo
-	CMatDefault StandardTuning;
-	if(ClientID == -1 && Server()->DemoRecorder_IsRecording() && mem_comp(&StandardTuning, &m_Tuning, sizeof(CMatDefault)) != 0)
+	CTuneParams StandardTuning;
+	if(ClientID == -1 && Server()->DemoRecorder_IsRecording() && mem_comp(&StandardTuning, &m_Tuning, sizeof(CTuneParams)) != 0)
 	{
 		CMsgPacker Msg(NETMSGTYPE_SV_TUNEPARAMS);
 		int *pParams = (int *)&m_Tuning;
@@ -3845,7 +3845,7 @@ int CGameContext::GetDDRaceTeam(int ClientID)
 
 void CGameContext::ResetTuning()
 {
-	CMatDefault TuningParams;
+	CTuneParams TuningParams;
 	m_Tuning = TuningParams;
 	Tuning()->Set("gun_speed", 1400);
 	Tuning()->Set("gun_curvature", 0);

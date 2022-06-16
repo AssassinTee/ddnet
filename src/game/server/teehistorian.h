@@ -9,7 +9,7 @@
 #include <time.h>
 
 class CConfig;
-class CMatDefault;
+class CTuneParams;
 class CUuidManager;
 class CPlayer;
 
@@ -35,7 +35,7 @@ public:
 		int m_MapCrc;
 
 		CConfig *m_pConfig;
-		CMatDefault *m_pTuning;
+		CTuneParams *m_pTuning;
 		CUuidManager *m_pUuids;
 	};
 

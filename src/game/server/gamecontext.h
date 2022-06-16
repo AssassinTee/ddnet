@@ -69,8 +69,8 @@ class CGameContext : public IGameServer
 	CCollision m_Collision;
 	protocol7::CNetObjHandler m_NetObjHandler7;
 	CNetObjHandler m_NetObjHandler;
-	CMatDefault m_Tuning;
-	CMatDefault m_aTuningList[NUM_TUNEZONES];
+	CTuneParams m_Tuning;
+	CTuneParams m_aTuningList[NUM_TUNEZONES];
 	std::vector<std::string> m_vCensorlist;
 
 	bool m_TeeHistorianActive;
@@ -133,8 +133,8 @@ public:
 	IEngine *Engine() { return m_pEngine; }
 	IStorage *Storage() { return m_pStorage; }
 	CCollision *Collision() { return &m_Collision; }
-	CMatDefault *Tuning() { return &m_Tuning; }
-	CMatDefault *TuningList() { return &m_aTuningList[0]; }
+	CTuneParams *Tuning() { return &m_Tuning; }
+	CTuneParams *TuningList() { return &m_aTuningList[0]; }
 	IAntibot *Antibot() { return m_pAntibot; }
 	CTeeHistorian *TeeHistorian() { return &m_TeeHistorian; }
 	bool TeeHistorianActive() const { return m_TeeHistorianActive; }

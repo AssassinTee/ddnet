@@ -25,12 +25,10 @@ public:
 	operator float() const { return m_Value / 100.0f; }
 };
 
-/* Materials ---------------------------------------------------------------------------- */
-
-class CMatDefault //Note: this was CTuneParams before
+class CTuneParams
 {
 public:
-	CMatDefault()
+	CTuneParams()
 	{
 		const float TicksPerSecond = ms_TicksPerSecond;
 #define MACRO_TUNING_PARAM(Name, ScriptName, Value, Description) m_##Name.Set((int)(Value * 100.0f));
@@ -44,14 +42,9 @@ public:
 #include "tuning.h"
 #undef MACRO_TUNING_PARAM
 
-	// client side material values
-	virtual int GetSkidSound();
-	virtual float GetSkidThreshold() { return 500.0f; }
-	virtual float GetDynamicAcceleration(float Velocity) { return m_GroundControlAccel; }
-
 	static int Num()
 	{
-		return sizeof(CMatDefault) / sizeof(CTuneParam);
+		return sizeof(CTuneParams) / sizeof(CTuneParam);
 	}
 	bool Set(int Index, float Value);
 	bool Set(const char *pName, float Value);
@@ -59,6 +52,24 @@ public:
 	bool Get(const char *pName, float *pValue) const;
 
 protected:
+	constexpr static const float ms_TicksPerSecond = 50.0f;
+};
+
+/* Materials ---------------------------------------------------------------------------- */
+
+class CMatDefault
+{
+public:
+	CTuneParams &GetTuning() { return m_TuneParams; }
+	CMatDefault() = default;
+	virtual int GetSkidSound();
+	virtual float GetSkidThreshold() { return 500.0f; }
+	virtual float GetDynamicGroundAccel(float Vel, int Dir) { return HandleDirection(m_TuneParams.m_GroundControlAccel, Vel, Dir); }
+	virtual float GetDynamicAirAccel(float Vel, int Dir) { return HandleDirection(m_TuneParams.m_AirControlAccel, Vel, Dir); }
+	virtual float HandleDirection(float Accel, float Vel, int Dir) { return Dir == 0 ? 0.0f : Dir * Accel; }
+
+protected:
+	CTuneParams m_TuneParams;
 	constexpr static const float ms_TicksPerSecond = 50.0f;
 };
 
@@ -81,52 +92,120 @@ class CMatPenalty : public CMatDefault
 {
 public:
 	CMatPenalty();
-	float GetDynamicAcceleration(float Velocity) override;
+	float GetDynamicGroundAccel(float Vel, int Dir) override;
 	float GetSkidThreshold() override;
+
+private:
+	float m_PenaltyControlAccel;
+	float m_PenaltyMinAccel;
+	float m_PenaltyScale;
 };
 
-class CMatSlimeBase : public CMatDefault
+// SLIME
+
+class IMatSlime : virtual public CMatDefault
 {
 public:
-	CMatSlimeBase() = default;
 	virtual float GetSkidThreshold() override;
 	virtual int GetSkidSound() override { return -1; }
+
+protected:
+	IMatSlime() = default;
 };
 
-class CMatSlime : public CMatSlimeBase
+class CMatSlime : public IMatSlime
 {
 public:
 	CMatSlime();
 };
 
-class CMatSlimeV : public CMatSlimeBase
+class CMatSlimeV : public IMatSlime
 {
 public:
 	CMatSlimeV();
 };
 
-class CMatSlimeH : public CMatSlimeBase
+class CMatSlimeH : public IMatSlime
 {
 public:
 	CMatSlimeH();
 };
 
-class CMatSlimeWeak : public CMatSlimeBase
+class CMatSlimeWeak : public IMatSlime
 {
 public:
 	CMatSlimeWeak();
 };
 
-class CMatSlimeWeakV : public CMatSlimeBase
+class CMatSlimeWeakV : public IMatSlime
 {
 public:
 	CMatSlimeWeakV();
 };
 
-class CMatSlimeWeakH : public CMatSlimeBase
+class CMatSlimeWeakH : public IMatSlime
 {
 public:
 	CMatSlimeWeakH();
+};
+
+// BOOSTER
+
+class IMatBooster : public CMatDefault
+{
+public:
+	virtual float GetDynamicGroundAccel(float Vel, int Dir) override;
+	virtual float HandleDirection(float Accel, float Vel, int Dir) override;
+
+protected:
+	enum BoosterDir
+	{
+		LEFT = -1,
+		BIDIRECT,
+		RIGHT,
+	};
+
+	IMatBooster() = default;
+	float m_BoosterMinControlAccel;
+	float m_BoosterMaxControlAccel;
+	float m_BoosterHighSpeedAccel;
+	BoosterDir m_BoosterDir;
+};
+
+class CMatBoosterBidirect : virtual public IMatBooster
+{
+public:
+	CMatBoosterBidirect();
+};
+
+class CMatBoosterRight : public CMatBoosterBidirect
+{
+public:
+	CMatBoosterRight();
+};
+
+class CMatBoosterLeft : public CMatBoosterBidirect
+{
+public:
+	CMatBoosterLeft();
+};
+
+class CMatBoosterWeakBidirect : virtual public IMatBooster
+{
+public:
+	CMatBoosterWeakBidirect();
+};
+
+class CMatBoosterWeakRight : public CMatBoosterWeakBidirect
+{
+public:
+	CMatBoosterWeakRight();
+};
+
+class CMatBoosterWeakLeft : public CMatBoosterWeakBidirect
+{
+public:
+	CMatBoosterWeakLeft();
 };
 
 #endif //GAME_MATERIAL_TUNING_H

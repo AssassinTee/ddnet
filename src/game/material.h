@@ -11,7 +11,6 @@
 #include <functional>
 #include <vector>
 
-
 class CMaterials
 {
 public:
@@ -22,11 +21,11 @@ public:
 
 	//TODO split this into Get and Set
 	CMatDefault &At(int Index) { return (*this)[Index]; }
-	CMatDefault *Tuning() { return m_apMaterials[MAT_DEFAULT]; }
+	CTuneParams &GetTuning(int Index) { return At(Index).GetTuning(); }
 
 	//multi material interactions (ground)
 	float GetGroundControlSpeed(bool GroundedLeft, bool GroundedRight, int MaterialLeft, int MaterialRight);
-	float GetGroundControlAccel(bool GroundedLeft, bool GroundedRight, int MaterialLeft, int MaterialRight);
+	float GetGroundControlAccel(bool GroundedLeft, bool GroundedRight, int MaterialLeft, int MaterialRight, float Vel, int Dir);
 	float GetGroundFriction(bool GroundedLeft, bool GroundedRight, int MaterialLeft, int MaterialRight);
 	float GetGroundJumpImpulse(bool GroundedLeft, bool GroundedRight, int MaterialLeft, int MaterialRight);
 	float GetElasticityX(bool GroundedTop, bool GroundedBottom, int MaterialTop, int MaterialBottom, float Offset);
@@ -42,7 +41,24 @@ private:
 	CMaterials();
 	CMatDefault &operator[](int Index);
 	float HandleMaterialInteraction(bool GroundedLeft, bool GroundedRight, float ValueLeft, float ValueRight, const std::function<float(float, float)> &function);
-	const std::vector<CMatDefault *> m_apMaterials;
+	std::vector<CMatDefault *> m_apMaterials;
+
+	CMatDefault m_MatDefault;
+	CMatIce m_MatIce;
+	CMatSand m_MatSand;
+	CMatPenalty m_MatPenalty;
+	CMatSlime m_MatSlime;
+	CMatSlimeV m_MatSlimeV;
+	CMatSlimeH m_MatSlimeH;
+	CMatSlimeWeak m_MatSlimeWeak;
+	CMatSlimeWeakV m_MatSlimeWeakV;
+	CMatSlimeWeakH m_MatSlimeWeakH;
+	CMatBoosterBidirect m_MatBoosterBidirect;
+	CMatBoosterRight m_MatBoosterRight;
+	CMatBoosterLeft m_MatBoosterLeft;
+	CMatBoosterWeakBidirect m_MatBoosterWeakBidirect;
+	CMatBoosterWeakRight m_MatBoosterWeakRight;
+	CMatBoosterWeakLeft m_MatBoosterWeakLeft;
 };
 
 #endif //GAME_MATERIAL_H

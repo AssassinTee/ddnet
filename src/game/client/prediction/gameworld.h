@@ -54,7 +54,7 @@ public:
 	class CCollision *Collision() { return m_pCollision; }
 	CTeamsCore *Teams() { return &m_Teams; }
 	std::vector<SSwitchers> &Switchers() { return m_Core.m_vSwitchers; }
-	CMatDefault *Tuning();
+	CTuneParams *Tuning();
 	CEntity *GetEntity(int ID, int EntityType);
 	class CCharacter *GetCharacterByID(int ID) { return (ID >= 0 && ID < MAX_CLIENTS) ? m_apCharacters[ID] : nullptr; }
 
@@ -90,9 +90,9 @@ public:
 	CEntity *FindMatch(int ObjID, int ObjType, const void *pObjData);
 	void Clear();
 
-	CMatDefault *m_pTuningList;
-	CMatDefault *TuningList() { return m_pTuningList; }
-	CMatDefault *GetTuning(int i) { return &TuningList()[i]; }
+	CTuneParams *m_pTuningList;
+	CTuneParams *TuningList() { return m_pTuningList; }
+	CTuneParams *GetTuning(int i) { return &TuningList()[i]; }
 
 private:
 	void RemoveEntities();

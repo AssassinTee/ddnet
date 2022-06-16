@@ -34,6 +34,7 @@ CMapImages::CMapImages(int TextureSize)
 	m_TextureScale = TextureSize;
 	mem_zero(m_EntitiesIsLoaded, sizeof(m_EntitiesIsLoaded));
 	m_SpeedupArrowIsLoaded = false;
+	m_MaterialIsLoaded = false;
 
 	mem_zero(m_aTextureUsedByTileOrQuadLayerFlag, sizeof(m_aTextureUsedByTileOrQuadLayerFlag));
 
