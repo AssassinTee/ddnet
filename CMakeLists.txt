@@ -1831,6 +1831,8 @@ set_src(GAME_SHARED GLOB src/game
   mapitems_ex_types.h
   material.cpp
   material.h
+  material_tuning.cpp
+  material_tuning.h
   prng.cpp
   prng.h
   teamscore.cpp

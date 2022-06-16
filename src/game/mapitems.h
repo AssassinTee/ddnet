@@ -187,6 +187,22 @@ enum
 	//Material Controllers
 	MAT_DEFAULT = 0, //Note: default is not air
 	MAT_ICE,
+	MAT_SAND,
+	MAT_PENALTY_GRAS,
+	MAT_SLIME = 16,
+	MAT_SLIME_V,
+	MAT_SLIME_H,
+	MAT_SLIME_WEAK,
+	MAT_SLIME_WEAK_V,
+	MAT_SLIME_WEAK_H,
+	MAT_SLIME_H_WEAK_V, // only reserved not implemented
+	MAT_SLIME_V_WEAK_H,
+	MAT_BOOSTER_BIDIRECT_V = 24,
+	MAT_BOOSTER_BIDIRECT_H,
+	MAT_BOOSTER_RIGHT,
+	MAT_BOOSTER_LEFT,
+	MAT_BOOSTER_UP,
+	MAT_BOOSTER_DOWN,
 	NUM_MATERIALS,
 	//End of materials
 	//Layers

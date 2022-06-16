@@ -483,7 +483,37 @@ bool CCollision::TestBox(vec2 Pos, vec2 Size) const
 	return false;
 }
 
-void CCollision::MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elasticity) const
+void CCollision::TestElasticity(vec2 Pos, vec2 Size, vec2 *pElasticityX, vec2 *pElasticityY) const
+{
+	Size *= 0.5f; // same as TestBox
+	int MaterialTL = GetMaterial(round_to_int(Pos.x - Size.x), round_to_int(Pos.y - Size.y));
+	int MaterialTR = GetMaterial(round_to_int(Pos.x + Size.x), round_to_int(Pos.y - Size.y));
+	int MaterialBL = GetMaterial(round_to_int(Pos.x - Size.x), round_to_int(Pos.y + Size.y));
+	int MaterialBR = GetMaterial(round_to_int(Pos.x + Size.x), round_to_int(Pos.y + Size.y));
+	bool IsGroundTL = CheckPoint(Pos.x - Size.x, Pos.y - Size.y);
+	bool IsGroundTR = CheckPoint(Pos.x + Size.x, Pos.y - Size.y);
+	bool IsGroundBL = CheckPoint(Pos.x - Size.x, Pos.y + Size.y);
+	bool IsGroundBR = CheckPoint(Pos.x + Size.x, Pos.y + Size.y);
+
+	if(pElasticityY)
+	{
+		float OffsetX = fmodf(Pos.x, 32.0f) / 32.0f;
+		// top
+		(*pElasticityY).x = CMaterials::GetInstance()->GetElasticityY(IsGroundTL, IsGroundTR, MaterialTL, MaterialTR, OffsetX);
+		// bottom
+		(*pElasticityY).y = CMaterials::GetInstance()->GetElasticityY(IsGroundBL, IsGroundBR, MaterialBL, MaterialBR, OffsetX);
+	}
+	if(pElasticityX)
+	{
+		float OffsetY = fmodf(Pos.y, 32.0f) / 32.0f;
+		// right
+		(*pElasticityX).x = CMaterials::GetInstance()->GetElasticityX(IsGroundTR, IsGroundBR, MaterialTR, MaterialBR, OffsetY);
+		// left
+		(*pElasticityX).y = CMaterials::GetInstance()->GetElasticityX(IsGroundTL, IsGroundBL, MaterialTL, MaterialBL, OffsetY);
+	}
+}
+
+void CCollision::MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size) const
 {
 	// do the move
 	vec2 Pos = *pInoutPos;
@@ -495,6 +525,7 @@ void CCollision::MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elas
 	if(Distance > 0.00001f)
 	{
 		float Fraction = 1.0f / (float)(Max + 1);
+
 		for(int i = 0; i <= Max; i++)
 		{
 			// Early break as optimization to stop checking for collisions for
@@ -517,18 +548,20 @@ void CCollision::MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elas
 			if(TestBox(vec2(NewPos.x, NewPos.y), Size))
 			{
 				int Hits = 0;
+				vec2 ElasticityY, ElasticityX;
+				TestElasticity(NewPos, Size, &ElasticityX, &ElasticityY);
 
 				if(TestBox(vec2(Pos.x, NewPos.y), Size))
 				{
 					NewPos.y = Pos.y;
-					Vel.y *= -Elasticity;
+					Vel.y *= Vel.y > 0 ? -ElasticityY.y : -ElasticityY.x;
 					Hits++;
 				}
 
 				if(TestBox(vec2(NewPos.x, Pos.y), Size))
 				{
 					NewPos.x = Pos.x;
-					Vel.x *= -Elasticity;
+					Vel.x *= Vel.x > 0 ? -ElasticityX.x : -ElasticityX.y;
 					Hits++;
 				}
 
@@ -537,9 +570,9 @@ void CCollision::MoveBox(vec2 *pInoutPos, vec2 *pInoutVel, vec2 Size, float Elas
 				if(Hits == 0)
 				{
 					NewPos.y = Pos.y;
-					Vel.y *= -Elasticity;
+					Vel.y *= Vel.y > 0 ? -ElasticityY.x : -ElasticityY.y;
 					NewPos.x = Pos.x;
-					Vel.x *= -Elasticity;
+					Vel.x *= Vel.x > 0 ? -ElasticityX.x : -ElasticityX.y;
 				}
 			}
 

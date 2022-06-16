@@ -458,9 +458,9 @@ void CPlayers::RenderPlayer(
 			SkidMaterialID = RightMat;
 		CMatDefault &SkidMaterial = Material()->At(SkidMaterialID);
 
-		if(length(Vel * 50) > SkidMaterial.m_SkidThreshold)
+		if(length(Vel * 50) > SkidMaterial.GetSkidThreshold() && SkidMaterial.GetSkidThreshold() >= 0.0f)
 		{
-			int SoundID = SkidMaterial.m_SkidSound;
+			int SoundID = SkidMaterial.GetSkidSound();
 			static int64_t SkidSoundTime = 0;
 			if(time() - SkidSoundTime > time_freq() / 10)
 			{

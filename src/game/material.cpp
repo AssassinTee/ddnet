@@ -3,7 +3,6 @@
 //
 
 #include "material.h"
-#include "mapitems.h"
 #include <base/math.h>
 
 const char *CMatDefault::ms_apNames[] =
@@ -46,12 +45,19 @@ bool CMatDefault::Get(const char *pName, float *pValue) const
 	return false;
 }
 
-CMaterials::CMaterials()
+CMaterials::CMaterials() :
+	m_apMaterials{{new CMatDefault(),
+		new CMatIce(),
+		new CMatSand()}}
 {
-	m_apMaterials = {
-		new CMatDefault(),
-		new CMatIce()};
 }
+/*new CMatPenalty(),
+		new CMatSlime(),
+		new CMatSlimeV(),
+		new CMatSlimeH(),
+		new CMatSlimeWeak(),
+		new CMatSlimeWeakV(),
+		new CMatSlimeWeakH()};*/
 
 CMaterials::~CMaterials()
 {
@@ -59,7 +65,7 @@ CMaterials::~CMaterials()
 	{
 		delete Mat;
 	}
-	m_apMaterials.clear();
+	//m_apMaterials.clear();
 }
 
 CMatDefault &CMaterials::operator[](int Index)
@@ -67,6 +73,15 @@ CMatDefault &CMaterials::operator[](int Index)
 	switch(Index)
 	{
 	case MAT_ICE: return *m_apMaterials[1];
+	case MAT_SAND:
+		return *m_apMaterials[2];
+		/*case MAT_PENALTY_GRAS: return *m_apMaterials[3];
+	case MAT_SLIME: return *m_apMaterials[4];
+	case MAT_SLIME_V: return *m_apMaterials[5];
+	case MAT_SLIME_H: return *m_apMaterials[6];
+	case MAT_SLIME_WEAK: return *m_apMaterials[7];
+	case MAT_SLIME_WEAK_V: return *m_apMaterials[8];
+	case MAT_SLIME_WEAK_H: return *m_apMaterials[9];*/
 	}
 	return *m_apMaterials[MAT_DEFAULT];
 }
@@ -91,6 +106,16 @@ float CMaterials::GetGroundJumpImpulse(bool GroundedLeft, bool GroundedRight, in
 {
 	// you sticked to something with one leg, average it?
 	return HandleMaterialInteraction(GroundedLeft, GroundedRight, At(MaterialLeft).m_GroundJumpImpulse, At(MaterialRight).m_GroundJumpImpulse, [](float a, float b) { return (a + b) / 2; });
+}
+
+float CMaterials::GetElasticityX(bool GroundedTop, bool GroundedBottom, int MaterialTop, int MaterialBottom, float Offset)
+{
+	return HandleMaterialInteraction(GroundedTop, GroundedBottom, At(MaterialTop).m_GroundElasticityX, At(MaterialBottom).m_GroundElasticityX, [Offset](float a, float b) { return Offset > 0.5 ? a : b; });
+}
+
+float CMaterials::GetElasticityY(bool GroundedLeft, bool GroundedRight, int MaterialLeft, int MaterialRight, float Offset)
+{
+	return HandleMaterialInteraction(GroundedLeft, GroundedRight, At(MaterialLeft).m_GroundElasticityY, At(MaterialRight).m_GroundElasticityY, [Offset](float a, float b) { return Offset > 0.5 ? a : b; });
 }
 
 float CMaterials::HandleMaterialInteraction(bool GroundedLeft, bool GroundedRight, float ValueLeft, float ValueRight, const std::function<float(float, float)> &function)
