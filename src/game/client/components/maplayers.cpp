@@ -1765,7 +1765,8 @@ void CMapLayers::OnRender()
 						if(!Graphics()->IsTileBufferingEnabled())
 						{
 							Graphics()->BlendNone();
-							RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_OPAQUE,
+							/*TODO change to value in map*/
+							RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_OPAQUE,
 								EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
 
 							Graphics()->BlendNormal();
@@ -1782,8 +1783,8 @@ void CMapLayers::OnRender()
 									32.0f, Color.v4() * ColorHint.v4(), TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_TRANSPARENT,
 									EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
 							}
-
-							RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_TRANSPARENT,
+							/*TODO change to value in map*/
+							RenderTools()->RenderTilemap(pTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_TRANSPARENT,
 								EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
 						}
 						else
@@ -1859,10 +1860,11 @@ void CMapLayers::OnRender()
 					if(!Graphics()->IsTileBufferingEnabled())
 					{
 						Graphics()->BlendNone();
-						RenderTools()->RenderTilemap(pFrontTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_OPAQUE,
+						/*TODO change to value in map*/
+						RenderTools()->RenderTilemap(pFrontTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_OPAQUE,
 							EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
 						Graphics()->BlendNormal();
-						RenderTools()->RenderTilemap(pFrontTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_TRANSPARENT,
+						RenderTools()->RenderTilemap(pFrontTiles, pTMap->m_Width, pTMap->m_Height, 32.0f, 32.0f, Color, TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_TRANSPARENT,
 							EnvelopeEval, this, pTMap->m_ColorEnv, pTMap->m_ColorEnvOffset);
 					}
 					else

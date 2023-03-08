@@ -592,6 +592,8 @@ protected:
 			for(int x = 0; x < m_Width; x++)
 				std::swap(pTiles[y * m_Width + x], pTiles[(m_Height - 1 - y) * m_Width + x]);
 	}
+	int m_TileSizeX = 32;
+	int m_TileSizeY = 32;
 
 public:
 	CLayerTiles(int w, int h);
@@ -650,8 +652,8 @@ public:
 
 	void GetSize(float *pWidth, float *pHeight) override
 	{
-		*pWidth = m_Width * 32.0f;
-		*pHeight = m_Height * 32.0f;
+		*pWidth = m_Width * m_TileSizeX;
+		*pHeight = m_Height * m_TileSizeY;
 	}
 
 	void FlagModified(int x, int y, int w, int h);

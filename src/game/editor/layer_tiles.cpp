@@ -130,8 +130,8 @@ void CLayerTiles::Render(bool Tileset)
 	}
 }
 
-int CLayerTiles::ConvertX(float x) const { return (int)(x / 32.0f); }
-int CLayerTiles::ConvertY(float y) const { return (int)(y / 32.0f); }
+int CLayerTiles::ConvertX(float x) const { return (int)(x / m_TileSizeX); }
+int CLayerTiles::ConvertY(float y) const { return (int)(y / m_TileSizeY); }
 
 void CLayerTiles::Convert(CUIRect Rect, RECTi *pOut)
 {
@@ -145,10 +145,10 @@ void CLayerTiles::Snap(CUIRect *pRect)
 {
 	RECTi Out;
 	Convert(*pRect, &Out);
-	pRect->x = Out.x * 32.0f;
-	pRect->y = Out.y * 32.0f;
-	pRect->w = Out.w * 32.0f;
-	pRect->h = Out.h * 32.0f;
+	pRect->x = (float)(Out.x * m_TileSizeX);
+	pRect->y = (float)(Out.y * m_TileSizeY);
+	pRect->w = (float)(Out.w * m_TileSizeX);
+	pRect->h = (float)(Out.h * m_TileSizeY);
 }
 
 void CLayerTiles::Clamp(RECTi *pRect)
@@ -656,10 +656,10 @@ void CLayerTiles::ShowInfo()
 	Graphics()->TextureSet(m_pEditor->Client()->GetDebugFont());
 	Graphics()->QuadsBegin();
 
-	int StartY = maximum(0, (int)(ScreenY0 / 32.0f) - 1);
-	int StartX = maximum(0, (int)(ScreenX0 / 32.0f) - 1);
-	int EndY = minimum((int)(ScreenY1 / 32.0f) + 1, m_Height);
-	int EndX = minimum((int)(ScreenX1 / 32.0f) + 1, m_Width);
+	int StartY = maximum(0, (int)(ScreenY0 / (float)m_TileSizeY) - 1);
+	int StartX = maximum(0, (int)(ScreenX0 / (float)m_TileSizeX) - 1);
+	int EndY = minimum((int)(ScreenY1 / (float)m_TileSizeY) + 1, m_Height);
+	int EndX = minimum((int)(ScreenX1 / (float)m_TileSizeX) + 1, m_Width);
 
 	for(int y = StartY; y < EndY; y++)
 		for(int x = StartX; x < EndX; x++)
@@ -669,13 +669,13 @@ void CLayerTiles::ShowInfo()
 			{
 				char aBuf[64];
 				str_format(aBuf, sizeof(aBuf), m_pEditor->m_ShowTileHexInfo ? "%02X" : "%i", m_pTiles[c].m_Index);
-				m_pEditor->Graphics()->QuadsText(x * 32, y * 32, 16.0f, aBuf);
+				m_pEditor->Graphics()->QuadsText(x * m_TileSizeX, y * m_TileSizeY, 16.0f, aBuf);
 
 				char aFlags[4] = {m_pTiles[c].m_Flags & TILEFLAG_XFLIP ? 'X' : ' ',
 					m_pTiles[c].m_Flags & TILEFLAG_YFLIP ? 'Y' : ' ',
 					m_pTiles[c].m_Flags & TILEFLAG_ROTATE ? 'R' : ' ',
 					0};
-				m_pEditor->Graphics()->QuadsText(x * 32, y * 32 + 16, 16.0f, aFlags);
+				m_pEditor->Graphics()->QuadsText(x * m_TileSizeX, y * m_TileSizeY + 16, 16.0f, aFlags);
 			}
 			x += m_pTiles[c].m_Skip;
 		}
@@ -693,7 +693,7 @@ int CLayerTiles::RenderProperties(CUIRect *pToolBox)
 	CLayerGroup *pGroup = m_pEditor->m_Map.m_vpGroups[m_pEditor->m_SelectedGroup];
 
 	// Game tiles can only be constructed if the layer is relative to the game layer
-	if(!EntitiesLayer && !(pGroup->m_OffsetX % 32) && !(pGroup->m_OffsetY % 32) && pGroup->m_ParallaxX == 100 && pGroup->m_ParallaxY == 100)
+	if(!EntitiesLayer && !(pGroup->m_OffsetX % m_TileSizeX) && !(pGroup->m_OffsetY % m_TileSizeY) && pGroup->m_ParallaxX == 100 && pGroup->m_ParallaxY == 100)
 	{
 		pToolBox->HSplitBottom(12.0f, pToolBox, &Button);
 		static int s_ColclButton = 0;
@@ -735,8 +735,8 @@ int CLayerTiles::RenderProperties(CUIRect *pToolBox)
 		}
 		if(Result > -1)
 		{
-			int OffsetX = -pGroup->m_OffsetX / 32;
-			int OffsetY = -pGroup->m_OffsetY / 32;
+			int OffsetX = -pGroup->m_OffsetX / m_TileSizeX;
+			int OffsetY = -pGroup->m_OffsetY / m_TileSizeY;
 
 			if(Result != TILE_TELECHECKIN && Result != TILE_TELECHECKINEVIL)
 			{

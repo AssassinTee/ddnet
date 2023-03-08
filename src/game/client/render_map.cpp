@@ -252,7 +252,7 @@ void CRenderTools::RenderTileRectangle(int RectX, int RectY, int RectW, int Rect
 	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
 }
 
-void CRenderTools::RenderTilemap(CTile *pTiles, int w, int h, float Scale, ColorRGBA Color, int RenderFlags,
+void CRenderTools::RenderTilemap(CTile *pTiles, int w, int h, float ScaleX, float ScaleY, ColorRGBA Color, int RenderFlags,
 	ENVELOPE_EVAL pfnEval, void *pUser, int ColorEnv, int ColorEnvOffset)
 {
 	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
@@ -260,8 +260,10 @@ void CRenderTools::RenderTilemap(CTile *pTiles, int w, int h, float Scale, Color
 
 	// calculate the final pixelsize for the tiles
 	float TilePixelSize = 1024 / 32.0f;
-	float FinalTileSize = Scale / (ScreenX1 - ScreenX0) * Graphics()->ScreenWidth();
-	float FinalTilesetScale = FinalTileSize / TilePixelSize;
+	float FinalTileSizeX = ScaleX / (ScreenX1 - ScreenX0) * Graphics()->ScreenWidth();
+	float FinalTileSizeY = ScaleY / (ScreenX1 - ScreenX0) * Graphics()->ScreenWidth();
+	float FinalTilesetScaleX = FinalTileSizeX / TilePixelSize;
+	float FinalTilesetScaleY = FinalTileSizeX / TilePixelSize;
 
 	ColorRGBA Channels(1.f, 1.f, 1.f, 1.f);
 	if(ColorEnv >= 0)
@@ -275,15 +277,17 @@ void CRenderTools::RenderTilemap(CTile *pTiles, int w, int h, float Scale, Color
 		Graphics()->QuadsBegin();
 	Graphics()->SetColor(Color.r * Channels.r, Color.g * Channels.g, Color.b * Channels.b, Color.a * Channels.a);
 
-	int StartY = (int)(ScreenY0 / Scale) - 1;
-	int StartX = (int)(ScreenX0 / Scale) - 1;
-	int EndY = (int)(ScreenY1 / Scale) + 1;
-	int EndX = (int)(ScreenX1 / Scale) + 1;
+	int StartY = (int)(ScreenY0 / ScaleY) - 1;
+	int StartX = (int)(ScreenX0 / ScaleX) - 1;
+	int EndY = (int)(ScreenY1 / ScaleY) + 1;
+	int EndX = (int)(ScreenX1 / ScaleX) + 1;
 
 	// adjust the texture shift according to mipmap level
 	float TexSize = 1024.0f;
-	float Frac = (1.25f / TexSize) * (1 / FinalTilesetScale);
-	float Nudge = (0.5f / TexSize) * (1 / FinalTilesetScale);
+	float FracX = (1.25f / TexSize) * (1 / FinalTilesetScaleX);
+	float NudgeX = (0.5f / TexSize) * (1 / FinalTilesetScaleX);
+	float FracY = (1.25f / TexSize) * (1 / FinalTilesetScaleX);
+	float NudgeY = (0.5f / TexSize) * (1 / FinalTilesetScaleX);
 
 	for(int y = StartY; y < EndY; y++)
 	{
@@ -343,14 +347,14 @@ void CRenderTools::RenderTilemap(CTile *pTiles, int w, int h, float Scale, Color
 					int Px1 = Px0 + (1024 / 16) - 1;
 					int Py1 = Py0 + (1024 / 16) - 1;
 
-					float x0 = Nudge + Px0 / TexSize + Frac;
-					float y0 = Nudge + Py0 / TexSize + Frac;
-					float x1 = Nudge + Px1 / TexSize - Frac;
-					float y1 = Nudge + Py0 / TexSize + Frac;
-					float x2 = Nudge + Px1 / TexSize - Frac;
-					float y2 = Nudge + Py1 / TexSize - Frac;
-					float x3 = Nudge + Px0 / TexSize + Frac;
-					float y3 = Nudge + Py1 / TexSize - Frac;
+					float x0 = NudgeX + Px0 / TexSize + FracX;
+					float y0 = NudgeY + Py0 / TexSize + FracY;
+					float x1 = NudgeX + Px1 / TexSize - FracX;
+					float y1 = NudgeY + Py0 / TexSize + FracY;
+					float x2 = NudgeX + Px1 / TexSize - FracX;
+					float y2 = NudgeY + Py1 / TexSize - FracY;
+					float x3 = NudgeX + Px0 / TexSize + FracX;
+					float y3 = NudgeY + Py1 / TexSize - FracY;
 
 					if(Graphics()->IsTileBufferingEnabled())
 					{
@@ -397,13 +401,13 @@ void CRenderTools::RenderTilemap(CTile *pTiles, int w, int h, float Scale, Color
 					if(Graphics()->IsTileBufferingEnabled())
 					{
 						Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3, Index);
-						IGraphics::CQuadItem QuadItem(x * Scale, y * Scale, Scale, Scale);
+						IGraphics::CQuadItem QuadItem(x * ScaleX, y * ScaleY, ScaleX, ScaleY);
 						Graphics()->QuadsTex3DDrawTL(&QuadItem, 1);
 					}
 					else
 					{
 						Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3);
-						IGraphics::CQuadItem QuadItem(x * Scale, y * Scale, Scale, Scale);
+						IGraphics::CQuadItem QuadItem(x * ScaleX, y * ScaleY, ScaleX, ScaleY);
 						Graphics()->QuadsDrawTL(&QuadItem, 1);
 					}
 				}
