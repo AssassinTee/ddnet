@@ -592,8 +592,6 @@ protected:
 			for(int x = 0; x < m_Width; x++)
 				std::swap(pTiles[y * m_Width + x], pTiles[(m_Height - 1 - y) * m_Width + x]);
 	}
-	int m_TileSizeX = 32;
-	int m_TileSizeY = 32;
 
 public:
 	CLayerTiles(int w, int h);
@@ -652,8 +650,8 @@ public:
 
 	void GetSize(float *pWidth, float *pHeight) override
 	{
-		*pWidth = m_Width * m_TileSizeX;
-		*pHeight = m_Height * m_TileSizeY;
+		*pWidth = m_Width * m_TileWidth;
+		*pHeight = m_Height * m_TileHeight;
 	}
 
 	void FlagModified(int x, int y, int w, int h);
@@ -679,6 +677,9 @@ public:
 	int m_Switch;
 	int m_Tune;
 	char m_aFileName[IO_MAX_PATH_LENGTH];
+
+	int m_TileHeight;
+	int m_TileWidth;
 };
 
 class CLayerQuads : public CLayer

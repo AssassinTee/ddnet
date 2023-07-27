@@ -263,7 +263,7 @@ void CRenderTools::RenderTilemap(CTile *pTiles, int w, int h, float ScaleX, floa
 	float FinalTileSizeX = ScaleX / (ScreenX1 - ScreenX0) * Graphics()->ScreenWidth();
 	float FinalTileSizeY = ScaleY / (ScreenX1 - ScreenX0) * Graphics()->ScreenWidth();
 	float FinalTilesetScaleX = FinalTileSizeX / TilePixelSize;
-	float FinalTilesetScaleY = FinalTileSizeX / TilePixelSize;
+	float FinalTilesetScaleY = FinalTileSizeY / TilePixelSize;
 
 	ColorRGBA Channels(1.f, 1.f, 1.f, 1.f);
 	if(ColorEnv >= 0)
@@ -286,8 +286,8 @@ void CRenderTools::RenderTilemap(CTile *pTiles, int w, int h, float ScaleX, floa
 	float TexSize = 1024.0f;
 	float FracX = (1.25f / TexSize) * (1 / FinalTilesetScaleX);
 	float NudgeX = (0.5f / TexSize) * (1 / FinalTilesetScaleX);
-	float FracY = (1.25f / TexSize) * (1 / FinalTilesetScaleX);
-	float NudgeY = (0.5f / TexSize) * (1 / FinalTilesetScaleX);
+	float FracY = (1.25f / TexSize) * (1 / FinalTilesetScaleY);
+	float NudgeY = (0.5f / TexSize) * (1 / FinalTilesetScaleY);
 
 	for(int y = StartY; y < EndY; y++)
 	{

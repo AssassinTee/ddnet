@@ -321,6 +321,9 @@ struct CMapItemLayerTilemap
 	int m_Front;
 	int m_Switch;
 	int m_Tune;
+
+	int m_TileHeight;
+	int m_TileWidth;
 };
 
 struct CMapItemLayerQuads

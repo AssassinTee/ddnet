@@ -197,7 +197,7 @@ bool CEditorMap::Save(class IStorage *pStorage, const char *pFileName)
 				pLayerTiles->PrepareForSave();
 
 				CMapItemLayerTilemap Item;
-				Item.m_Version = 3;
+				Item.m_Version = 4;
 
 				Item.m_Layer.m_Version = 0; // was previously uninitialized, do not rely on it being 0
 				Item.m_Layer.m_Flags = pLayerTiles->m_Flags;
@@ -209,6 +209,9 @@ bool CEditorMap::Save(class IStorage *pStorage, const char *pFileName)
 
 				Item.m_Width = pLayerTiles->m_Width;
 				Item.m_Height = pLayerTiles->m_Height;
+
+				Item.m_TileHeight = 32;
+				Item.m_TileWidth = 32;
 				// Item.m_Flags = pLayerTiles->m_Game ? TILESLAYERFLAG_GAME : 0;
 
 				if(pLayerTiles->m_Tele)
@@ -221,8 +224,18 @@ bool CEditorMap::Save(class IStorage *pStorage, const char *pFileName)
 					Item.m_Flags = TILESLAYERFLAG_SWITCH;
 				else if(pLayerTiles->m_Tune)
 					Item.m_Flags = TILESLAYERFLAG_TUNE;
+				else if(pLayerTiles->m_Game)
+					Item.m_Flags = TILESLAYERFLAG_GAME;
 				else
-					Item.m_Flags = pLayerTiles->m_Game ? TILESLAYERFLAG_GAME : 0;
+				{
+					// only allow custom tile size on normal layers
+					//Item.m_TileHeight = pLayerTiles->m_TileHeight;
+					//Item.m_TileWidth = pLayerTiles->m_TileWidth;
+					/* TEST ONLY */
+					Item.m_TileHeight = 15;
+					Item.m_TileWidth = 20;
+					Item.m_Flags = 0;
+				}
 
 				Item.m_Image = pLayerTiles->m_Image;
 
@@ -696,6 +709,10 @@ bool CEditorMap::Load(class IStorage *pStorage, const char *pFileName, int Stora
 						pTiles->m_Image = pTilemapItem->m_Image;
 						pTiles->m_Game = pTilemapItem->m_Flags & TILESLAYERFLAG_GAME;
 
+						// set default tile size
+						pTiles->m_TileHeight = 32;
+						pTiles->m_TileWidth = 32;
+
 						// load layer name
 						if(pTilemapItem->m_Version >= 3)
 							IntsToStr(pTilemapItem->m_aName, sizeof(pTiles->m_aName) / sizeof(int), pTiles->m_aName);
@@ -845,6 +862,15 @@ bool CEditorMap::Load(class IStorage *pStorage, const char *pFileName, int Stora
 											pTiles->m_pTiles[i].m_Index += ENTITY_OFFSET;
 									}
 								}
+							}
+							if(pTilemapItem->m_Version <= 3 || pTiles->m_Game) {
+								pTiles->m_TileHeight = 32;
+								pTiles->m_TileHeight = 32;
+							}
+							else
+							{
+								pTiles->m_TileHeight = pTilemapItem->m_TileHeight;
+								pTiles->m_TileWidth = pTilemapItem->m_TileWidth;
 							}
 							DataFile.UnloadData(pTilemapItem->m_Data);
 						}
