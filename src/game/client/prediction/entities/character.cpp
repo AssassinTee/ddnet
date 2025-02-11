@@ -706,12 +706,12 @@ void CCharacter::HandleSkippableTiles(int Index)
 			}
 			else
 			{
-				float TempMaxSpeed = MaxSpeed / 5.0f;
+				Force = minimum(Force, MaxSpeed);
 				TempVel += Direction * Force;
 				float NextSpeed = length(TempVel);
-				if(NextSpeed > TempMaxSpeed)
+				if(NextSpeed > MaxSpeed)
 				{
-					TempVel *= TempMaxSpeed / NextSpeed;
+					TempVel *= MaxSpeed / NextSpeed;
 				}
 			}
 			m_Core.m_Vel = ClampVel(m_MoveRestrictions, TempVel);
