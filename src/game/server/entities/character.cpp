@@ -1482,19 +1482,11 @@ void CCharacter::HandleSkippableTiles(int Index)
 			}
 			else
 			{
-				float DotProduct = dot(Direction, m_Core.m_Vel);
-				// project current speed onto speedup direction
-				vec2 Projection = Direction * DotProduct; // direction has length one
-
-				// projection might point into opposite direction
-				float CurrentDirectionalSpeed = std::signbit(DotProduct) * length(Projection);
+				// hardest to understand
+				float CurrentDirectionalSpeed = dot(Direction, m_Core.m_Vel);
 				float TempMaxSpeed = MaxSpeed / 5.0f;
-				//float SpeedupSpeed = length(Direction * Force); // direction has length one
 				if(CurrentDirectionalSpeed + Force > TempMaxSpeed)
-				{
-					float NewForce = TempMaxSpeed - CurrentDirectionalSpeed;
-					TempVel += Direction * NewForce;
-				}
+					TempVel += Direction * (TempMaxSpeed - CurrentDirectionalSpeed);
 				else
 					TempVel += Direction * Force;
 			}
