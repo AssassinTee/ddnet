@@ -1492,6 +1492,15 @@ void CCharacter::HandleSkippableTiles(int Index)
 			}
 			m_Core.m_Vel = ClampVel(m_MoveRestrictions, TempVel);
 		}
+		else if(Type == TILE_SPEED_LIMIT)
+		{
+			float Speed = length(m_Core.m_Vel);
+			if(Speed > MaxSpeed)
+			{
+				TempVel *= (float)MaxSpeed / Speed;
+			}
+			m_Core.m_Vel = ClampVel(m_MoveRestrictions, TempVel);
+		}
 	}
 }
 
