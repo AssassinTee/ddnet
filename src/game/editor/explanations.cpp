@@ -147,9 +147,11 @@ const char *CEditor::ExplainDDNet(int Tile, int Layer)
 		if(Layer == LAYER_SPEEDUP)
 			return "SPEEDUP: Gives tee defined speed. Arrow shows direction and angle.";
 		break;
-	case TILE_TELECHECKOUT:
+	case TILE_TELECHECKOUT: // also TILE_SPEED_LIMIT
 		if(Layer == LAYER_TELE)
 			return "CHECKPOINT TELEPORT TO: Tees will appear here after touching TELEPORT CHECKPOINT with the same number and falling into CFROM TELEPORT.";
+		if(Layer == LAYER_SPEEDUP)
+			return "SPEED LIMIT: Limits the speed of a tee in all directions.";
 		break;
 	case TILE_TELECHECKIN:
 		if(Layer == LAYER_TELE)
