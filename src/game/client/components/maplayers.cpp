@@ -1691,7 +1691,7 @@ void CMapLayers::OnRender()
 					{
 						Graphics()->BlendNormal();
 						RenderTileLayer(TileLayerCounter - 3, Color);
-						if(g_Config.m_ClTextEntities)
+						if(g_Config.m_ClTextEntities && g_Config.m_ClTextEntitiesSwitch)
 						{
 							Graphics()->TextureSet(m_pImages->GetOverlayTop());
 							RenderTileLayer(TileLayerCounter - 2, Color);
@@ -1724,7 +1724,7 @@ void CMapLayers::OnRender()
 					{
 						Graphics()->BlendNormal();
 						RenderTileLayer(TileLayerCounter - 2, Color);
-						if(g_Config.m_ClTextEntities)
+						if(g_Config.m_ClTextEntities && g_Config.m_ClTextEntitiesTeleport)
 						{
 							Graphics()->TextureSet(m_pImages->GetOverlayCenter());
 							RenderTileLayer(TileLayerCounter - 1, Color);
@@ -1761,12 +1761,19 @@ void CMapLayers::OnRender()
 						RenderTileLayer(TileLayerCounter - 3, Color);
 						Graphics()->WrapNormal();
 
-						if(g_Config.m_ClTextEntities)
+						if(g_Config.m_ClTextEntities && g_Config.m_ClTextEntitiesSpeedBoost)
 						{
-							Graphics()->TextureSet(m_pImages->GetOverlayBottom());
-							RenderTileLayer(TileLayerCounter - 2, Color);
-							Graphics()->TextureSet(m_pImages->GetOverlayTop());
-							RenderTileLayer(TileLayerCounter - 1, Color);
+							if(g_Config.m_ClTextEntitiesSpeedBoost & 1)
+							{
+								Graphics()->TextureSet(m_pImages->GetOverlayBottom());
+								RenderTileLayer(TileLayerCounter - 2, Color);
+							}
+
+							if(g_Config.m_ClTextEntitiesSpeedBoost & 2)
+							{
+								Graphics()->TextureSet(m_pImages->GetOverlayTop());
+								RenderTileLayer(TileLayerCounter - 1, Color);
+							}
 						}
 					}
 				}

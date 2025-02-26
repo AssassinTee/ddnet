@@ -726,7 +726,7 @@ void CRenderTools::RenderTile(int x, int y, unsigned char Index, float Scale, Co
 
 void CRenderTools::RenderTeleOverlay(CTeleTile *pTele, int w, int h, float Scale, float Alpha) const
 {
-	if(!g_Config.m_ClTextEntities)
+	if(!g_Config.m_ClTextEntities || !g_Config.m_ClTextEntitiesTeleport)
 		return;
 
 	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
@@ -831,9 +831,12 @@ void CRenderTools::RenderSpeedupOverlay(CSpeedupTile *pSpeedup, int w, int h, fl
 				// draw force and max speed
 				if(g_Config.m_ClTextEntities)
 				{
-					str_format(aBuf, sizeof(aBuf), "%d", Force);
-					TextRender()->Text(mx * Scale, (my + 0.5f + ToCenterOffset / 2) * Scale, Size * Scale / 2.f, aBuf);
-					if(MaxSpeed)
+					if(g_Config.m_ClTextEntitiesSpeedBoost & 1)
+					{
+						str_format(aBuf, sizeof(aBuf), "%d", Force);
+						TextRender()->Text(mx * Scale, (my + 0.5f + ToCenterOffset / 2) * Scale, Size * Scale / 2.f, aBuf);
+					}
+					if(MaxSpeed && g_Config.m_ClTextEntitiesSpeedBoost & 2)
 					{
 						str_format(aBuf, sizeof(aBuf), "%d", MaxSpeed);
 						TextRender()->Text(mx * Scale, (my + ToCenterOffset / 2) * Scale, Size * Scale / 2.f, aBuf);
@@ -848,7 +851,7 @@ void CRenderTools::RenderSpeedupOverlay(CSpeedupTile *pSpeedup, int w, int h, fl
 
 void CRenderTools::RenderSwitchOverlay(CSwitchTile *pSwitch, int w, int h, float Scale, float Alpha) const
 {
-	if(!g_Config.m_ClTextEntities)
+	if(!g_Config.m_ClTextEntities || !g_Config.m_ClTextEntitiesSwitch)
 		return;
 
 	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
