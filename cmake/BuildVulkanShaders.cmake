@@ -142,6 +142,12 @@ if(NOT FOUND_MATCHING_SHA256_FILE)
   generate_shader_file("" "-DTW_TILE_TEXTURED" "${PROJECT_SOURCE_DIR}/data/shader/vulkan/tile_border.frag" "data/shader/vulkan/tile_border_textured.frag.spv")
   generate_shader_file("" "-DTW_TILE_TEXTURED" "${PROJECT_SOURCE_DIR}/data/shader/vulkan/tile_border.vert" "data/shader/vulkan/tile_border_textured.vert.spv")
 
+  generate_shader_file("" "" "${PROJECT_SOURCE_DIR}/data/shader/vulkan/tile_color.frag" "data/shader/vulkan/tile_color.frag.spv")
+  generate_shader_file("" "" "${PROJECT_SOURCE_DIR}/data/shader/vulkan/tile_color.vert" "data/shader/vulkan/tile_color.vert.spv")
+
+  generate_shader_file("-DTW_TILE_TEXTURED" "" "${PROJECT_SOURCE_DIR}/data/shader/vulkan/tile_color.frag" "data/shader/vulkan/tile_color_textured.frag.spv")
+  generate_shader_file("-DTW_TILE_TEXTURED" "" "${PROJECT_SOURCE_DIR}/data/shader/vulkan/tile_color.vert" "data/shader/vulkan/tile_color_textured.vert.spv")
+
   # quad layer
   generate_shader_file("" "" "${PROJECT_SOURCE_DIR}/data/shader/vulkan/quad.frag" "data/shader/vulkan/quad.frag.spv")
   generate_shader_file("" "" "${PROJECT_SOURCE_DIR}/data/shader/vulkan/quad.vert" "data/shader/vulkan/quad.vert.spv")
