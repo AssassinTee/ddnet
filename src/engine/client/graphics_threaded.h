@@ -120,6 +120,7 @@ public:
 
 		CMD_RENDER_TILE_LAYER, // render a tilelayer
 		CMD_RENDER_BORDER_TILE, // render one tile multiple times
+		CMD_RENDER_TILE_LAYER_COLOR, // render a tilelayer with color for each tile
 		CMD_RENDER_QUAD_LAYER, // render a quad layer
 		CMD_RENDER_TEXT, // render text
 		CMD_RENDER_QUAD_CONTAINER, // render a quad buffer container
@@ -366,6 +367,21 @@ public:
 			SCommand(CMD_RENDER_TILE_LAYER) {}
 		SState m_State;
 		SColorf m_Color; // the color of the whole tilelayer -- already enveloped
+
+		// the char offset of all indices that should be rendered, and the amount of renders
+		char **m_pIndicesOffsets;
+		unsigned int *m_pDrawCount;
+
+		int m_IndicesDrawNum;
+		int m_BufferContainerIndex;
+	};
+
+	struct SCommand_RenderTileLayerColor : public SCommand
+	{
+		SCommand_RenderTileLayerColor() :
+			SCommand(CMD_RENDER_TILE_LAYER_COLOR) {}
+		SState m_State;
+		ColorRGBA *m_pColor; // processor will fill this out
 
 		// the char offset of all indices that should be rendered, and the amount of renders
 		char **m_pIndicesOffsets;
@@ -1181,6 +1197,7 @@ public:
 	void FlushVerticesTex3D() override;
 
 	void RenderTileLayer(int BufferContainerIndex, const ColorRGBA &Color, char **pOffsets, unsigned int *pIndicedVertexDrawNum, size_t NumIndicesOffset) override;
+	void RenderTileLayerColor(int BufferContainerIndex, ColorRGBA *pColor, char **pOffsets, unsigned int *pIndicedVertexDrawNum, size_t NumIndicesOffset) override;
 	virtual void RenderBorderTiles(int BufferContainerIndex, const ColorRGBA &Color, char *pIndexBufferOffset, const vec2 &Offset, const vec2 &Scale, uint32_t DrawNum) override;
 	void RenderQuadLayer(int BufferContainerIndex, SQuadRenderInfo *pQuadInfo, size_t QuadNum, int QuadOffset) override;
 	void RenderText(int BufferContainerIndex, int TextQuadNum, int TextureSize, int TextureTextIndex, int TextureTextOutlineIndex, const ColorRGBA &TextColor, const ColorRGBA &TextOutlineColor) override;
