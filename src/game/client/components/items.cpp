@@ -247,7 +247,6 @@ void CItems::RenderLaser(const CLaserData *pCurrent, bool IsPredicted)
 	ColorRGBA RGB;
 	vec2 Pos = pCurrent->m_To;
 	vec2 From = pCurrent->m_From;
-	float Len = distance(Pos, From);
 
 	int ColorIn, ColorOut;
 	switch(Type)
@@ -261,9 +260,18 @@ void CItems::RenderLaser(const CLaserData *pCurrent, bool IsPredicted)
 		ColorIn = g_Config.m_ClLaserShotgunInnerColor;
 		break;
 	case LASERTYPE_DRAGGER:
-	case LASERTYPE_DOOR:
 		ColorOut = g_Config.m_ClLaserDoorOutlineColor;
 		ColorIn = g_Config.m_ClLaserDoorInnerColor;
+		break;
+	case LASERTYPE_DOOR:
+		{
+			static int Hues[] = {0, 128, 64, 192, 32, 160, 80, 208, 16, 144, 48, 176, 96, 224, 112, 240};
+			float ColorHue = Hues[pCurrent->m_SwitchNumber % 16] / 256.0f;
+			ColorHSLA out(ColorHue, 1.0f, 0.25f);
+			ColorHSLA in(ColorHue, 1.0f, 0.5f);
+			ColorOut = out.Pack();
+			ColorIn = in.Pack();
+		}
 		break;
 	case LASERTYPE_FREEZE:
 		ColorOut = g_Config.m_ClLaserFreezeOutlineColor;
@@ -287,12 +295,6 @@ void CItems::RenderLaser(const CLaserData *pCurrent, bool IsPredicted)
 		ColorIn = g_Config.m_ClLaserRifleInnerColor;
 	}
 
-	RGB = color_cast<ColorRGBA>(ColorHSLA(ColorOut));
-	ColorRGBA OuterColor(RGB.r, RGB.g, RGB.b, 1.0f);
-	RGB = color_cast<ColorRGBA>(ColorHSLA(ColorIn));
-	ColorRGBA InnerColor(RGB.r, RGB.g, RGB.b, 1.0f);
-
-	int TuneZone = GameClient()->m_GameWorld.m_WorldConfig.m_UseTuneZones ? Collision()->IsTune(Collision()->GetMapIndex(From)) : 0;
 	bool IsOtherTeam = (pCurrent->m_ExtraInfo && pCurrent->m_Owner >= 0 && m_pClient->IsOtherTeam(pCurrent->m_Owner));
 
 	float Alpha = 1.f;
@@ -301,19 +303,37 @@ void CItems::RenderLaser(const CLaserData *pCurrent, bool IsPredicted)
 		Alpha = g_Config.m_ClShowOthersAlpha / 100.0f;
 	}
 
+	RGB = color_cast<ColorRGBA>(ColorHSLA(ColorOut));
+	ColorRGBA OuterColor(RGB.r, RGB.g, RGB.b, Alpha);
+	RGB = color_cast<ColorRGBA>(ColorHSLA(ColorIn));
+	ColorRGBA InnerColor(RGB.r, RGB.g, RGB.b, Alpha);
+
+	float Ticks;
+	if(Type == LASERTYPE_DOOR)
+	{
+		Ticks = 0.02f * Client()->GameTickSpeed();
+	}
+	else if(IsPredicted) {
+		int PredictionTick = Client()->GetPredictionTick();
+		Ticks = (float)(PredictionTick - pCurrent->m_StartTick) + Client()->PredIntraGameTick(g_Config.m_ClDummy);
+	}
+	else
+		Ticks = (float)(Client()->GameTick(g_Config.m_ClDummy) - pCurrent->m_StartTick) + Client()->IntraGameTick(g_Config.m_ClDummy);
+
+	RenderLaser(pCurrent->m_From, pCurrent->m_To, OuterColor, InnerColor, Ticks);
+}
+
+void CItems::RenderLaser(const vec2& From, const vec2& Pos, ColorRGBA& OuterColor, ColorRGBA& InnerColor, float Ticks)
+{
+	int TuneZone = GameClient()->m_GameWorld.m_WorldConfig.m_UseTuneZones ? Collision()->IsTune(Collision()->GetMapIndex(From)) : 0;
+	float Len = distance(Pos, From);
+
 	vec2 Dir;
 	if(Len > 0)
 	{
 		Dir = normalize_pre_length(Pos - From, Len);
-
-		int PredictionTick = Client()->GetPredictionTick();
-
-		float Ticks;
-		if(IsPredicted)
-			Ticks = (float)(PredictionTick - pCurrent->m_StartTick) + Client()->PredIntraGameTick(g_Config.m_ClDummy);
-		else
-			Ticks = (float)(Client()->GameTick(g_Config.m_ClDummy) - pCurrent->m_StartTick) + Client()->IntraGameTick(g_Config.m_ClDummy);
-		float Ms = (Ticks / Client()->GameTickSpeed()) * 1000.0f;
+		
+		float Ms = Ticks * 1000.0f / Client()->GameTickSpeed();
 		float a = Ms / m_pClient->GetTuning(TuneZone)->m_LaserBounceDelay;
 		a = clamp(a, 0.0f, 1.0f);
 		float Ia = 1 - a;
@@ -324,7 +344,7 @@ void CItems::RenderLaser(const CLaserData *pCurrent, bool IsPredicted)
 		Graphics()->QuadsBegin();
 
 		// do outline
-		Graphics()->SetColor(OuterColor.r, OuterColor.g, OuterColor.b, Alpha);
+		Graphics()->SetColor(OuterColor);
 		Out = vec2(Dir.y, -Dir.x) * (7.0f * Ia);
 
 		IGraphics::CFreeformItem Freeform(
@@ -336,7 +356,7 @@ void CItems::RenderLaser(const CLaserData *pCurrent, bool IsPredicted)
 
 		// do inner
 		Out = vec2(Dir.y, -Dir.x) * (5.0f * Ia);
-		Graphics()->SetColor(InnerColor.r, InnerColor.g, InnerColor.b, Alpha); // center
+		Graphics()->SetColor(InnerColor); // center
 
 		Freeform = IGraphics::CFreeformItem(
 			From.x - Out.x, From.y - Out.y,
@@ -353,9 +373,9 @@ void CItems::RenderLaser(const CLaserData *pCurrent, bool IsPredicted)
 		int CurParticle = (Client()->GameTick(g_Config.m_ClDummy) % 3);
 		Graphics()->TextureSet(GameClient()->m_ParticlesSkin.m_aSpriteParticleSplat[CurParticle]);
 		Graphics()->QuadsSetRotation(Client()->GameTick(g_Config.m_ClDummy));
-		Graphics()->SetColor(OuterColor.r, OuterColor.g, OuterColor.b, Alpha);
+		Graphics()->SetColor(OuterColor);
 		Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, m_aParticleSplatOffset[CurParticle], Pos.x, Pos.y);
-		Graphics()->SetColor(InnerColor.r, InnerColor.g, InnerColor.b, Alpha);
+		Graphics()->SetColor(InnerColor);
 		Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, m_aParticleSplatOffset[CurParticle], Pos.x, Pos.y, 20.f / 24.f, 20.f / 24.f);
 	}
 }
