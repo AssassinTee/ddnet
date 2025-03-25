@@ -20,6 +20,7 @@ class CLayers;
 class CMapImages;
 class ColorRGBA;
 class CMapItemGroup;
+class CMapItemLayer;
 class CMapItemLayerTilemap;
 class CMapItemLayerQuads;
 
@@ -154,6 +155,14 @@ private:
 	void RenderTileBorder(int LayerIndex, const ColorRGBA &Color, int BorderX0, int BorderY0, int BorderX1, int BorderY1);
 	void RenderKillTileBorder(int LayerIndex, const ColorRGBA &Color);
 	void RenderQuadLayer(int LayerIndex, CMapItemLayerQuads *pQuadLayer, bool ForceRender = false);
+
+	bool OnRenderApplyClipping(CMapItemGroup *pGroup, int &TileLayerCounter, int &QuadLayerCounter, bool &PassedGameLayer, vec2 Center);
+	int GetLayerType(const CMapItemLayer* pLayer, bool &PassedGameLayer);
+	int OnRenderCheckRendering(bool PassedGameLayer, int LayerType, const CMapItemLayer *pLayer);
+	int GetTileLayerAndOverlayCount(const CMapItemLayerTilemap *pTMap, int LayerType, void **ppTiles = nullptr);
+	void OnRenderWriteDump(const CMapItemLayerTilemap *pTMap, int GroupID, int LayerID);
+	void OnRenderEntitiesNoBuffering(int LayerType, const CMapItemLayerTilemap *pTMap, int EntityOverlayVal);
+	void OnRenderEntitiesWithBuffering(int LayerType, int TileLayerCounter, int EntityOverlayVal);
 };
 
 #endif
