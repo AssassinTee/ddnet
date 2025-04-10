@@ -311,6 +311,14 @@ void CMapLayers::OnMapLoad()
 		RenderLoading();
 	}
 
+	if(!m_vTotalLayerCount.empty())
+		m_vTotalLayerCount.clear();
+	if(!m_vOverlayCount.empty())
+		m_vOverlayCount.clear();
+
+	m_vTotalLayerCount.resize(m_pLayers->NumGroups());
+	m_vOverlayCount.resize(m_pLayers->NumGroups());
+
 	bool PassedGameLayer = false;
 	// prepare all visuals for all tile layers
 	std::vector<SGraphicTile> vtmpTiles;
@@ -329,6 +337,9 @@ void CMapLayers::OnMapLoad()
 	std::vector<STmpQuad> vtmpQuads;
 	std::vector<STmpQuadTextured> vtmpQuadsTextured;
 
+	int TotalTileLayerCount = 0;
+	int TotalQuadLayerCount = 0;
+
 	for(int g = 0; g < m_pLayers->NumGroups(); g++)
 	{
 		CMapItemGroup *pGroup = m_pLayers->GetGroup(g);
@@ -340,6 +351,9 @@ void CMapLayers::OnMapLoad()
 			continue;
 		}
 
+		std::vector<int> vTotalLayerCounter(pGroup->m_NumLayers, 0);
+		std::vector<int> vOverlayCounter(pGroup->m_NumLayers, 0);
+
 		for(int l = 0; l < pGroup->m_NumLayers; l++)
 		{
 			CMapItemLayer *pLayer = m_pLayers->GetLayer(pGroup->m_StartLayer + l);
@@ -347,10 +361,17 @@ void CMapLayers::OnMapLoad()
 			PassedGameLayer |= LayerType == LAYER_GAME;
 			bool IsEntityLayer = LayerType != -1;
 
+			if(LayerType == LAYER_GAME)
+				m_GameLayerGroup = g;
+
 			if(m_Type <= TYPE_BACKGROUND_FORCE)
 			{
 				if(PassedGameLayer)
+				{
+					m_vTotalLayerCount[g] = vTotalLayerCounter;
+					m_vOverlayCount[g] = vOverlayCounter;
 					return;
+				}
 			}
 			else if(m_Type == TYPE_FOREGROUND)
 			{
@@ -368,6 +389,9 @@ void CMapLayers::OnMapLoad()
 
 				if(TileLayerAndOverlayCount)
 				{
+					vTotalLayerCounter[l] = TotalTileLayerCount;
+					vOverlayCounter[l] = TileLayerAndOverlayCount - 1;
+					TotalTileLayerCount += TileLayerAndOverlayCount;
 					int CurOverlay = 0;
 					while(CurOverlay < TileLayerAndOverlayCount)
 					{
@@ -654,6 +678,8 @@ void CMapLayers::OnMapLoad()
 			}
 			else if(pLayer->m_Type == LAYERTYPE_QUADS && Graphics()->IsQuadBufferingEnabled())
 			{
+				vTotalLayerCounter[l] = TotalQuadLayerCount;
+				TotalQuadLayerCount += 1;
 				CMapItemLayerQuads *pQLayer = (CMapItemLayerQuads *)pLayer;
 
 				m_vpQuadLayerVisuals.push_back(new SQuadLayerVisuals());
@@ -761,6 +787,8 @@ void CMapLayers::OnMapLoad()
 				}
 			}
 		}
+		m_vTotalLayerCount[g] = vTotalLayerCounter;
+		m_vOverlayCount[g] = vOverlayCounter;
 	}
 }
 
@@ -780,14 +808,19 @@ void CMapLayers::RenderTileLayer(int LayerIndex, const ColorRGBA &Color)
 
 	if(ScreenRectX1 > 0 && ScreenRectY1 > 0 && ScreenRectX0 < (int)Visuals.m_Width && ScreenRectY0 < (int)Visuals.m_Height)
 	{
+		int X0 = std::max(ScreenRectX0, 0);
+		int X1 = std::min(ScreenRectX1, (int)Visuals.m_Width);
+
+		if(X0 > X1)
+			return;
+
 		// create the indice buffers we want to draw -- reuse them
 		static std::vector<char *> s_vpIndexOffsets;
 		static std::vector<unsigned int> s_vDrawCounts;
 
-		int X0 = std::max(ScreenRectX0, 0);
 		int Y0 = std::max(ScreenRectY0, 0);
-		int X1 = std::min(ScreenRectX1, (int)Visuals.m_Width);
 		int Y1 = std::min(ScreenRectY1, (int)Visuals.m_Height);
+		int XR = X1 - 1;
 
 		s_vpIndexOffsets.clear();
 		s_vDrawCounts.clear();
@@ -798,10 +831,6 @@ void CMapLayers::RenderTileLayer(int LayerIndex, const ColorRGBA &Color)
 
 		for(int y = Y0; y < Y1; ++y)
 		{
-			if(X0 > X1)
-				continue;
-			int XR = X1 - 1;
-
 			dbg_assert(Visuals.m_pTilesOfLayer[y * Visuals.m_Width + XR].IndexBufferByteOffset() >= Visuals.m_pTilesOfLayer[y * Visuals.m_Width + X0].IndexBufferByteOffset(), "Tile count wrong.");
 
 			unsigned int NumVertices = ((Visuals.m_pTilesOfLayer[y * Visuals.m_Width + XR].IndexBufferByteOffset() - Visuals.m_pTilesOfLayer[y * Visuals.m_Width + X0].IndexBufferByteOffset()) / sizeof(unsigned int)) + (Visuals.m_pTilesOfLayer[y * Visuals.m_Width + XR].DoDraw() ? 6lu : 0lu);
@@ -829,11 +858,6 @@ void CMapLayers::RenderTileLayer(int LayerIndex, const ColorRGBA &Color)
 void CMapLayers::RenderTileBorder(int LayerIndex, const ColorRGBA &Color, int BorderX0, int BorderY0, int BorderX1, int BorderY1)
 {
 	STileLayerVisuals &Visuals = *m_vpTileLayerVisuals[LayerIndex];
-
-	int Y0 = std::max(0, BorderY0);
-	int X0 = std::max(0, BorderX0);
-	int Y1 = std::min((int)Visuals.m_Height, BorderY1);
-	int X1 = std::min((int)Visuals.m_Width, BorderX1);
 
 	// corners
 	auto DrawCorner = [this, &Visuals, Color](vec2 Offset, vec2 Scale, STileLayerVisuals::STileVisual &Visual) {
@@ -886,6 +910,9 @@ void CMapLayers::RenderTileBorder(int LayerIndex, const ColorRGBA &Color, int Bo
 		Graphics()->RenderBorderTiles(Visuals.m_BufferContainerIndex, Color, pOffset, Offset, Scale, DrawNum);
 	};
 
+	int Y0 = std::max(0, BorderY0);
+	int Y1 = std::min((int)Visuals.m_Height, BorderY1);
+
 	if(Y0 < (int)Visuals.m_Height && Y1 > 0)
 	{
 		if(BorderX1 > (int)Visuals.m_Width)
@@ -905,6 +932,9 @@ void CMapLayers::RenderTileBorder(int LayerIndex, const ColorRGBA &Color, int Bo
 				Visuals.m_vBorderLeft[Y0], Visuals.m_vBorderLeft[Y1 - 1]);
 		}
 	}
+
+	int X0 = std::max(0, BorderX0);
+	int X1 = std::min((int)Visuals.m_Width, BorderX1);
 
 	if(X0 < (int)Visuals.m_Width && X1 > 0)
 	{
@@ -1090,12 +1120,13 @@ void CMapLayers::OnRender()
 
 	// Hide Entities in full design mode
 	int EntityOverlayVal = m_Type == TYPE_FULL_DESIGN ? 0 : g_Config.m_ClOverlayEntities;
+	int GroupStart = m_Type == TYPE_FOREGROUND ? m_GameLayerGroup : 0;
+	int GroupEnd = (m_Type == TYPE_BACKGROUND || m_Type == TYPE_BACKGROUND_FORCE) ? std::min(m_GameLayerGroup + 1, m_pLayers->NumGroups()) : m_pLayers->NumGroups();
 
 	bool PassedGameLayer = false;
-	int TileLayerCounter = 0;
-	int QuadLayerCounter = 0;
+	//int QuadLayerCounter = 0;
 
-	for(int g = 0; g < m_pLayers->NumGroups(); g++)
+	for(int g = GroupStart; g < GroupEnd; g++)
 	{
 		CMapItemGroup *pGroup = m_pLayers->GetGroup(g);
 
@@ -1121,7 +1152,7 @@ void CMapLayers::OnRender()
 			if(x1 < 0.0f || x0 > 1.0f || y1 < 0.0f || y0 > 1.0f)
 			{
 				// check tile layer count of this group
-				LayersOfGroupCount(pGroup, TileLayerCounter, QuadLayerCounter, PassedGameLayer);
+				//LayersOfGroupCount(pGroup, QuadLayerCounter, PassedGameLayer);
 				continue;
 			}
 
@@ -1143,27 +1174,27 @@ void CMapLayers::OnRender()
 				return;
 
 			if(
-					// skip rendering if we render foreground but are in background
-					(!PassedGameLayer && m_Type == TYPE_FOREGROUND) ||
+				// skip rendering if we render foreground but are in background
+				(!PassedGameLayer && m_Type == TYPE_FOREGROUND) ||
 
-					// skip rendering if we render background force, but deactivated tile layer and want to render a tilelayer
-					((pLayer->m_Type == LAYERTYPE_TILES && !g_Config.m_ClBackgroundShowTilesLayers) && m_Type == TYPE_BACKGROUND_FORCE) ||
+				// skip rendering if we render background force, but deactivated tile layer and want to render a tilelayer
+				((pLayer->m_Type == LAYERTYPE_TILES && !g_Config.m_ClBackgroundShowTilesLayers) && m_Type == TYPE_BACKGROUND_FORCE) ||
 
-					// skip rendering if we render background but encounter an entity, e.g. speed layer infront of game layer or similar
-					(m_Type == TYPE_BACKGROUND_FORCE && IsEntityLayer) ||
+				// skip rendering if we render background but encounter an entity, e.g. speed layer infront of game layer or similar
+				(m_Type == TYPE_BACKGROUND_FORCE && IsEntityLayer) ||
 
-					// skip rendering entities if we want to render everything in it's full glory
-					(m_Type == TYPE_FULL_DESIGN && IsEntityLayer) ||
+				// skip rendering entities if we want to render everything in it's full glory
+				(m_Type == TYPE_FULL_DESIGN && IsEntityLayer) ||
 
-					// skip rendering anything but entities if we only want to render entities
-					(!IsEntityLayer && EntityOverlayVal == 100 && m_Type != TYPE_BACKGROUND_FORCE) // only show entities
+				// skip rendering anything but entities if we only want to render entities
+				(!IsEntityLayer && EntityOverlayVal == 100 && m_Type != TYPE_BACKGROUND_FORCE) // only show entities
 			)
 				continue;
 
 			if(pLayer->m_Type == LAYERTYPE_TILES && Input()->ModifierIsPressed() && Input()->ShiftIsPressed() && Input()->KeyPress(KEY_KP_0))
 				WriteTilesetDebugDump((CMapItemLayerTilemap *)pLayer, g, l);
 
-			int CurrentTileLayerCount = 0;
+			/*int CurrentTileLayerCount = 0;
 			void *pTilesData = nullptr;
 			if(pLayer->m_Type == LAYERTYPE_TILES)
 			{
@@ -1176,11 +1207,17 @@ void CMapLayers::OnRender()
 			else if(pLayer->m_Type == LAYERTYPE_QUADS)
 			{
 				++QuadLayerCounter;
-			}
+			}*/
 
 			// skip rendering if detail layers if not wanted
 			if(pLayer->m_Flags & LAYERFLAG_DETAIL && (!g_Config.m_GfxHighDetail && !(m_Type == TYPE_FULL_DESIGN)) && LayerType != LAYER_GAME) // detail but no details
 				continue;
+
+			/*dbg_msg("debug", "Type %d", m_Type);
+			dbg_msg("debug", "LayerType: %d, PassedGameLayer: %d", LayerType, PassedGameLayer);
+			dbg_msg("debug", "vCountSize: %d, group: %d, NumGroups: %d", m_vTotalLayerCount.size(), g, m_pLayers->NumGroups());
+			dbg_msg("debug", "vCountSizeGroup: %d, layer: %d", m_vTotalLayerCount[g].size(), l);
+			dbg_msg("debug", "Count: %d, overlays: %d", m_vTotalLayerCount[g][l], m_vOverlayCount[g][l]);*/
 
 			if(pLayer->m_Type == LAYERTYPE_TILES)
 			{
@@ -1206,10 +1243,10 @@ void CMapLayers::OnRender()
 					Color = ColorRGBA(1.0f, 1.0f, 1.0f, EntityOverlayVal / 100.0f);
 				}
 
-				if(!Graphics()->IsTileBufferingEnabled())
+				/*if(!Graphics()->IsTileBufferingEnabled())
 					RenderTilelayerNoTileBuffer(LayerType, pTilesData, pLayerTilemap, Color);
-				else
-					RenderTilelayerWithTileBuffer(LayerType, TileLayerCounter, Color);
+				else*/
+				RenderTilelayerWithTileBuffer(LayerType, m_vTotalLayerCount[g][l], m_vOverlayCount[g][l], Color);
 			}
 			else if(pLayer->m_Type == LAYERTYPE_QUADS)
 			{
@@ -1231,7 +1268,7 @@ void CMapLayers::OnRender()
 						}
 						else
 						{
-							RenderQuadLayer(QuadLayerCounter - 1, pLayerQuads, true);
+							RenderQuadLayer(m_vTotalLayerCount[g][l], pLayerQuads, true);
 						}
 					}
 				}
@@ -1244,7 +1281,7 @@ void CMapLayers::OnRender()
 					}
 					else
 					{
-						RenderQuadLayer(QuadLayerCounter - 1, pLayerQuads, false);
+						RenderQuadLayer(m_vTotalLayerCount[g][l], pLayerQuads, false);
 					}
 				}
 			}
@@ -1329,64 +1366,68 @@ int CMapLayers::GetTileLayerAndOverlayCount(const CMapItemLayerTilemap *pLayerTi
 	return OverlayCount + 1; // always add 1 tilelayer
 }
 
-void CMapLayers::RenderTilelayerWithTileBuffer(int LayerType, int TileLayerCounter, const ColorRGBA &Color)
+void CMapLayers::RenderTilelayerWithTileBuffer(int LayerType, int TotalLayerCount, int OverlayCount, const ColorRGBA &Color)
 {
-	switch(LayerType)
+	if(LayerType == -1)
 	{
-	case LAYER_GAME:
+		Graphics()->BlendNormal();
+
+		// Render default tileset
+		RenderTileLayer(TotalLayerCount, Color);
+		return;
+	}
+
+	if(LayerType != LAYER_SWITCH && LayerType != LAYER_SPEEDUP)
+	{
 		Graphics()->TextureSet(m_pImages->GetEntities(MAP_IMAGE_ENTITY_LAYER_TYPE_ALL_EXCEPT_SWITCH));
 		Graphics()->BlendNormal();
-		RenderKillTileBorder(TileLayerCounter - 1, Color.Multiply(GetDeathBorderColor()));
-		RenderTileLayer(TileLayerCounter - 1, Color);
-		break;
-
-	case LAYER_TELE:
-		Graphics()->TextureSet(m_pImages->GetEntities(MAP_IMAGE_ENTITY_LAYER_TYPE_ALL_EXCEPT_SWITCH));
-		Graphics()->BlendNormal();
-		RenderTileLayer(TileLayerCounter - 2, Color);
-		if(g_Config.m_ClTextEntities)
-		{
-			Graphics()->TextureSet(m_pImages->GetOverlayCenter());
-			RenderTileLayer(TileLayerCounter - 1, Color);
-		}
-		break;
-
-	case LAYER_SPEEDUP:
-		// draw arrow -- clamp to the edge of the arrow image
-		Graphics()->WrapClamp();
-		Graphics()->TextureSet(m_pImages->GetSpeedupArrow());
-		RenderTileLayer(TileLayerCounter - 3, Color);
-		Graphics()->WrapNormal();
-
-		if(g_Config.m_ClTextEntities)
-		{
-			Graphics()->TextureSet(m_pImages->GetOverlayBottom());
-			RenderTileLayer(TileLayerCounter - 2, Color);
-			Graphics()->TextureSet(m_pImages->GetOverlayTop());
-			RenderTileLayer(TileLayerCounter - 1, Color);
-		}
-		break;
-
-	case LAYER_SWITCH:
+		if(LayerType == LAYER_GAME)
+			RenderKillTileBorder(TotalLayerCount, Color.Multiply(GetDeathBorderColor()));
+	}
+	else if(LayerType == LAYER_SWITCH)
+	{
 		Graphics()->TextureSet(m_pImages->GetEntities(MAP_IMAGE_ENTITY_LAYER_TYPE_SWITCH));
 		Graphics()->BlendNormal();
-		RenderTileLayer(TileLayerCounter - 3, Color);
-		if(g_Config.m_ClTextEntities)
-		{
-			Graphics()->TextureSet(m_pImages->GetOverlayTop());
-			RenderTileLayer(TileLayerCounter - 2, Color);
-			Graphics()->TextureSet(m_pImages->GetOverlayBottom());
-			RenderTileLayer(TileLayerCounter - 1, Color);
-		}
-		break;
+	}
+	else // LayerType == LAYER_SPEEDUP
+	{
+		Graphics()->WrapClamp();
+		Graphics()->TextureSet(m_pImages->GetSpeedupArrow());
+	}
 
-	case LAYER_FRONT:
-	case LAYER_TUNE:
-		Graphics()->TextureSet(m_pImages->GetEntities(MAP_IMAGE_ENTITY_LAYER_TYPE_ALL_EXCEPT_SWITCH));
-	default:
-		Graphics()->BlendNormal();
-		RenderTileLayer(TileLayerCounter - 1, Color);
-		break;
+	// Render default tileset
+	RenderTileLayer(TotalLayerCount, Color);
+
+	if(!g_Config.m_ClTextEntities || !OverlayCount)
+		return;
+
+	if(LayerType == LAYER_SPEEDUP)
+		Graphics()->WrapNormal();
+
+	for(int i = 0; i < OverlayCount; ++i)
+	{
+		switch(LayerType)
+		{
+		case LAYER_TELE:
+			Graphics()->TextureSet(m_pImages->GetOverlayCenter());
+			break;
+		case LAYER_SPEEDUP:
+			if(i == 0)
+				Graphics()->TextureSet(m_pImages->GetOverlayBottom());
+			else
+				Graphics()->TextureSet(m_pImages->GetOverlayTop());
+			break;
+		case LAYER_SWITCH:
+			if(i == 0)
+				Graphics()->TextureSet(m_pImages->GetOverlayTop());
+			else
+				Graphics()->TextureSet(m_pImages->GetOverlayBottom());
+			break;
+		default:
+			dbg_msg("maplayers", "Overlay %d does not exist for layertype %d", i, LayerType);
+			break;
+		}
+		RenderTileLayer(TotalLayerCount + i + 1, Color);
 	}
 }
 

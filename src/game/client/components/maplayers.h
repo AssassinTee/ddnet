@@ -126,6 +126,10 @@ class CMapLayers : public CComponent
 	};
 	std::vector<SQuadLayerVisuals *> m_vpQuadLayerVisuals;
 
+	std::vector<std::vector<int>> m_vTotalLayerCount;
+	std::vector<std::vector<int>> m_vOverlayCount;
+	int m_GameLayerGroup;
+
 	virtual CCamera *GetCurCamera();
 	virtual const char *LoadingTitle() const;
 
@@ -160,7 +164,7 @@ private:
 	int GetTileLayerAndOverlayCount(const CMapItemLayerTilemap *pLayerTilemap, int LayerType, void **ppTiles = nullptr) const;
 
 	void RenderTilelayerNoTileBuffer(int LayerType, void *pTilesData, CMapItemLayerTilemap *pLayerTilemap, const ColorRGBA &Color);
-	void RenderTilelayerWithTileBuffer(int LayerType, int TileLayerCounter, const ColorRGBA &Color);
+	void RenderTilelayerWithTileBuffer(int LayerType, int TotalLayerCount, int OverlayCount, const ColorRGBA &Color);
 	ColorRGBA GetDeathBorderColor() const;
 	void WriteTilesetDebugDump(const CMapItemLayerTilemap *pLayerTilemap, int Group, int Layer) const;
 };
