@@ -155,16 +155,16 @@ public:
 	static void EnvelopeEval(int TimeOffsetMillis, int Env, ColorRGBA &Result, size_t Channels, void *pUser);
 
 private:
-	void RenderTileLayer(int LayerIndex, const ColorRGBA &Color);
-	void RenderTileBorder(int LayerIndex, const ColorRGBA &Color, int BorderX0, int BorderY0, int BorderX1, int BorderY1);
-	void RenderKillTileBorder(int LayerIndex, const ColorRGBA &Color);
+	void RenderTileLayer(int LayerIndex, const ColorRGBA &Color) const;
+	void RenderTileBorder(int LayerIndex, const ColorRGBA &Color, int BorderX0, int BorderY0, int BorderX1, int BorderY1) const;
+	void RenderKillTileBorder(int LayerIndex, const ColorRGBA &Color) const;
 	void RenderQuadLayer(int LayerIndex, CMapItemLayerQuads *pQuadLayer, bool ForceRender = false);
 
 	int GetLayerType(const CMapItemLayer *pLayer) const;
 	int GetTileLayerAndOverlayCount(const CMapItemLayerTilemap *pLayerTilemap, int LayerType, void **ppTiles = nullptr) const;
 
 	void RenderTilelayerNoTileBuffer(int LayerType, void *pTilesData, CMapItemLayerTilemap *pLayerTilemap, const ColorRGBA &Color);
-	void RenderTilelayerWithTileBuffer(int LayerType, int TotalLayerCount, int OverlayCount, const ColorRGBA &Color);
+	void RenderTilelayerWithTileBuffer(int LayerType, int TotalLayerCount, int OverlayCount, const ColorRGBA &Color) const;
 	ColorRGBA GetDeathBorderColor() const;
 	void WriteTilesetDebugDump(const CMapItemLayerTilemap *pLayerTilemap, int Group, int Layer) const;
 };
