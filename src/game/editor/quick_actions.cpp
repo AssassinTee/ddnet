@@ -140,6 +140,17 @@ void CEditor::AddTeleLayer()
 	m_EditorHistory.RecordAction(std::make_shared<CEditorActionAddLayer>(this, m_SelectedGroup, LayerIndex));
 }
 
+void CEditor::AddLiquidLayer()
+{
+	std::shared_ptr<CLayer> pLiquidLayer = std::make_shared<CLayerLiquid>(this, m_Map.m_pGameLayer->m_Width, m_Map.m_pGameLayer->m_Height);
+	m_Map.MakeLiquidLayer(pLiquidLayer);
+	m_Map.m_vpGroups[m_SelectedGroup]->AddLayer(pLiquidLayer);
+	int LayerIndex = m_Map.m_vpGroups[m_SelectedGroup]->m_vpLayers.size() - 1;
+	SelectLayer(LayerIndex);
+	m_pBrush->Clear();
+	m_EditorHistory.RecordAction(std::make_shared<CEditorActionAddLayer>(this, m_SelectedGroup, LayerIndex));
+}
+
 bool CEditor::IsNonGameTileLayerSelected() const
 {
 	std::shared_ptr<CLayer> pLayer = GetSelectedLayer(0);

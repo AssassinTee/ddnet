@@ -105,6 +105,12 @@ void CLayers::Init(IMap *pMap, bool GameOnly)
 					m_pTuneLayer = pTilemap;
 					IsEntities = true;
 				}
+
+				if(pTilemap->m_Flags & TILESLAYERFLAG_LIQUID)
+				{
+					m_pLiquidLayer = pTilemap;
+					IsEntities = true;
+				}
 			}
 
 			if(IsEntities)

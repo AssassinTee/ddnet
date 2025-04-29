@@ -24,6 +24,7 @@
 #include <game/editor/mapitems/layer_tele.h>
 #include <game/editor/mapitems/layer_tiles.h>
 #include <game/editor/mapitems/layer_tune.h>
+#include <game/editor/mapitems/layer_liquid.h>
 
 #include <engine/console.h>
 #include <engine/editor.h>
@@ -212,11 +213,13 @@ public:
 	std::shared_ptr<class CLayerFront> m_pFrontLayer;
 	std::shared_ptr<class CLayerSwitch> m_pSwitchLayer;
 	std::shared_ptr<class CLayerTune> m_pTuneLayer;
+	std::shared_ptr<class CLayerLiquid> m_pLiquidLayer;
 	void MakeTeleLayer(const std::shared_ptr<CLayer> &pLayer);
 	void MakeSpeedupLayer(const std::shared_ptr<CLayer> &pLayer);
 	void MakeFrontLayer(const std::shared_ptr<CLayer> &pLayer);
 	void MakeSwitchLayer(const std::shared_ptr<CLayer> &pLayer);
 	void MakeTuneLayer(const std::shared_ptr<CLayer> &pLayer);
+	void MakeLiquidLayer(const std::shared_ptr<CLayer> &pLayer);
 };
 
 class CProperty
@@ -348,6 +351,7 @@ public:
 	void AddTuneLayer();
 	void AddSpeedupLayer();
 	void AddTeleLayer();
+	void AddLiquidLayer();
 	void DeleteSelectedLayer();
 	void LayerSelectImage();
 	bool IsNonGameTileLayerSelected() const;

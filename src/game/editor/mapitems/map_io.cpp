@@ -192,6 +192,8 @@ bool CEditorMap::Save(const char *pFileName, const std::function<void(const char
 					Item.m_Flags = TILESLAYERFLAG_SWITCH;
 				else if(pLayerTiles->m_HasTune)
 					Item.m_Flags = TILESLAYERFLAG_TUNE;
+				else if(pLayerTiles->m_HasLiquid)
+					Item.m_Flags = TILESLAYERFLAG_LIQUID;
 				else
 					Item.m_Flags = pLayerTiles->m_HasGame ? TILESLAYERFLAG_GAME : 0;
 
@@ -203,6 +205,7 @@ bool CEditorMap::Save(const char *pFileName, const std::function<void(const char
 				Item.m_Front = -1;
 				Item.m_Switch = -1;
 				Item.m_Tune = -1;
+				Item.m_Liquid = -1;
 
 				if(Item.m_Flags && !(pLayerTiles->m_HasGame))
 				{
@@ -221,6 +224,9 @@ bool CEditorMap::Save(const char *pFileName, const std::function<void(const char
 						Item.m_Switch = Writer.AddData((size_t)pLayerTiles->m_Width * pLayerTiles->m_Height * sizeof(CSwitchTile), std::static_pointer_cast<CLayerSwitch>(pLayerTiles)->m_pSwitchTile);
 					else if(pLayerTiles->m_HasTune)
 						Item.m_Tune = Writer.AddData((size_t)pLayerTiles->m_Width * pLayerTiles->m_Height * sizeof(CTuneTile), std::static_pointer_cast<CLayerTune>(pLayerTiles)->m_pTuneTile);
+					else if(pLayerTiles->m_HasLiquid)
+						Item.m_Liquid = Writer.AddData((size_t)pLayerTiles->m_Width * pLayerTiles->m_Height * sizeof(CTile), pLayerTiles->m_pTiles);
+
 				}
 				else
 					Item.m_Data = Writer.AddData((size_t)pLayerTiles->m_Width * pLayerTiles->m_Height * sizeof(CTile), pLayerTiles->m_pTiles);
@@ -729,6 +735,14 @@ bool CEditorMap::Load(const char *pFileName, int StorageType, const std::functio
 						pTiles = std::make_shared<CLayerTune>(m_pEditor, pTilemapItem->m_Width, pTilemapItem->m_Height);
 						MakeTuneLayer(pTiles);
 					}
+					else if(pTilemapItem->m_Flags & TILESLAYERFLAG_LIQUID)
+					{
+						if(pTilemapItem->m_Version <= 2)
+							pTilemapItem->m_Liquid = *((const int *)(pTilemapItem) + 20);
+
+						pTiles = std::make_shared<CLayerLiquid>(m_pEditor, pTilemapItem->m_Width, pTilemapItem->m_Height);
+						MakeLiquidLayer(pTiles);
+					}
 					else
 					{
 						pTiles = std::make_shared<CLayerTiles>(m_pEditor, pTilemapItem->m_Width, pTilemapItem->m_Height);
@@ -842,6 +856,13 @@ bool CEditorMap::Load(const char *pFileName, int StorageType, const std::functio
 							}
 						}
 						DataFile.UnloadData(pTilemapItem->m_Tune);
+					}
+					else if(pTiles->m_HasLiquid)
+					{
+						void *pLiquidData = DataFile.GetData(pTilemapItem->m_Liquid);
+						unsigned int Size = DataFile.GetDataSize(pTilemapItem->m_Liquid);
+						pTiles->ExtractTiles(pTilemapItem->m_Version, (CTile *)pLiquidData, Size);
+						DataFile.UnloadData(pTilemapItem->m_Liquid);
 					}
 					else // regular tile layer or game layer
 					{

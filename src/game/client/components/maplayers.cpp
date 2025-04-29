@@ -301,7 +301,13 @@ void CMapLayers::OnMapLoad()
 				if(LayerType == LAYER_GAME)
 				{
 					m_GameGroup = g;
-					return;
+				}
+				else if(LayerType == LAYER_LIQUID)
+				{
+					CMapItemLayerTilemap* pTileMap = (CMapItemLayerTilemap*)pLayer;
+					m_WaterLayer = ConvertWaterLayer(pTileMap);
+					void *pTilesData = nullptr;
+					GetTileLayerAndOverlayCount(pLayerTilemap, LayerType, &pTilesData);
 				}
 			}
 		}
@@ -1280,6 +1286,8 @@ int CMapLayers::GetLayerType(const CMapItemLayer *pLayer) const
 		return LAYER_SPEEDUP;
 	else if(pLayer == (CMapItemLayer *)m_pLayers->TuneLayer())
 		return LAYER_TUNE;
+	else if(pLayer == (CMapItemLayer *)m_pLayers->LiquidLayer())
+		return LAYER_LIQUID;
 	return LAYER_DEFAULT_TILESET;
 }
 
@@ -1313,6 +1321,11 @@ int CMapLayers::GetTileLayerAndOverlayCount(const CMapItemLayerTilemap *pLayerTi
 	case LAYER_TUNE:
 		DataIndex = pLayerTilemap->m_Tune;
 		TileSize = sizeof(CTuneTile);
+		OverlayCount = 0;
+		break;
+	case LAYER_LIQUID:
+		DataIndex = pLayerTilemap->m_Liquid;
+		TileSize = sizeof(CTile);
 		OverlayCount = 0;
 		break;
 	case LAYER_GAME:

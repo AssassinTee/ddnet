@@ -57,6 +57,13 @@ bool IsValidTeleTile(int Index)
 		Index == TILE_TELECHECKINEVIL);
 }
 
+bool IsValidLiquidTile(int Index)
+{
+	return (
+		Index == TILE_WATER ||
+		Index == TILE_LAVA);
+}
+
 bool IsTeleTileCheckpoint(int Index)
 {
 	return Index == TILE_TELECHECK || Index == TILE_TELECHECKOUT;

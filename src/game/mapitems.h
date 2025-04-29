@@ -183,6 +183,9 @@ enum
 	TILE_CREDITS_8 = 159,
 	TILE_ENTITIES_OFF_1 = 190,
 	TILE_ENTITIES_OFF_2,
+	//Liquids
+	TILE_WATER = 1,
+	TILE_LAVA,
 	//End of higher tiles
 	//Layers
 	LAYER_GAME = 0,
@@ -191,6 +194,7 @@ enum
 	LAYER_SPEEDUP,
 	LAYER_SWITCH,
 	LAYER_TUNE,
+	LAYER_LIQUID,
 	NUM_LAYERS,
 	//Flags
 	TILEFLAG_XFLIP = 1,
@@ -210,6 +214,7 @@ enum
 	TILESLAYERFLAG_FRONT = 8,
 	TILESLAYERFLAG_SWITCH = 16,
 	TILESLAYERFLAG_TUNE = 32,
+	TILESLAYERFLAG_LIQUID = 64,
 
 	ENTITY_OFFSET = 255 - 16 * 4,
 };
@@ -346,6 +351,7 @@ public:
 	int m_Front;
 	int m_Switch;
 	int m_Tune;
+	int m_Liquid;
 };
 
 class CMapItemLayerQuads
@@ -559,6 +565,7 @@ public:
 bool IsValidGameTile(int Index);
 bool IsValidFrontTile(int Index);
 bool IsValidTeleTile(int Index);
+bool IsValidLiquidTile(int Index);
 bool IsTeleTileCheckpoint(int Index); // Assumes that Index is a valid tele tile index
 bool IsTeleTileNumberUsed(int Index, bool Checkpoint); // Assumes that Index is a valid tele tile index
 bool IsTeleTileNumberUsedAny(int Index); // Does not check for checkpoint only

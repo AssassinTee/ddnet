@@ -186,6 +186,7 @@ public:
 	bool m_HasFront;
 	bool m_HasSwitch;
 	bool m_HasTune;
+	bool m_HasLiquid;
 	char m_aFileName[IO_MAX_PATH_LENGTH];
 
 	EditorTileStateChangeHistory<STileStateChange> m_TilesHistory;
