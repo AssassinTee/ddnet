@@ -3759,6 +3759,30 @@ int str_toint_base(const char *str, int base)
 	return strtol(str, nullptr, base);
 }
 
+int str_with_math_operators_toint_base(const char *str, int base)
+{
+	static char *operators = "*\0/\0+\0-\0";
+	for(int i = 0; i < 4; ++i)
+	{
+		char *c = operators + 2 * i;
+		const char *pos = str_find(str, c);
+		if(pos && pos + 1)
+		{
+			int Num1 = strtol(str, nullptr, base);
+			int Num2 = strtol(pos + 1, nullptr, base);
+			if(i == 0)
+				return Num1 * Num2;
+			else if(i == 1)
+				return Num1 / Num2;
+			else if(i == 2)
+				return Num1 + Num2;
+			else
+				return Num1 - Num2;
+		}
+	}
+	return strtol(str, nullptr, base);
+}
+
 unsigned long str_toulong_base(const char *str, int base)
 {
 	return strtoul(str, nullptr, base);

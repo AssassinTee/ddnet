@@ -688,7 +688,7 @@ void CLineInputNumber::SetInteger(int Number, int Base, int HexPrefix)
 
 int CLineInputNumber::GetInteger(int Base) const
 {
-	return str_toint_base(GetString(), Base);
+	return str_with_math_operators_toint_base(GetString(), Base);
 }
 
 void CLineInputNumber::SetInteger64(int64_t Number, int Base, int HexPrefix)
