@@ -1585,6 +1585,8 @@ set(EXPECTED_DATA
   shader/tile.vert
   shader/tile_border.frag
   shader/tile_border.vert
+  shader/tile_color.frag
+  shader/tile_color.vert
   shader/vulkan/prim.frag
   shader/vulkan/prim.vert
   shader/vulkan/prim3d.frag
@@ -1601,6 +1603,8 @@ set(EXPECTED_DATA
   shader/vulkan/tile.vert
   shader/vulkan/tile_border.frag
   shader/vulkan/tile_border.vert
+  shader/vulkan/tile_color.frag
+  shader/vulkan/tile_color.vert
   skins/PaladiN.png
   skins/antiantey.png
   skins/beast.png

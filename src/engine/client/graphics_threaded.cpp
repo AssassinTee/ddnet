@@ -1374,6 +1374,50 @@ void CGraphics_Threaded::RenderTileLayer(int BufferContainerIndex, const ColorRG
 	// todo max indices group check!!
 }
 
+void CGraphics_Threaded::RenderTileLayerColor(int BufferContainerIndex, ColorRGBA *pColor, char **pOffsets, unsigned int *pIndicedVertexDrawNum, size_t NumIndicesOffset)
+{
+	if(NumIndicesOffset == 0)
+		return;
+
+	// add the VertexArrays and draw
+	CCommandBuffer::SCommand_RenderTileLayerColor Cmd;
+	Cmd.m_State = m_State;
+	Cmd.m_IndicesDrawNum = NumIndicesOffset;
+	Cmd.m_BufferContainerIndex = BufferContainerIndex;
+	Cmd.m_pColor = pColor;
+
+	void *pData = m_pCommandBuffer->AllocData((sizeof(char *) + sizeof(unsigned int)) * NumIndicesOffset);
+	if(pData == nullptr)
+	{
+		// kick command buffer and try again
+		KickCommandBuffer();
+
+		pData = m_pCommandBuffer->AllocData((sizeof(char *) + sizeof(unsigned int)) * NumIndicesOffset);
+		if(pData == nullptr)
+		{
+			dbg_msg("graphics", "failed to allocate data for vertices");
+			return;
+		}
+	}
+	Cmd.m_pIndicesOffsets = (char **)pData;
+	Cmd.m_pDrawCount = (unsigned int *)(((char *)pData) + (sizeof(char *) * NumIndicesOffset));
+
+	AddCmd(Cmd, [&] {
+		pData = m_pCommandBuffer->AllocData((sizeof(char *) + sizeof(unsigned int)) * NumIndicesOffset);
+		if(pData == nullptr)
+			return false;
+		Cmd.m_pIndicesOffsets = (char **)pData;
+		Cmd.m_pDrawCount = (unsigned int *)(((char *)pData) + (sizeof(char *) * NumIndicesOffset));
+		return true;
+	});
+
+	mem_copy(Cmd.m_pIndicesOffsets, pOffsets, sizeof(char *) * NumIndicesOffset);
+	mem_copy(Cmd.m_pDrawCount, pIndicedVertexDrawNum, sizeof(unsigned int) * NumIndicesOffset);
+
+	m_pCommandBuffer->AddRenderCalls(NumIndicesOffset);
+	// todo max indices group check!!
+}
+
 void CGraphics_Threaded::RenderBorderTiles(int BufferContainerIndex, const ColorRGBA &Color, char *pIndexBufferOffset, const vec2 &Offset, const vec2 &Scale, uint32_t DrawNum)
 {
 	if(DrawNum == 0)

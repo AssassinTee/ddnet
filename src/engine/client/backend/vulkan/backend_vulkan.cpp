@@ -1285,6 +1285,7 @@ protected:
 
 		m_aCommandCallbacks[CommandBufferCMDOff(CCommandBuffer::CMD_RENDER_TILE_LAYER)] = {true, [this](SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SCommand *pBaseCommand) { Cmd_RenderTileLayer_FillExecuteBuffer(ExecBuffer, static_cast<const CCommandBuffer::SCommand_RenderTileLayer *>(pBaseCommand)); }, [this](const CCommandBuffer::SCommand *pBaseCommand, SRenderCommandExecuteBuffer &ExecBuffer) { return Cmd_RenderTileLayer(static_cast<const CCommandBuffer::SCommand_RenderTileLayer *>(pBaseCommand), ExecBuffer); }};
 		m_aCommandCallbacks[CommandBufferCMDOff(CCommandBuffer::CMD_RENDER_BORDER_TILE)] = {true, [this](SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SCommand *pBaseCommand) { Cmd_RenderBorderTile_FillExecuteBuffer(ExecBuffer, static_cast<const CCommandBuffer::SCommand_RenderBorderTile *>(pBaseCommand)); }, [this](const CCommandBuffer::SCommand *pBaseCommand, SRenderCommandExecuteBuffer &ExecBuffer) { return Cmd_RenderBorderTile(static_cast<const CCommandBuffer::SCommand_RenderBorderTile *>(pBaseCommand), ExecBuffer); }};
+		m_aCommandCallbacks[CommandBufferCMDOff(CCommandBuffer::CMD_RENDER_TILE_LAYER_COLOR)] = {true, [this](SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SCommand *pBaseCommand) { Cmd_RenderTileLayerColor_FillExecuteBuffer(ExecBuffer, static_cast<const CCommandBuffer::SCommand_RenderTileLayerColor *>(pBaseCommand)); }, [this](const CCommandBuffer::SCommand *pBaseCommand, SRenderCommandExecuteBuffer &ExecBuffer) { return Cmd_RenderTileLayerColor(static_cast<const CCommandBuffer::SCommand_RenderTileLayerColor *>(pBaseCommand), ExecBuffer); }};
 		m_aCommandCallbacks[CommandBufferCMDOff(CCommandBuffer::CMD_RENDER_QUAD_LAYER)] = {true, [this](SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SCommand *pBaseCommand) { Cmd_RenderQuadLayer_FillExecuteBuffer(ExecBuffer, static_cast<const CCommandBuffer::SCommand_RenderQuadLayer *>(pBaseCommand)); }, [this](const CCommandBuffer::SCommand *pBaseCommand, SRenderCommandExecuteBuffer &ExecBuffer) { return Cmd_RenderQuadLayer(static_cast<const CCommandBuffer::SCommand_RenderQuadLayer *>(pBaseCommand), ExecBuffer); }};
 		m_aCommandCallbacks[CommandBufferCMDOff(CCommandBuffer::CMD_RENDER_TEXT)] = {true, [this](SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SCommand *pBaseCommand) { Cmd_RenderText_FillExecuteBuffer(ExecBuffer, static_cast<const CCommandBuffer::SCommand_RenderText *>(pBaseCommand)); }, [this](const CCommandBuffer::SCommand *pBaseCommand, SRenderCommandExecuteBuffer &ExecBuffer) { return Cmd_RenderText(static_cast<const CCommandBuffer::SCommand_RenderText *>(pBaseCommand), ExecBuffer); }};
 		m_aCommandCallbacks[CommandBufferCMDOff(CCommandBuffer::CMD_RENDER_QUAD_CONTAINER)] = {true, [this](SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SCommand *pBaseCommand) { Cmd_RenderQuadContainer_FillExecuteBuffer(ExecBuffer, static_cast<const CCommandBuffer::SCommand_RenderQuadContainer *>(pBaseCommand)); }, [this](const CCommandBuffer::SCommand *pBaseCommand, SRenderCommandExecuteBuffer &ExecBuffer) { return Cmd_RenderQuadContainer(static_cast<const CCommandBuffer::SCommand_RenderQuadContainer *>(pBaseCommand), ExecBuffer); }};
@@ -3358,6 +3359,65 @@ protected:
 	}
 
 	[[nodiscard]] bool RenderTileLayer(SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SState &State, bool IsBorder, const GL_SColorf &Color, const vec2 &Scale, const vec2 &Off, size_t IndicesDrawNum, char *const *pIndicesOffsets, const unsigned int *pDrawCount)
+	{
+		std::array<float, (size_t)4 * 2> m;
+		GetStateMatrix(State, m);
+
+		bool IsTextured;
+		size_t BlendModeIndex;
+		size_t DynamicIndex;
+		size_t AddressModeIndex;
+		GetStateIndices(ExecBuffer, State, IsTextured, BlendModeIndex, DynamicIndex, AddressModeIndex);
+		auto &PipeLayout = GetTileLayerPipeLayout(IsBorder, IsTextured, BlendModeIndex, DynamicIndex);
+		auto &PipeLine = GetTileLayerPipe(IsBorder, IsTextured, BlendModeIndex, DynamicIndex);
+
+		VkCommandBuffer *pCommandBuffer;
+		if(!GetGraphicCommandBuffer(pCommandBuffer, ExecBuffer.m_ThreadIndex))
+			return false;
+		auto &CommandBuffer = *pCommandBuffer;
+
+		BindPipeline(ExecBuffer.m_ThreadIndex, CommandBuffer, ExecBuffer, PipeLine, State);
+
+		std::array<VkBuffer, 1> aVertexBuffers = {ExecBuffer.m_Buffer};
+		std::array<VkDeviceSize, 1> aOffsets = {(VkDeviceSize)ExecBuffer.m_BufferOff};
+		vkCmdBindVertexBuffers(CommandBuffer, 0, 1, aVertexBuffers.data(), aOffsets.data());
+
+		if(IsTextured)
+		{
+			vkCmdBindDescriptorSets(CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, PipeLayout, 0, 1, &ExecBuffer.m_aDescriptors[0].m_Descriptor, 0, nullptr);
+		}
+
+		SUniformTileGPosBorder VertexPushConstants;
+		size_t VertexPushConstantSize = sizeof(SUniformTileGPos);
+		SUniformTileGVertColor FragPushConstants;
+		size_t FragPushConstantSize = sizeof(SUniformTileGVertColor);
+
+		mem_copy(VertexPushConstants.m_aPos, m.data(), m.size() * sizeof(float));
+		FragPushConstants = Color;
+
+		if(IsBorder)
+		{
+			VertexPushConstants.m_Scale = Scale;
+			VertexPushConstants.m_Offset = Off;
+			VertexPushConstantSize = sizeof(SUniformTileGPosBorder);
+		}
+
+		vkCmdPushConstants(CommandBuffer, PipeLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, VertexPushConstantSize, &VertexPushConstants);
+		vkCmdPushConstants(CommandBuffer, PipeLayout, VK_SHADER_STAGE_FRAGMENT_BIT, sizeof(SUniformTileGPosBorder) + sizeof(SUniformTileGVertColorAlign), FragPushConstantSize, &FragPushConstants);
+
+		size_t DrawCount = IndicesDrawNum;
+		vkCmdBindIndexBuffer(CommandBuffer, ExecBuffer.m_IndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+		for(size_t i = 0; i < DrawCount; ++i)
+		{
+			VkDeviceSize IndexOffset = (VkDeviceSize)((ptrdiff_t)pIndicesOffsets[i] / sizeof(uint32_t));
+
+			vkCmdDrawIndexed(CommandBuffer, static_cast<uint32_t>(pDrawCount[i]), 1, IndexOffset, 0, 0);
+		}
+
+		return true;
+	}
+
+	[[nodiscard]] bool RenderTileLayerColor(SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SState &State, bool IsBorder, GL_SColorf *pColor, const vec2 &Scale, const vec2 &Off, size_t IndicesDrawNum, char *const *pIndicesOffsets, const unsigned int *pDrawCount)
 	{
 		std::array<float, (size_t)4 * 2> m;
 		GetStateMatrix(State, m);
@@ -6100,6 +6160,12 @@ public:
 		if(!CreateTileGraphicsPipeline<true>("shader/vulkan/tile_border_textured.vert.spv", "shader/vulkan/tile_border_textured.frag.spv", true))
 			return -1;
 
+		if(!CreateTileGraphicsPipeline<false>("shader/vulkan/tile_color.vert.spv", "shader/vulkan/tile_color.frag.spv", false))
+			return -1;
+
+		if(!CreateTileGraphicsPipeline<true>("shader/vulkan/tile_color_textured.vert.spv", "shader/vulkan/tile_color_textured.frag.spv", false))
+			return -1;
+
 		if(!CreatePrimExGraphicsPipeline("shader/vulkan/primex_rotationless.vert.spv", "shader/vulkan/primex_rotationless.frag.spv", false, true))
 			return -1;
 
@@ -7084,11 +7150,23 @@ public:
 		RenderTileLayer_FillExecuteBuffer(ExecBuffer, pCommand->m_IndicesDrawNum, pCommand->m_State, pCommand->m_BufferContainerIndex);
 	}
 
+	void Cmd_RenderTileLayerColor_FillExecuteBuffer(SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SCommand_RenderTileLayerColor *pCommand)
+	{
+		RenderTileLayer_FillExecuteBuffer(ExecBuffer, pCommand->m_IndicesDrawNum, pCommand->m_State, pCommand->m_BufferContainerIndex);
+	}
+
 	[[nodiscard]] bool Cmd_RenderTileLayer(const CCommandBuffer::SCommand_RenderTileLayer *pCommand, SRenderCommandExecuteBuffer &ExecBuffer)
 	{
 		vec2 Scale{};
 		vec2 Off{};
 		return RenderTileLayer(ExecBuffer, pCommand->m_State, false, pCommand->m_Color, Scale, Off, (size_t)pCommand->m_IndicesDrawNum, pCommand->m_pIndicesOffsets, pCommand->m_pDrawCount);
+	}
+
+	[[nodiscard]] bool Cmd_RenderTileLayerColor(const CCommandBuffer::SCommand_RenderTileLayer *pCommand, SRenderCommandExecuteBuffer &ExecBuffer)
+	{
+		vec2 Scale{};
+		vec2 Off{};
+		return RenderTileLayerColor(ExecBuffer, pCommand->m_State, false, pCommand->m_pColor, Scale, Off, (size_t)pCommand->m_IndicesDrawNum, pCommand->m_pIndicesOffsets, pCommand->m_pDrawCount);
 	}
 
 	void Cmd_RenderBorderTile_FillExecuteBuffer(SRenderCommandExecuteBuffer &ExecBuffer, const CCommandBuffer::SCommand_RenderBorderTile *pCommand)
