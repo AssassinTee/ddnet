@@ -132,6 +132,7 @@ public:
 
 	std::shared_ptr<CLayer> Duplicate() const override;
 	const char *TypeName() const override;
+	CColor OverviewColor() const override { return m_Color; }
 
 	virtual void ShowInfo();
 	CUi::EPopupMenuFunctionResult RenderProperties(CUIRect *pToolbox) override;

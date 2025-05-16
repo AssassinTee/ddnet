@@ -152,6 +152,22 @@ void CLayerGroup::GetSize(float *pWidth, float *pHeight) const
 	}
 }
 
+CColor CLayerGroup::OverviewColor() const
+{
+	CColor color(0, 0, 0, 255);
+	for(const auto &pLayer : m_vpLayers)
+	{
+		CColor LayerColor = pLayer->OverviewColor();
+		color.r += LayerColor.r;
+		color.g += LayerColor.g;
+		color.b += LayerColor.b;
+	}
+	color.r /= m_vpLayers.size();
+	color.g /= m_vpLayers.size();
+	color.b /= m_vpLayers.size();
+	return color;
+}
+
 int CLayerGroup::SwapLayers(int Index0, int Index1)
 {
 	if(Index0 < 0 || Index0 >= (int)m_vpLayers.size())

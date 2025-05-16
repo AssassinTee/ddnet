@@ -24,6 +24,7 @@ public:
 
 	std::shared_ptr<CLayer> Duplicate() const override;
 	const char *TypeName() const override;
+	CColor OverviewColor() const override { return CColor(255, 255, 255, 255); }
 
 	int m_Sound;
 	std::vector<CSoundSource> m_vSources;

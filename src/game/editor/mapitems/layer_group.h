@@ -39,6 +39,7 @@ public:
 	void Mapping(float *pPoints) const;
 
 	void GetSize(float *pWidth, float *pHeight) const;
+	CColor OverviewColor() const;
 
 	void DeleteLayer(int Index);
 	void DuplicateLayer(int Index);

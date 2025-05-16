@@ -288,3 +288,23 @@ const char *CLayerQuads::TypeName() const
 {
 	return "quads";
 }
+
+CColor CLayerQuads::OverviewColor() const
+{
+	if(m_vQuads.size())
+	{
+		CColor Color(0, 0, 0, 255);
+		for(int i = 0; i < 4; ++i)
+		{
+			const CColor &PointColor = m_vQuads[0].m_aColors[i];
+			Color.r += PointColor.r;
+			Color.g += PointColor.g;
+			Color.b += PointColor.b;
+		}
+		Color.r /= 4;
+		Color.g /= 4;
+		Color.b /= 4;
+		return Color;
+	}
+	return CColor(255, 255, 255, 255);
+}
