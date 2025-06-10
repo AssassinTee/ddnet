@@ -672,6 +672,7 @@ public:
 	virtual int Sizeof() const override { return sizeof(*this); }
 
 	void RenderLoading(const char *pCaption, const char *pContent, int IncreaseCounter);
+	void EnableProgressBar(int Steps);
 	void FinishLoading();
 
 	bool IsInit() const { return m_IsInit; }

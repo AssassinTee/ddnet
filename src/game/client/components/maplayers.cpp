@@ -84,6 +84,7 @@ void CMapLayers::OnMapLoad()
 
 	const char *pLoadingTitle = Localize("Loading map");
 	const char *pLoadingMessage = Localize("Uploading map data to GPU");
+	m_pClient->m_Menus.EnableProgressBar(m_pLayers->NumLayers());
 	m_pClient->m_Menus.RenderLoading(pLoadingTitle, pLoadingMessage, 0);
 
 	for(int g = 0; g < m_pLayers->NumGroups(); g++)
@@ -198,6 +199,8 @@ void CMapLayers::OnMapLoad()
 			}
 		}
 	}
+
+	m_pClient->m_Menus.FinishLoading();
 }
 
 void CMapLayers::OnRender()

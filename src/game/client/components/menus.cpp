@@ -777,6 +777,11 @@ void CMenus::RenderMenubar(CUIRect Box, IClient::EClientState ClientState)
 	}
 }
 
+void CMenus::EnableProgressBar(int Steps)
+{
+	m_LoadingState.m_Total = Steps;
+}
+
 void CMenus::RenderLoading(const char *pCaption, const char *pContent, int IncreaseCounter)
 {
 	// TODO: not supported right now due to separate render thread

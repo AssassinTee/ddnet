@@ -183,11 +183,11 @@ void CRenderLayer::UseTexture(IGraphics::CTextureHandle TextureHandle) const
 		m_pGraphics->TextureClear();
 }
 
-void CRenderLayer::RenderLoading() const
+void CRenderLayer::RenderLoading(bool Increase) const
 {
 	const char *pLoadingTitle = Localize("Loading map");
 	const char *pLoadingMessage = Localize("Uploading map data to GPU");
-	m_pGameClient->m_Menus.RenderLoading(pLoadingTitle, pLoadingMessage, 0);
+	m_pGameClient->m_Menus.RenderLoading(pLoadingTitle, pLoadingMessage, (int)Increase);
 }
 
 /**************
@@ -719,7 +719,7 @@ void CRenderLayerTile::UploadTileData(std::optional<CTileLayerVisuals> &VisualsO
 		// and finally inform the backend how many indices are required
 		m_pGraphics->IndicesNumRequiredNotify(vTmpTiles.size() * 6);
 	}
-	RenderLoading();
+	RenderLoading(CurOverlay == 0);
 }
 
 int CRenderLayerTile::GetDataIndex(unsigned int &TileSize) const
@@ -951,7 +951,7 @@ void CRenderLayerQuads::Init()
 		// and finally inform the backend how many indices are required
 		m_pGraphics->IndicesNumRequiredNotify(m_pLayerQuads->m_NumQuads * 6);
 	}
-	RenderLoading();
+	RenderLoading(true);
 }
 
 void CRenderLayerQuads::Render(const CRenderLayerParams &Params)
