@@ -840,6 +840,16 @@ void CMenus::RenderLoading(const char *pCaption, const char *pContent, int Incre
 		Ui()->RenderProgressBar(ProgressBar, CurLoadRenderCount / (float)m_LoadingState.m_Total);
 	}
 
+	CUIRect LoadingIcon;
+	Box.HSplitBottom(30.0f, &Box, nullptr);
+	Box.HSplitBottom(25.0f, &Box, &LoadingIcon);
+	vec2 Pos = vec2(LoadingIcon.x + LoadingIcon.w - 20.0f, LoadingIcon.y + LoadingIcon.h / 2.0f);
+	static int LoadingIconProgress = 0;
+	constexpr ColorRGBA OutlineColor = ColorRGBA(0.5, 0.5, 0.5);
+	constexpr ColorRGBA InnerColor = ColorRGBA(1, 1, 1);
+	GameClient()->m_Items.RenderLaser(Pos, Pos, OutlineColor, InnerColor, LoadingIconProgress, LoadingIconProgress, LASERTYPE_DRAGGER);
+	LoadingIconProgress += 20;
+
 	Graphics()->SetColor(1.0, 1.0, 1.0, 1.0);
 
 	Client()->UpdateAndSwap();
