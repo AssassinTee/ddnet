@@ -4917,13 +4917,21 @@ public:
 		return Ret;
 	}
 
-	template<bool HasSampler>
+	template<bool HasSampler, bool Colored>
 	[[nodiscard]] bool CreateTileGraphicsPipelineImpl(const char *pVertName, const char *pFragName, bool IsBorder, SPipelineContainer &PipeContainer, EVulkanBackendTextureModes TexMode, EVulkanBackendBlendModes BlendMode, EVulkanBackendClipModes DynamicMode)
 	{
-		std::array<VkVertexInputAttributeDescription, HasSampler ? 2 : 1> aAttributeDescriptions = {};
+		std::array<VkVertexInputAttributeDescription, HasSampler ? (Colored ? 3 : 2) : (Colored ? 2 : 1)> aAttributeDescriptions = {};
 		aAttributeDescriptions[0] = {0, 0, VK_FORMAT_R32G32_SFLOAT, 0};
 		if(HasSampler)
+		{
 			aAttributeDescriptions[1] = {1, 0, VK_FORMAT_R8G8B8A8_UINT, sizeof(float) * 2};
+			if(Colored)
+			    aAttributeDescriptions[2] =  {0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 0};
+		}
+		else if(Colored)
+		{
+			aAttributeDescriptions[1] =  {0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 0};
+		}
 
 		std::array<VkDescriptorSetLayout, 1> aSetLayouts;
 		aSetLayouts[0] = m_Standard3DTexturedDescriptorSetLayout;
@@ -4941,7 +4949,7 @@ public:
 		return CreateGraphicsPipeline<false>(pVertName, pFragName, PipeContainer, HasSampler ? (sizeof(float) * 2 + sizeof(uint8_t) * 4) : (sizeof(float) * 2), aAttributeDescriptions, aSetLayouts, aPushConstants, TexMode, BlendMode, DynamicMode);
 	}
 
-	template<bool HasSampler>
+	template<bool HasSampler, bool Colored>
 	[[nodiscard]] bool CreateTileGraphicsPipeline(const char *pVertName, const char *pFragName, bool IsBorder)
 	{
 		bool Ret = true;
@@ -4952,7 +4960,7 @@ public:
 		{
 			for(size_t j = 0; j < VULKAN_BACKEND_CLIP_MODE_COUNT; ++j)
 			{
-				Ret &= CreateTileGraphicsPipelineImpl<HasSampler>(pVertName, pFragName, IsBorder, !IsBorder ? m_TilePipeline : m_TileBorderPipeline, TexMode, EVulkanBackendBlendModes(i), EVulkanBackendClipModes(j));
+				Ret &= CreateTileGraphicsPipelineImpl<HasSampler, Colored>(pVertName, pFragName, IsBorder, !IsBorder ? m_TilePipeline : m_TileBorderPipeline, TexMode, EVulkanBackendBlendModes(i), EVulkanBackendClipModes(j));
 			}
 		}
 
@@ -6088,16 +6096,22 @@ public:
 		if(!CreateTextGraphicsPipeline("shader/vulkan/text.vert.spv", "shader/vulkan/text.frag.spv"))
 			return -1;
 
-		if(!CreateTileGraphicsPipeline<false>("shader/vulkan/tile.vert.spv", "shader/vulkan/tile.frag.spv", false))
+		if(!CreateTileGraphicsPipeline<false, false>("shader/vulkan/tile.vert.spv", "shader/vulkan/tile.frag.spv", false))
 			return -1;
 
-		if(!CreateTileGraphicsPipeline<true>("shader/vulkan/tile_textured.vert.spv", "shader/vulkan/tile_textured.frag.spv", false))
+		if(!CreateTileGraphicsPipeline<true, false>("shader/vulkan/tile_textured.vert.spv", "shader/vulkan/tile_textured.frag.spv", false))
 			return -1;
 
-		if(!CreateTileGraphicsPipeline<false>("shader/vulkan/tile_border.vert.spv", "shader/vulkan/tile_border.frag.spv", true))
+		if(!CreateTileGraphicsPipeline<false, true>("shader/vulkan/tile_colored.vert.spv", "shader/vulkan/tile_colored.frag.spv", false))
 			return -1;
 
-		if(!CreateTileGraphicsPipeline<true>("shader/vulkan/tile_border_textured.vert.spv", "shader/vulkan/tile_border_textured.frag.spv", true))
+		if(!CreateTileGraphicsPipeline<true, true>("shader/vulkan/tile_textured_colored.vert.spv", "shader/vulkan/tile_textured_colored.frag.spv", false))
+			return -1;
+
+		if(!CreateTileGraphicsPipeline<false, false>("shader/vulkan/tile_border.vert.spv", "shader/vulkan/tile_border.frag.spv", true))
+			return -1;
+
+		if(!CreateTileGraphicsPipeline<true, false>("shader/vulkan/tile_border_textured.vert.spv", "shader/vulkan/tile_border_textured.frag.spv", true))
 			return -1;
 
 		if(!CreatePrimExGraphicsPipeline("shader/vulkan/primex_rotationless.vert.spv", "shader/vulkan/primex_rotationless.frag.spv", false, true))
