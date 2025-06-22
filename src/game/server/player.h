@@ -239,6 +239,11 @@ public:
 
 	CSaveTee m_LastTeleTee;
 	std::optional<CSaveTee> m_LastDeath;
+
+	// Unique
+	bool m_ShowFlag;
+	int m_SortedScore;
+	int m_FastcapSpawnAt;
 };
 
 #endif

@@ -3128,7 +3128,9 @@ bool timestamp_from_str(const char *string, const char *format, time_t *timestam
 
 int str_time(int64_t centisecs, int format, char *buffer, int buffer_size)
 {
-	const int sec = 100;
+	int sec = 100;
+	if(format >= TIME_HOURS_MILISECS)
+		sec *= 10;
 	const int min = 60 * sec;
 	const int hour = 60 * min;
 	const int day = 24 * hour;
@@ -3168,6 +3170,18 @@ int str_time(int64_t centisecs, int format, char *buffer, int buffer_size)
 		[[fallthrough]];
 	case TIME_SECS_CENTISECS:
 		return str_format(buffer, buffer_size, "%02" PRId64 ".%02" PRId64, (centisecs % min) / sec, centisecs % sec);
+	case TIME_HOURS_MILISECS: // calling them centisecs is just wrong here
+		if(centisecs >= hour)
+			return str_format(buffer, buffer_size, "%02" PRId64 ":%02" PRId64 ":%02" PRId64 ".%03" PRId64, centisecs / hour,
+				(centisecs % hour) / min, (centisecs % min) / sec, centisecs % sec);
+		[[fallthrough]];
+	case TIME_MINS_MILISECS:
+		if(centisecs >= min)
+			return str_format(buffer, buffer_size, "%02" PRId64 ":%02" PRId64 ".%03" PRId64, centisecs / min,
+				(centisecs % min) / sec, centisecs % sec);
+		[[fallthrough]];
+	case TIME_SECS_MILISECS:
+		return str_format(buffer, buffer_size, "%02" PRId64 ".%03" PRId64, (centisecs % min) / sec, centisecs % sec);
 	}
 
 	return -1;
@@ -3175,6 +3189,8 @@ int str_time(int64_t centisecs, int format, char *buffer, int buffer_size)
 
 int str_time_float(float secs, int format, char *buffer, int buffer_size)
 {
+	if(format >= TIME_HOURS_MILISECS)
+		return str_time(llroundf(secs * 10000) / 10, format, buffer, buffer_size);
 	return str_time(llroundf(secs * 1000) / 10, format, buffer, buffer_size);
 }
 
