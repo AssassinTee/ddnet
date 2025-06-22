@@ -235,6 +235,11 @@ public:
 	int m_RescueMode;
 
 	CSaveTee m_LastTeleTee;
+
+	// Unique
+	bool m_ShowFlag;
+	int m_SortedScore;
+	int m_FastcapSpawnAt;
 };
 
 #endif

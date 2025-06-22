@@ -115,6 +115,10 @@ void CPlayer::Reset()
 	m_SpecTeam = false;
 	m_NinjaJetpack = false;
 
+	// Unique
+	m_ShowFlag = true;
+	m_FastcapSpawnAt = 1;
+
 	m_Paused = PAUSE_NONE;
 	m_DND = false;
 	m_Whispers = true;
@@ -735,7 +739,7 @@ void CPlayer::TryRespawn()
 {
 	vec2 SpawnPos;
 
-	if(!GameServer()->m_pController->CanSpawn(m_Team, &SpawnPos, GameServer()->GetDDRaceTeam(m_ClientId)))
+	if(!GameServer()->m_pController->CanSpawn(m_Team, g_Config.m_SvFastcap ? m_FastcapSpawnAt : 0, &SpawnPos, GameServer()->GetDDRaceTeam(m_ClientId)))
 		return;
 
 	m_WeakHookSpawn = false;

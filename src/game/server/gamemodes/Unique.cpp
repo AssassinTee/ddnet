@@ -1,6 +1,6 @@
 /* (c) Shereef Marzouk. See "licence DDRace.txt" and the readme.txt in the root of the distribution for more information. */
 /* Based on Race mod stuff and tweaked by GreYFoX@GTi and others to fit our DDRace needs. */
-#include "DDRace.h"
+#include "Unique.h"
 
 #include <engine/server.h>
 #include <engine/shared/config.h>
@@ -11,24 +11,26 @@
 #include <game/server/score.h>
 #include <game/version.h>
 
-#define GAME_TYPE_NAME "DDraceNetwork"
-#define TEST_TYPE_NAME "TestDDraceNetwork"
+#define GAME_TYPE_RACE "Race"
+#define GAME_TYPE_FASTCAP "FastCap"
+#define TEST_TYPE_NAME "TestUniqueRace"
 
-CGameControllerDDRace::CGameControllerDDRace(class CGameContext *pGameServer) :
+CGameControllerUnique::CGameControllerUnique(class CGameContext *pGameServer) :
 	IGameController(pGameServer)
 {
-	m_pGameType = g_Config.m_SvTestingCommands ? TEST_TYPE_NAME : GAME_TYPE_NAME;
+	m_pGameType = g_Config.m_SvTestingCommands ? TEST_TYPE_NAME : (g_Config.m_SvFastcap ? GAME_TYPE_FASTCAP : GAME_TYPE_RACE);
 	m_GameFlags = protocol7::GAMEFLAG_RACE;
+	m_pRecordFlagChar = nullptr;
 }
 
-CGameControllerDDRace::~CGameControllerDDRace() = default;
+CGameControllerUnique::~CGameControllerUnique() = default;
 
-CScore *CGameControllerDDRace::Score()
+CScore *CGameControllerUnique::Score()
 {
 	return GameServer()->Score();
 }
 
-void CGameControllerDDRace::HandleCharacterTiles(CCharacter *pChr, int MapIndex, float FractionOfTick)
+void CGameControllerUnique::HandleCharacterTiles(CCharacter *pChr, int MapIndex, float FractionOfTick)
 {
 	CPlayer *pPlayer = pChr->GetPlayer();
 	const int ClientId = pPlayer->GetCid();
@@ -50,7 +52,7 @@ void CGameControllerDDRace::HandleCharacterTiles(CCharacter *pChr, int MapIndex,
 	int FTile3 = GameServer()->Collision()->GetFrontTileIndex(S3);
 	int FTile4 = GameServer()->Collision()->GetFrontTileIndex(S4);
 
-	const ERaceState PlayerDDRaceState = pChr->m_DDRaceState;
+	const ERaceState &PlayerDDRaceState = pChr->m_DDRaceState;
 	bool IsOnStartTile = (TileIndex == TILE_START) || (TileFIndex == TILE_START) || FTile1 == TILE_START || FTile2 == TILE_START || FTile3 == TILE_START || FTile4 == TILE_START || Tile1 == TILE_START || Tile2 == TILE_START || Tile3 == TILE_START || Tile4 == TILE_START;
 	// start
 	if(IsOnStartTile && PlayerDDRaceState != ERaceState::CHEATED)
@@ -78,8 +80,18 @@ void CGameControllerDDRace::HandleCharacterTiles(CCharacter *pChr, int MapIndex,
 		{
 			pChr->ResetPickups();
 		}
+		bool started = false;
+		/*if(pChr->m_DDRaceState != ERaceState::STARTED)
+		{
+			started = true;
+		}*/
+		if(pChr->m_DDRaceState != ERaceState::STARTED)
+			Teams().OnCharacterStart(ClientId, FractionOfTick);
+		/*if(pChr->m_DDRaceState == ERaceState::STARTED && started)
+		{
+			dbg_msg("dbg", "Start Tick %d, StartOffset %f", Server()->Tick(), FractionOfTick);
+		}*/
 
-		Teams().OnCharacterStart(ClientId);
 		pChr->m_LastTimeCp = -1;
 		pChr->m_LastTimeCpBroadcasted = -1;
 		for(float &CurrentTimeCp : pChr->m_aCurrentTimeCp)
@@ -90,7 +102,10 @@ void CGameControllerDDRace::HandleCharacterTiles(CCharacter *pChr, int MapIndex,
 
 	// finish
 	if(((TileIndex == TILE_FINISH) || (TileFIndex == TILE_FINISH) || FTile1 == TILE_FINISH || FTile2 == TILE_FINISH || FTile3 == TILE_FINISH || FTile4 == TILE_FINISH || Tile1 == TILE_FINISH || Tile2 == TILE_FINISH || Tile3 == TILE_FINISH || Tile4 == TILE_FINISH) && PlayerDDRaceState == ERaceState::STARTED)
-		Teams().OnCharacterFinish(ClientId);
+	{
+		//dbg_msg("dbg", "hit finish in tick %d", Server()->Tick());
+		Teams().OnCharacterFinish(ClientId, FractionOfTick);
+	}
 
 	// unlock team
 	else if(((TileIndex == TILE_UNLOCK_TEAM) || (TileFIndex == TILE_UNLOCK_TEAM)) && Teams().TeamLocked(GameServer()->GetDDRaceTeam(ClientId)))
@@ -100,7 +115,7 @@ void CGameControllerDDRace::HandleCharacterTiles(CCharacter *pChr, int MapIndex,
 	}
 
 	// solo part
-	if(((TileIndex == TILE_SOLO_ENABLE) || (TileFIndex == TILE_SOLO_ENABLE)) && !Teams().m_Core.GetSolo(ClientId))
+	/*if(((TileIndex == TILE_SOLO_ENABLE) || (TileFIndex == TILE_SOLO_ENABLE)) && !Teams().m_Core.GetSolo(ClientId))
 	{
 		GameServer()->SendChatTarget(ClientId, "You are now in a solo part");
 		pChr->SetSolo(true);
@@ -109,15 +124,16 @@ void CGameControllerDDRace::HandleCharacterTiles(CCharacter *pChr, int MapIndex,
 	{
 		GameServer()->SendChatTarget(ClientId, "You are now out of the solo part");
 		pChr->SetSolo(false);
-	}
+	}*/
 }
 
-void CGameControllerDDRace::SetArmorProgress(CCharacter *pCharacter, int Progress)
+void CGameControllerUnique::SetArmorProgress(CCharacter *pCharacter, int Progress)
 {
-	pCharacter->SetArmor(std::clamp(10 - (Progress / 15), 0, 10));
+	if(!g_Config.m_SvHealthAndAmmo)
+		pCharacter->SetArmor(std::clamp(10 - (Progress / 15), 0, 10));
 }
 
-void CGameControllerDDRace::OnPlayerConnect(CPlayer *pPlayer)
+void CGameControllerUnique::OnPlayerConnect(CPlayer *pPlayer)
 {
 	IGameController::OnPlayerConnect(pPlayer);
 	int ClientId = pPlayer->GetCid();
@@ -140,7 +156,7 @@ void CGameControllerDDRace::OnPlayerConnect(CPlayer *pPlayer)
 	}
 }
 
-void CGameControllerDDRace::OnPlayerDisconnect(CPlayer *pPlayer, const char *pReason)
+void CGameControllerUnique::OnPlayerDisconnect(CPlayer *pPlayer, const char *pReason)
 {
 	int ClientId = pPlayer->GetCid();
 	bool WasModerator = pPlayer->m_Moderating && Server()->ClientIngame(ClientId);
@@ -158,20 +174,20 @@ void CGameControllerDDRace::OnPlayerDisconnect(CPlayer *pPlayer, const char *pRe
 			Teams().SetClientInvited(Team, ClientId, false);
 }
 
-void CGameControllerDDRace::OnReset()
+void CGameControllerUnique::OnReset()
 {
 	IGameController::OnReset();
 	Teams().Reset();
 }
 
-void CGameControllerDDRace::Tick()
+void CGameControllerUnique::Tick()
 {
 	IGameController::Tick();
 	Teams().ProcessSaveTeam();
 	Teams().Tick();
 }
 
-void CGameControllerDDRace::DoTeamChange(class CPlayer *pPlayer, int Team, bool DoChatMsg)
+void CGameControllerUnique::DoTeamChange(class CPlayer *pPlayer, int Team, bool DoChatMsg)
 {
 	Team = ClampTeam(Team);
 	if(Team == pPlayer->GetTeam())
@@ -192,4 +208,11 @@ void CGameControllerDDRace::DoTeamChange(class CPlayer *pPlayer, int Team, bool 
 	}
 
 	IGameController::DoTeamChange(pPlayer, Team, DoChatMsg);
+}
+
+int CGameControllerUnique::OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int Weapon)
+{
+	if(m_pRecordFlagChar && m_pRecordFlagChar == pVictim)
+		m_pRecordFlagChar = NULL;
+	return 0;
 }
