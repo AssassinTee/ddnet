@@ -16,32 +16,65 @@
 void CGameContext::ConCredits(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
-	static constexpr const char *CREDITS[] = {
-		"DDNet is run by the DDNet staff (DDNet.org/staff)",
-		"Great maps and many ideas from the great community",
-		"Help and code by eeeee, HMH, east, CookieMichal, Learath2,",
-		"Savander, laxa, Tobii, BeaR, Wohoo, nuborn, timakro, Shiki,",
-		"trml, Soreu, hi_leute_gll, Lady Saavik, Chairn, heinrich5991,",
-		"swick, oy, necropotame, Ryozuki, Redix, d3fault, marcelherd,",
-		"BannZay, ACTom, SiuFuWong, PathosEthosLogos, TsFreddie,",
-		"Jupeyy, noby, ChillerDragon, ZombieToad, weez15, z6zzz,",
-		"Piepow, QingGo, RafaelFF, sctt, jao, daverck, fokkonaut,",
-		"Bojidar, FallenKN, ardadem, archimede67, sirius1242, Aerll,",
-		"trafilaw, Zwelf, Patiga, Konsti, ElXreno, MikiGamer,",
-		"Fireball, Banana090, axblk, yangfl, Kaffeine, Zodiac,",
-		"c0d3d3v, GiuCcc, Ravie, Robyt3, simpygirl, sjrc6, Cellegen,",
-		"srdante, Nouaa, Voxel, luk51, Vy0x2, Avolicious, louis,",
-		"Marmare314, hus3h, ArijanJ, tarunsamanta2k20, Possseidon,",
-		"M0REKZ, Teero, furo, dobrykafe, Moiman, JSaurusRex,",
-		"Steinchen, ewancg, gerdoe-jr, BlaiZephyr, KebsCS, bencie,",
-		"DynamoFox, MilkeeyCat, iMilchshake, SchrodingerZhu,",
-		"catseyenebulous, Rei-Tw, Matodor, Emilcha, art0007i, SollyBunny,",
-		"0xfaulty & others",
-		"Based on DDRace by the DDRace developers,",
-		"which is a mod of Teeworlds by the Teeworlds developers.",
-	};
-	for(const char *pLine : CREDITS)
-		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp", pLine);
+	if(!pSelf->IsUniqueRace())
+	{
+		static constexpr const char *CREDITS[] = {
+			"DDNet is run by the DDNet staff (DDNet.org/staff)",
+			"Great maps and many ideas from the great community",
+			"Help and code by eeeee, HMH, east, CookieMichal, Learath2,",
+			"Savander, laxa, Tobii, BeaR, Wohoo, nuborn, timakro, Shiki,",
+			"trml, Soreu, hi_leute_gll, Lady Saavik, Chairn, heinrich5991,",
+			"swick, oy, necropotame, Ryozuki, Redix, d3fault, marcelherd,",
+			"BannZay, ACTom, SiuFuWong, PathosEthosLogos, TsFreddie,",
+			"Jupeyy, noby, ChillerDragon, ZombieToad, weez15, z6zzz,",
+			"Piepow, QingGo, RafaelFF, sctt, jao, daverck, fokkonaut,",
+			"Bojidar, FallenKN, ardadem, archimede67, sirius1242, Aerll,",
+			"trafilaw, Zwelf, Patiga, Konsti, ElXreno, MikiGamer,",
+			"Fireball, Banana090, axblk, yangfl, Kaffeine, Zodiac,",
+			"c0d3d3v, GiuCcc, Ravie, Robyt3, simpygirl, sjrc6, Cellegen,",
+			"srdante, Nouaa, Voxel, luk51, Vy0x2, Avolicious, louis,",
+			"Marmare314, hus3h, ArijanJ, tarunsamanta2k20, Possseidon,",
+			"M0REKZ, Teero, furo, dobrykafe, Moiman, JSaurusRex,",
+			"Steinchen, ewancg, gerdoe-jr, BlaiZephyr, KebsCS, bencie,",
+			"DynamoFox, MilkeeyCat, iMilchshake, SchrodingerZhu,",
+			"catseyenebulous, Rei-Tw, Matodor, Emilcha, art0007i, SollyBunny,",
+			"0xfaulty & others",
+			"Based on DDRace by the DDRace developers,",
+			"which is a mod of Teeworlds by the Teeworlds developers.",
+		};
+		for(const char *pLine : CREDITS)
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp", pLine);
+	}
+	else
+	{
+		static constexpr const char *CREDITS[] = {
+			"DDNet is run by the DDNet staff (DDNet.org/staff)",
+			"Great maps and many ideas from the great community",
+			"Help and code by eeeee, HMH, east, CookieMichal, Learath2,",
+			"Savander, laxa, Tobii, BeaR, Wohoo, nuborn, timakro, Shiki,",
+			"trml, Soreu, hi_leute_gll, Lady Saavik, Chairn, heinrich5991,",
+			"swick, oy, necropotame, Ryozuki, Redix, d3fault, marcelherd,",
+			"BannZay, ACTom, SiuFuWong, PathosEthosLogos, TsFreddie,",
+			"Jupeyy, noby, ChillerDragon, ZombieToad, weez15, z6zzz,",
+			"Piepow, QingGo, RafaelFF, sctt, jao, daverck, fokkonaut,",
+			"Bojidar, FallenKN, ardadem, archimede67, sirius1242, Aerll,",
+			"trafilaw, Zwelf, Patiga, Konsti, ElXreno, MikiGamer,",
+			"Fireball, Banana090, axblk, yangfl, Kaffeine, Zodiac,",
+			"c0d3d3v, GiuCcc, Ravie, Robyt3, simpygirl, sjrc6, Cellegen,",
+			"srdante, Nouaa, Voxel, luk51, Vy0x2, Avolicious, louis,",
+			"Marmare314, hus3h, ArijanJ, tarunsamanta2k20, Possseidon,",
+			"M0REKZ, Teero, furo, dobrykafe, Moiman, JSaurusRex,",
+			"Steinchen, ewancg, gerdoe-jr, BlaiZephyr, KebsCS, bencie,",
+			"DynamoFox, MilkeeyCat, iMilchshake, SchrodingerZhu,",
+			"catseyenebulous, Rei-Tw, Matodor, Emilcha, art0007i, SollyBunny,",
+			"0xfaulty & others",
+			"Based on DDRace by the DDRace developers,",
+			"which is a mod of Teeworlds by the Teeworlds developers.",
+			"Unique Race is run by Tezcan, timakro, Ryozuki and others.",
+			"Unique port to ddnet by Assa (AssassinTee)"};
+		for(const char *pLine : CREDITS)
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp", pLine);
+	}
 }
 
 void CGameContext::ConInfo(IConsole::IResult *pResult, void *pUserData)
@@ -1652,6 +1685,11 @@ void CGameContext::ConSpecTeam(IConsole::IResult *pResult, void *pUserData)
 void CGameContext::ConSayTime(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	// TODO: This is disabled in unique, I don't know why
+	if(pSelf->IsUniqueRace())
+		return;
+
 	if(!CheckClientId(pResult->m_ClientId))
 		return;
 
@@ -1695,6 +1733,11 @@ void CGameContext::ConSayTime(IConsole::IResult *pResult, void *pUserData)
 void CGameContext::ConSayTimeAll(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	// TODO: This is disabled in unique, I don't know why
+	if(pSelf->IsUniqueRace())
+		return;
+
 	if(!CheckClientId(pResult->m_ClientId))
 		return;
 
@@ -2498,4 +2541,108 @@ void CGameContext::ConTimeCP(IConsole::IResult *pResult, void *pUserData)
 
 	const char *pName = pResult->GetString(0);
 	pSelf->Score()->LoadPlayerTimeCp(pResult->m_ClientId, pName);
+}
+
+// Unique
+void CGameContext::ConShowFlag(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!pSelf->IsUniqueRace())
+		return;
+
+	if(!CheckClientId(pResult->m_ClientId))
+		return;
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
+	if(!pPlayer)
+		return;
+
+	if(pResult->NumArguments())
+		pPlayer->m_ShowFlag = pResult->GetInteger(0);
+	else
+		pPlayer->m_ShowFlag = !pPlayer->m_ShowFlag;
+	pSelf->m_pController->UpdateRecordFlag();
+}
+
+void CGameContext::ConRed(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!pSelf->IsUniqueRace())
+		return;
+
+	if(!CheckClientId(pResult->m_ClientId))
+		return;
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
+	if(!pPlayer)
+		return;
+
+	if(!g_Config.m_SvFastcap)
+	{
+		pSelf->SendChatTarget(pPlayer->GetCid(), "You are not playing Fastcap.");
+		return;
+	}
+
+	pPlayer->m_FastcapSpawnAt = 1;
+
+	if(pPlayer->IsPaused())
+		return;
+	if(pPlayer->GetTeam() == TEAM_SPECTATORS)
+	{
+		if(g_Config.m_SvSpamprotection && pPlayer->m_LastSetTeam && pPlayer->m_LastSetTeam + pSelf->Server()->TickSpeed() * g_Config.m_SvTeamChangeDelay > pSelf->Server()->Tick())
+			return;
+		pSelf->m_VoteUpdate = true;
+		pPlayer->SetTeam(0);
+	}
+	else
+	{
+		if(pPlayer->m_LastKill && pPlayer->m_LastKill + pSelf->Server()->TickSpeed() / 2 > pSelf->Server()->Tick())
+			return;
+		if(!pPlayer->GetCharacter())
+			return;
+		pPlayer->m_LastKill = pSelf->Server()->Tick();
+		pPlayer->KillCharacter(WEAPON_SELF);
+		pPlayer->Respawn();
+	}
+}
+
+// Unique
+void CGameContext::ConBlue(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	if(!pSelf->IsUniqueRace())
+		return;
+
+	if(!CheckClientId(pResult->m_ClientId))
+		return;
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
+	if(!pPlayer)
+		return;
+
+	if(!g_Config.m_SvFastcap)
+	{
+		pSelf->SendChatTarget(pPlayer->GetCid(), "You are not playing Fastcap.");
+		return;
+	}
+
+	pPlayer->m_FastcapSpawnAt = 2;
+
+	if(pPlayer->IsPaused())
+		return;
+	if(pPlayer->GetTeam() == TEAM_SPECTATORS)
+	{
+		if(g_Config.m_SvSpamprotection && pPlayer->m_LastSetTeam && pPlayer->m_LastSetTeam + pSelf->Server()->TickSpeed() * g_Config.m_SvTeamChangeDelay > pSelf->Server()->Tick())
+			return;
+		pSelf->m_VoteUpdate = true;
+		pPlayer->SetTeam(0);
+	}
+	else
+	{
+		if(pPlayer->m_LastKill && pPlayer->m_LastKill + pSelf->Server()->TickSpeed() / 2 > pSelf->Server()->Tick())
+			return;
+		if(!pPlayer->GetCharacter())
+			return;
+		pPlayer->m_LastKill = pSelf->Server()->Tick();
+		pPlayer->KillCharacter(WEAPON_SELF);
+		pPlayer->Respawn();
+	}
 }

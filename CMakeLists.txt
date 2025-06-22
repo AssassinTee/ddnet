@@ -140,15 +140,15 @@ endif()
 set(OpenGL_GL_PREFERENCE LEGACY)
 
 # Set the default build type to Release
-if(NOT(CMAKE_BUILD_TYPE))
-  if(NOT(DEV))
+if(NOT (CMAKE_BUILD_TYPE))
+  if(NOT (DEV))
     set(CMAKE_BUILD_TYPE Release)
   else()
     set(CMAKE_BUILD_TYPE Debug)
   endif()
 endif()
 
-if(NOT(CMAKE_BUILD_TYPE MATCHES "^(Release|Debug|RelWithDebInfo|MinSizeRel)$"))
+if(NOT (CMAKE_BUILD_TYPE MATCHES "^(Release|Debug|RelWithDebInfo|MinSizeRel)$"))
   message(WARNING "Unknown CMAKE_BUILD_TYPE, should be one of Release, Debug, RelWithDebInfo or MinSizeRel")
 endif()
 
@@ -458,7 +458,7 @@ function(set_extra_dirs_include VARIABLE NAME LIBRARY)
   if(IS_BUNDLED)
     set(TMP_TARGET_OS ${TARGET_OS})
     if(TARGET_OS STREQUAL "emscripten")
-     set(TMP_TARGET_OS webasm)
+      set(TMP_TARGET_OS webasm)
     endif()
     set("HINTS_${VARIABLE}_INCLUDEDIR" "ddnet-libs/${NAME}/include" "ddnet-libs/${NAME}/include/${TMP_TARGET_OS}" PARENT_SCOPE)
   endif()
@@ -506,7 +506,7 @@ find_package(Freetype)
 if(DOWNLOAD_GTEST)
   find_package(Git)
 endif()
-if(NOT(TARGET_OS STREQUAL "android"))
+if(NOT (TARGET_OS STREQUAL "android"))
   find_package(GLEW)
 endif()
 find_package(GTest)
@@ -631,31 +631,31 @@ if(CLIENT AND VULKAN)
   show_dependency_status("Vulkan" VULKAN)
 endif()
 
-if(NOT(CURL_FOUND))
+if(NOT (CURL_FOUND))
   message(SEND_ERROR "You must install Curl to compile ${CMAKE_PROJECT_NAME}")
 endif()
-if(NOT(Python3_FOUND))
+if(NOT (Python3_FOUND))
   message(SEND_ERROR "You must install Python to compile ${CMAKE_PROJECT_NAME}")
 endif()
-if(NOT(RUST_FOUND))
+if(NOT (RUST_FOUND))
   message(SEND_ERROR "You must install Rust and Cargo to compile ${CMAKE_PROJECT_NAME}")
 endif()
-if(NOT(SQLite3_FOUND))
+if(NOT (SQLite3_FOUND))
   message(SEND_ERROR "You must install SQLite3 to compile ${CMAKE_PROJECT_NAME}")
 endif()
 
-if(MYSQL AND NOT(MYSQL_FOUND))
+if(MYSQL AND NOT (MYSQL_FOUND))
   message(SEND_ERROR "You must install MySQL to compile the ${CMAKE_PROJECT_NAME} server with MySQL support")
 endif()
 
-if(WEBSOCKETS AND NOT(WEBSOCKETS_FOUND))
+if(WEBSOCKETS AND NOT (WEBSOCKETS_FOUND))
   message(SEND_ERROR "You must install libwebsockets to compile the ${CMAKE_PROJECT_NAME} server with websocket support")
 endif()
 
-if(UPNP AND NOT(MINIUPNPC_FOUND))
+if(UPNP AND NOT (MINIUPNPC_FOUND))
   message(SEND_ERROR "You must install miniupnpc to compile the ${CMAKE_PROJECT_NAME} server with UPnP support")
 endif()
-if(DISCORD AND NOT(DISCORDSDK_FOUND))
+if(DISCORD AND NOT (DISCORDSDK_FOUND))
   message(SEND_ERROR "You must install the Discord SDK to compile the ${CMAKE_PROJECT_NAME} client with Discord support")
 endif()
 if(DISCORD_DYNAMIC)
@@ -666,28 +666,28 @@ if(DISCORD_DYNAMIC)
     message(SEND_ERROR "You must enable the DISCORD flag if you want to link the Discord SDK")
   endif()
 endif()
-if(NOT(PNG_FOUND))
+if(NOT (PNG_FOUND))
   message(SEND_ERROR "You must install libpng to compile ${CMAKE_PROJECT_NAME}")
 endif()
-if(CLIENT AND NOT(FREETYPE_FOUND))
+if(CLIENT AND NOT (FREETYPE_FOUND))
   message(SEND_ERROR "You must install Freetype to compile the ${CMAKE_PROJECT_NAME} client")
 endif()
-if(CLIENT AND NOT(OGG_FOUND))
+if(CLIENT AND NOT (OGG_FOUND))
   message(SEND_ERROR "You must install Ogg to compile the ${CMAKE_PROJECT_NAME} client")
 endif()
-if(CLIENT AND NOT(OPUS_FOUND))
+if(CLIENT AND NOT (OPUS_FOUND))
   message(SEND_ERROR "You must install Opus to compile the ${CMAKE_PROJECT_NAME} client")
 endif()
-if(CLIENT AND NOT(OPUSFILE_FOUND))
+if(CLIENT AND NOT (OPUSFILE_FOUND))
   message(SEND_ERROR "You must install Opusfile to compile the ${CMAKE_PROJECT_NAME} client")
 endif()
-if(CLIENT AND NOT(SDL2_FOUND))
+if(CLIENT AND NOT (SDL2_FOUND))
   message(SEND_ERROR "You must install SDL2 to compile the ${CMAKE_PROJECT_NAME} client")
 endif()
-if(TARGET_OS STREQUAL "android" AND NOT(CRYPTO_FOUND))
+if(TARGET_OS STREQUAL "android" AND NOT (CRYPTO_FOUND))
   message(SEND_ERROR "You must install OpenSSL to compile ${CMAKE_PROJECT_NAME}")
 endif()
-if(NOT(GTEST_FOUND))
+if(NOT (GTEST_FOUND))
   if(DOWNLOAD_GTEST)
     if(GIT_FOUND)
       message(STATUS "Automatically downloading GTest to be able to run tests")
@@ -700,7 +700,7 @@ if(NOT(GTEST_FOUND))
   endif()
 endif()
 
-if(CLIENT AND VULKAN AND NOT(VULKAN_FOUND))
+if(CLIENT AND VULKAN AND NOT (VULKAN_FOUND))
   message(SEND_ERROR "You must install Vulkan libraries to compile the ${CMAKE_PROJECT_NAME} client")
 endif()
 
@@ -727,18 +727,18 @@ elseif(TARGET_OS STREQUAL "mac")
   set(PLATFORM_CLIENT_LIBS ${COCOA} ${OPENGL})
   set(PLATFORM_LIBS ${CARBON} ${SECURITY})
 elseif(TARGET_OS STREQUAL "haiku")
-    set(PLATFORM_CLIENT)
-    find_package(OpenGL)
-    set(PLATFORM_LIBS GL network)
-    set(PLATFORM_CLIENT_LIBS ${OPENGL_gl_LIBRARY})
-    set(PLATFORM_CLIENT_INCLUDE_DIRS ${OPENGL_INCLUDE_DIR})
+  set(PLATFORM_CLIENT)
+  find_package(OpenGL)
+  set(PLATFORM_LIBS GL network)
+  set(PLATFORM_CLIENT_LIBS ${OPENGL_gl_LIBRARY})
+  set(PLATFORM_CLIENT_INCLUDE_DIRS ${OPENGL_INCLUDE_DIR})
 elseif(TARGET_OS STREQUAL "android")
-    set(PLATFORM_CLIENT
-      src/android/android_main.cpp
-    )
-    set(PLATFORM_LIBS ${TW_ANDROID_LIBS})
-    set(PLATFORM_CLIENT_LIBS ${TW_ANDROID_LIBS_CLIENT})
-    set(PLATFORM_CLIENT_INCLUDE_DIRS)
+  set(PLATFORM_CLIENT
+    src/android/android_main.cpp
+  )
+  set(PLATFORM_LIBS ${TW_ANDROID_LIBS})
+  set(PLATFORM_CLIENT_LIBS ${TW_ANDROID_LIBS_CLIENT})
+  set(PLATFORM_CLIENT_INCLUDE_DIRS)
 elseif(TARGET_OS STREQUAL "emscripten")
   find_package(OpenGL)
   set(PLATFORM_CLIENT_LIBS GL)
@@ -767,7 +767,7 @@ endif()
 # DOWNLOAD GTEST
 ########################################################################
 
-if(NOT(GTEST_FOUND) AND DOWNLOAD_GTEST)
+if(NOT (GTEST_FOUND) AND DOWNLOAD_GTEST)
   set(DDNET_GTEST_VERSION 3d73dee972d0db344bda9b659836612aba6a3564)
   configure_file(cmake/Download_GTest_CMakeLists.txt.in googletest-download/CMakeLists.txt)
   execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
@@ -931,11 +931,11 @@ if(CMAKE_OSX_ARCHITECTURES)
 endif()
 
 set(RUST_SRC
-      ${RUST_BASE}
-      ${RUST_ENGINE_INTERFACE}
-      ${RUST_ENGINE_SHARED}
-      Cargo.toml
-      Cargo.lock
+  ${RUST_BASE}
+  ${RUST_ENGINE_INTERFACE}
+  ${RUST_ENGINE_SHARED}
+  Cargo.toml
+  Cargo.lock
 )
 set(RUST_TARGETS engine_shared)
 if(NOT CMAKE_OSX_ARCHITECTURES)
@@ -1891,12 +1891,12 @@ file(COPY ${COPY_DIRS} DESTINATION .)
 function(generate_source output_file script_parameter)
   add_custom_command(OUTPUT ${output_file}
     COMMAND ${Python3_EXECUTABLE} datasrc/compile.py ${script_parameter}
-      > "${PROJECT_BINARY_DIR}/${output_file}"
+    > "${PROJECT_BINARY_DIR}/${output_file}"
     DEPENDS
-      datasrc/compile.py
-      datasrc/content.py
-      datasrc/datatypes.py
-      datasrc/network.py
+    datasrc/compile.py
+    datasrc/content.py
+    datasrc/datatypes.py
+    datasrc/network.py
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   )
 endfunction()
@@ -1904,12 +1904,12 @@ endfunction()
 function(generate_source7 output_file script_parameter)
   add_custom_command(OUTPUT ${output_file}
     COMMAND ${Python3_EXECUTABLE} -m datasrc.seven.compile ${script_parameter}
-      > "${PROJECT_BINARY_DIR}/${output_file}"
+    > "${PROJECT_BINARY_DIR}/${output_file}"
     DEPENDS
-      datasrc/seven/compile.py
-      datasrc/seven/content.py
-      datasrc/seven/datatypes.py
-      datasrc/seven/network.py
+    datasrc/seven/compile.py
+    datasrc/seven/content.py
+    datasrc/seven/datatypes.py
+    datasrc/seven/network.py
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   )
 endfunction()
@@ -1917,17 +1917,17 @@ endfunction()
 function(generate_maps output_file script_parameter)
   add_custom_command(OUTPUT ${output_file}
     COMMAND ${Python3_EXECUTABLE} datasrc/crosscompile.py ${script_parameter}
-      > "${PROJECT_BINARY_DIR}/${output_file}"
+    > "${PROJECT_BINARY_DIR}/${output_file}"
     DEPENDS
-      datasrc/crosscompile.py
-      datasrc/compile.py
-      datasrc/content.py
-      datasrc/datatypes.py
-      datasrc/network.py
-      datasrc/seven/compile.py
-      datasrc/seven/content.py
-      datasrc/seven/datatypes.py
-      datasrc/seven/network.py
+    datasrc/crosscompile.py
+    datasrc/compile.py
+    datasrc/content.py
+    datasrc/datatypes.py
+    datasrc/network.py
+    datasrc/seven/compile.py
+    datasrc/seven/content.py
+    datasrc/seven/datatypes.py
+    datasrc/seven/network.py
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   )
 endfunction()
@@ -1948,12 +1948,12 @@ if(NOT PROJECT_GIT_DIR_ERROR)
 endif()
 add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/src/game/generated/git_revision.cpp
   COMMAND ${Python3_EXECUTABLE}
-    scripts/git_revision.py
-    > ${PROJECT_BINARY_DIR}/src/game/generated/git_revision.cpp
+  scripts/git_revision.py
+  > ${PROJECT_BINARY_DIR}/src/game/generated/git_revision.cpp
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   DEPENDS
-    ${GIT_REVISION_EXTRA_DEPS}
-    scripts/git_revision.py
+  ${GIT_REVISION_EXTRA_DEPS}
+  scripts/git_revision.py
 )
 generate_source("src/game/generated/client_data.cpp" "client_content_source")
 generate_source("src/game/generated/client_data.h" "client_content_header")
@@ -1975,7 +1975,7 @@ add_custom_command(OUTPUT "src/game/generated/wordlist.h"
   COMMAND ${Python3_EXECUTABLE} scripts/wordlist.py > ${PROJECT_BINARY_DIR}/src/game/generated/wordlist.h
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   DEPENDS
-    scripts/wordlist.py
+  scripts/wordlist.py
 )
 
 ########################################################################
@@ -2618,7 +2618,7 @@ if(CLIENT)
     )
   endif()
   set_property(TARGET game-client
-      PROPERTY OUTPUT_NAME ${CLIENT_EXECUTABLE}
+    PROPERTY OUTPUT_NAME ${CLIENT_EXECUTABLE}
   )
   target_link_libraries(game-client ${LIBS_CLIENT})
 
@@ -2648,7 +2648,7 @@ if(CLIENT)
   endif()
 
   set(PARAMS "${WAVPACK_INCLUDE_DIRS};${WAVPACK_INCLUDE_DIRS}")
-  if(NOT(WAVPACK_OPEN_FILE_INPUT_EX_PARAMS STREQUAL PARAMS))
+  if(NOT (WAVPACK_OPEN_FILE_INPUT_EX_PARAMS STREQUAL PARAMS))
     unset(WAVPACK_OPEN_FILE_INPUT_EX CACHE)
   endif()
   set(WAVPACK_OPEN_FILE_INPUT_EX_PARAMS "${PARAMS}" CACHE INTERNAL "")
@@ -2756,6 +2756,8 @@ if(SERVER)
     gamecontroller.h
     gamemodes/DDRace.cpp
     gamemodes/DDRace.h
+    gamemodes/Unique.cpp
+    gamemodes/Unique.h
     gamemodes/mod.cpp
     gamemodes/mod.h
     gameworld.cpp
@@ -2811,14 +2813,14 @@ if(SERVER)
   )
 
   add_library(game-server-without-main OBJECT
-      ${DEPS}
-      ${SERVER_SRC}
-      $<TARGET_OBJECTS:engine-shared>
-      $<TARGET_OBJECTS:game-shared>
-      $<TARGET_OBJECTS:rust-bridge-shared>
+    ${DEPS}
+    ${SERVER_SRC}
+    $<TARGET_OBJECTS:engine-shared>
+    $<TARGET_OBJECTS:game-shared>
+    $<TARGET_OBJECTS:rust-bridge-shared>
   )
   set_property(TARGET game-server-without-main
-      PROPERTY OUTPUT_NAME ${SERVER_EXECUTABLE}
+    PROPERTY OUTPUT_NAME ${SERVER_EXECUTABLE}
   )
   target_link_libraries(game-server-without-main ${LIBS_SERVER})
   list(APPEND TARGETS_OWN game-server-without-main)
@@ -2849,7 +2851,7 @@ if(SERVER)
     )
   endif()
   set_property(TARGET game-server
-      PROPERTY OUTPUT_NAME ${SERVER_EXECUTABLE}
+    PROPERTY OUTPUT_NAME ${SERVER_EXECUTABLE}
   )
   target_link_libraries(game-server ${LIBS_SERVER})
   list(APPEND TARGETS_OWN game-server)
@@ -2859,7 +2861,7 @@ if(SERVER)
     set(SERVER_LAUNCHER_SRC src/macos/server.mm)
     add_executable(game-server-launcher ${SERVER_LAUNCHER_SRC})
     set_property(TARGET game-server-launcher
-        PROPERTY OUTPUT_NAME ${SERVER_EXECUTABLE}-Launcher
+      PROPERTY OUTPUT_NAME ${SERVER_EXECUTABLE}-Launcher
     )
     target_link_libraries(game-server-launcher ${COCOA})
     list(APPEND TARGETS_OWN game-server-launcher)
@@ -2966,16 +2968,16 @@ file(WRITE ${PROJECT_BINARY_DIR}/checksummed_files.txt ${CHECKSUM_SRC_FILE})
 
 add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/src/game/generated/checksum.cpp
   COMMAND ${Python3_EXECUTABLE}
-    scripts/checksum.py
-    ${PROJECT_BINARY_DIR}/checksummed_files.txt
-    ${PROJECT_BINARY_DIR}/checksummed_extra.txt
-    > ${PROJECT_BINARY_DIR}/src/game/generated/checksum.cpp
+  scripts/checksum.py
+  ${PROJECT_BINARY_DIR}/checksummed_files.txt
+  ${PROJECT_BINARY_DIR}/checksummed_extra.txt
+  > ${PROJECT_BINARY_DIR}/src/game/generated/checksum.cpp
   WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
   DEPENDS
-    ${CHECKSUM_SRC}
-    ${PROJECT_BINARY_DIR}/checksummed_files.txt
-    ${PROJECT_BINARY_DIR}/checksummed_extra.txt
-    scripts/checksum.py
+  ${CHECKSUM_SRC}
+  ${PROJECT_BINARY_DIR}/checksummed_files.txt
+  ${PROJECT_BINARY_DIR}/checksummed_extra.txt
+  scripts/checksum.py
 )
 
 ########################################################################
@@ -3185,7 +3187,7 @@ set(CPACK_SYSTEM_NAME ${CMAKE_SYSTEM_NAME})
 
 if(TARGET_OS AND TARGET_BITS)
   if(TARGET_OS STREQUAL "windows")
-    if (TARGET_CPU_ARCHITECTURE STREQUAL "arm64")
+    if(TARGET_CPU_ARCHITECTURE STREQUAL "arm64")
       set(CPACK_SYSTEM_NAME "win-arm64")
     else()
       set(CPACK_SYSTEM_NAME "win${TARGET_BITS}")
@@ -3409,19 +3411,19 @@ if(CLIENT AND DMGBUILD)
     COMMAND dmgbuild -s ${PROJECT_SOURCE_DIR}/other/dmgsettings.py -D client=${DMG_TMPDIR}/${CLIENT_EXECUTABLE}.app -D server=${DMG_TMPDIR}/${SERVER_EXECUTABLE}.app -D background=${PROJECT_SOURCE_DIR}/other/dmgbackground.png "${CPACK_PACKAGE_NAME} ${CPACK_PACKAGE_VERSION}" ${CPACK_PACKAGE_FILE_NAME}.dmg
 
     DEPENDS
-      game-client
-      ${TARGET_STEAMAPI}
-      game-server-launcher
-      game-server
-      ${PROJECT_BINARY_DIR}/bundle/client/Info.plist
-      ${PROJECT_BINARY_DIR}/bundle/server/Info.plist
-      data
-      other/bundle/client/PkgInfo
-      other/bundle/server/PkgInfo
-      other/dmgbackground.png
-      other/dmgsettings.py
-      other/icons/${CLIENT_EXECUTABLE}.icns
-      other/icons/${SERVER_EXECUTABLE}.icns
+    game-client
+    ${TARGET_STEAMAPI}
+    game-server-launcher
+    game-server
+    ${PROJECT_BINARY_DIR}/bundle/client/Info.plist
+    ${PROJECT_BINARY_DIR}/bundle/server/Info.plist
+    data
+    other/bundle/client/PkgInfo
+    other/bundle/server/PkgInfo
+    other/dmgbackground.png
+    other/dmgsettings.py
+    other/icons/${CLIENT_EXECUTABLE}.icns
+    other/icons/${SERVER_EXECUTABLE}.icns
   )
   add_custom_target(package_dmg DEPENDS ${CPACK_PACKAGE_FILE_NAME}.dmg)
   list(APPEND PACKAGE_TARGETS package_dmg)

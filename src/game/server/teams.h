@@ -50,7 +50,7 @@ class CGameTeams
 	void KillTeam(int Team, int NewStrongId, int ExceptId = -1);
 	bool TeamFinished(int Team);
 	void OnTeamFinish(int Team, CPlayer **Players, unsigned int Size, int TimeTicks, const char *pTimestamp);
-	void OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp);
+	void OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp, float FractionOfTick);
 
 public:
 	CTeamsCore m_Core;
@@ -63,15 +63,15 @@ public:
 	class CGameContext *GameServer();
 	class IServer *Server();
 
-	void OnCharacterStart(int ClientId);
-	void OnCharacterFinish(int ClientId);
+	void OnCharacterStart(int ClientId, float FractionOfTick = 1.0f);
+	void OnCharacterFinish(int ClientId, float FractionOfTick = 1.0f);
 	void OnCharacterSpawn(int ClientId);
 	void OnCharacterDeath(int ClientId, int Weapon);
 	void Tick();
 
 	// returns nullptr if successful, error string if failed
 	const char *SetCharacterTeam(int ClientId, int Team);
-	void CheckTeamFinished(int Team);
+	void CheckTeamFinished(int Team, float FractionOfTick = 1.0f);
 
 	void ChangeTeamState(int Team, ETeamState State);
 
@@ -94,9 +94,10 @@ public:
 
 	ERaceState GetDDRaceState(const CPlayer *Player) const;
 	int GetStartTime(CPlayer *Player);
+	float GetStartTimeOffset(CPlayer *Player);
 	float *GetCurrentTimeCp(CPlayer *Player);
 	void SetDDRaceState(CPlayer *Player, ERaceState DDRaceState);
-	void SetStartTime(CPlayer *Player, int StartTime);
+	void SetStartTime(CPlayer *Player, int StartTime, float FractionOfTick);
 	void SetLastTimeCp(CPlayer *Player, int LastTimeCp);
 	void KillCharacterOrTeam(int ClientId, int Team);
 	void ResetSavedTeam(int ClientId, int Team);

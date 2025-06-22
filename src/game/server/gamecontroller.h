@@ -92,7 +92,7 @@ public:
 	*/
 	virtual void OnCharacterSpawn(class CCharacter *pChr);
 
-	virtual void HandleCharacterTiles(class CCharacter *pChr, int MapIndex);
+	virtual void HandleCharacterTiles(CCharacter *pChr, int MapIndex, float FractionOfTick);
 	virtual void SetArmorProgress(CCharacter *pCharacter, int Progress){};
 
 	/*
@@ -128,8 +128,13 @@ public:
 
 	virtual void Snap(int SnappingClient);
 
+	// Unique
+	int SnapRecordFlag(int SnappingClient);
+	int SnapFastcapFlag(int SnappingClient);
+	void SnapFlags(int SnappingClient);
+
 	//spawn
-	virtual bool CanSpawn(int Team, vec2 *pOutPos, int DDTeam);
+	virtual bool CanSpawn(int Team, int SpawnAt, vec2 *pOutPos, int DDTeam);
 
 	virtual void DoTeamChange(class CPlayer *pPlayer, int Team, bool DoChatMsg = true);
 
@@ -146,11 +151,23 @@ public:
 	CClientMask GetMaskForPlayerWorldEvent(int Asker, int ExceptID = -1);
 
 	bool IsTeamPlay() const { return m_GameFlags & GAMEFLAG_TEAMS; }
+
+	// Unique
+	virtual bool IsUniqueRace() const { return false; }
+
 	// DDRace
 
 	float m_CurrentRecord;
 	CGameTeams &Teams() { return m_Teams; }
 	std::shared_ptr<CScoreLoadBestTimeResult> m_pLoadBestTimeResult;
+
+	// Unique - TODO move into Unique.cpp
+	char m_aCurrentRecordHolder[16];
+	void UpdateRecordFlag();
+	uint32_t m_CurrentRecordQueueId;
+	CCharacter *m_pRecordFlagChar;
+	vec2 m_FastcapFlag1;
+	vec2 m_FastcapFlag2;
 };
 
 #endif
