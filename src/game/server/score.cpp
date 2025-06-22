@@ -33,7 +33,8 @@ void CScore::ExecPlayerThread(
 	const char *pThreadName,
 	int ClientId,
 	const char *pName,
-	int Offset)
+	int Offset,
+	bool IsUnique)
 {
 	auto pResult = NewSqlPlayerResult(ClientId);
 	if(pResult == nullptr)
@@ -44,6 +45,7 @@ void CScore::ExecPlayerThread(
 	str_copy(Tmp->m_aServer, g_Config.m_SvSqlServerName, sizeof(Tmp->m_aServer));
 	str_copy(Tmp->m_aRequestingPlayer, Server()->ClientName(ClientId), sizeof(Tmp->m_aRequestingPlayer));
 	Tmp->m_Offset = Offset;
+	Tmp->m_IsUnique = IsUnique;
 
 	m_pPool->Execute(pFuncPtr, std::move(Tmp), pThreadName);
 }
@@ -122,29 +124,29 @@ void CScore::LoadBestTime()
 
 void CScore::LoadPlayerData(int ClientId, const char *pName)
 {
-	ExecPlayerThread(CScoreWorker::LoadPlayerData, "load player data", ClientId, pName, 0);
+	ExecPlayerThread(CScoreWorker::LoadPlayerData, "load player data", ClientId, pName, 0, m_pGameServer->IsUniqueRace());
 }
 
 void CScore::LoadPlayerTimeCp(int ClientId, const char *pName)
 {
-	ExecPlayerThread(CScoreWorker::LoadPlayerTimeCp, "load player timecp", ClientId, pName, 0);
+	ExecPlayerThread(CScoreWorker::LoadPlayerTimeCp, "load player timecp", ClientId, pName, 0, m_pGameServer->IsUniqueRace());
 }
 
 void CScore::MapVote(int ClientId, const char *pMapName)
 {
 	if(RateLimitPlayer(ClientId))
 		return;
-	ExecPlayerThread(CScoreWorker::MapVote, "map vote", ClientId, pMapName, 0);
+	ExecPlayerThread(CScoreWorker::MapVote, "map vote", ClientId, pMapName, 0, m_pGameServer->IsUniqueRace());
 }
 
 void CScore::MapInfo(int ClientId, const char *pMapName)
 {
 	if(RateLimitPlayer(ClientId))
 		return;
-	ExecPlayerThread(CScoreWorker::MapInfo, "map info", ClientId, pMapName, 0);
+	ExecPlayerThread(CScoreWorker::MapInfo, "map info", ClientId, pMapName, 0, m_pGameServer->IsUniqueRace());
 }
 
-void CScore::SaveScore(int ClientId, int TimeTicks, const char *pTimestamp, const float aTimeCp[NUM_CHECKPOINTS], bool NotEligible)
+void CScore::SaveScore(int ClientId, float Time, int TimeTicks, const char *pTimestamp, const float aTimeCp[NUM_CHECKPOINTS], bool NotEligible)
 {
 	CConsole *pCon = (CConsole *)GameServer()->Console();
 	if(pCon->Cheated() || NotEligible)
@@ -161,7 +163,10 @@ void CScore::SaveScore(int ClientId, int TimeTicks, const char *pTimestamp, cons
 	FormatUuid(GameServer()->GameUuid(), Tmp->m_aGameUuid, sizeof(Tmp->m_aGameUuid));
 	Tmp->m_ClientId = ClientId;
 	str_copy(Tmp->m_aName, Server()->ClientName(ClientId), sizeof(Tmp->m_aName));
-	Tmp->m_Time = (float)(TimeTicks) / (float)Server()->TickSpeed();
+	if(GameServer()->IsUniqueRace())
+		Tmp->m_Time = Time;
+	else
+		Tmp->m_Time = (float)(TimeTicks) / (float)Server()->TickSpeed();
 	str_copy(Tmp->m_aTimestamp, pTimestamp, sizeof(Tmp->m_aTimestamp));
 	for(int i = 0; i < NUM_CHECKPOINTS; i++)
 		Tmp->m_aCurrentTimeCp[i] = aTimeCp[i];
@@ -199,63 +204,63 @@ void CScore::ShowRank(int ClientId, const char *pName)
 {
 	if(RateLimitPlayer(ClientId))
 		return;
-	ExecPlayerThread(CScoreWorker::ShowRank, "show rank", ClientId, pName, 0);
+	ExecPlayerThread(CScoreWorker::ShowRank, "show rank", ClientId, pName, 0, m_pGameServer->IsUniqueRace());
 }
 
 void CScore::ShowTeamRank(int ClientId, const char *pName)
 {
 	if(RateLimitPlayer(ClientId))
 		return;
-	ExecPlayerThread(CScoreWorker::ShowTeamRank, "show team rank", ClientId, pName, 0);
+	ExecPlayerThread(CScoreWorker::ShowTeamRank, "show team rank", ClientId, pName, 0, m_pGameServer->IsUniqueRace());
 }
 
 void CScore::ShowTop(int ClientId, int Offset)
 {
 	if(RateLimitPlayer(ClientId))
 		return;
-	ExecPlayerThread(CScoreWorker::ShowTop, "show top5", ClientId, "", Offset);
+	ExecPlayerThread(CScoreWorker::ShowTop, "show top5", ClientId, "", Offset, m_pGameServer->IsUniqueRace());
 }
 
 void CScore::ShowTeamTop5(int ClientId, int Offset)
 {
 	if(RateLimitPlayer(ClientId))
 		return;
-	ExecPlayerThread(CScoreWorker::ShowTeamTop5, "show team top5", ClientId, "", Offset);
+	ExecPlayerThread(CScoreWorker::ShowTeamTop5, "show team top5", ClientId, "", Offset, m_pGameServer->IsUniqueRace());
 }
 
 void CScore::ShowPlayerTeamTop5(int ClientId, const char *pName, int Offset)
 {
 	if(RateLimitPlayer(ClientId))
 		return;
-	ExecPlayerThread(CScoreWorker::ShowPlayerTeamTop5, "show team top5 player", ClientId, pName, Offset);
+	ExecPlayerThread(CScoreWorker::ShowPlayerTeamTop5, "show team top5 player", ClientId, pName, Offset, m_pGameServer->IsUniqueRace());
 }
 
 void CScore::ShowTimes(int ClientId, int Offset)
 {
 	if(RateLimitPlayer(ClientId))
 		return;
-	ExecPlayerThread(CScoreWorker::ShowTimes, "show times", ClientId, "", Offset);
+	ExecPlayerThread(CScoreWorker::ShowTimes, "show times", ClientId, "", Offset, m_pGameServer->IsUniqueRace());
 }
 
 void CScore::ShowTimes(int ClientId, const char *pName, int Offset)
 {
 	if(RateLimitPlayer(ClientId))
 		return;
-	ExecPlayerThread(CScoreWorker::ShowTimes, "show times", ClientId, pName, Offset);
+	ExecPlayerThread(CScoreWorker::ShowTimes, "show times", ClientId, pName, Offset, m_pGameServer->IsUniqueRace());
 }
 
 void CScore::ShowPoints(int ClientId, const char *pName)
 {
 	if(RateLimitPlayer(ClientId))
 		return;
-	ExecPlayerThread(CScoreWorker::ShowPoints, "show points", ClientId, pName, 0);
+	ExecPlayerThread(CScoreWorker::ShowPoints, "show points", ClientId, pName, 0, m_pGameServer->IsUniqueRace());
 }
 
 void CScore::ShowTopPoints(int ClientId, int Offset)
 {
 	if(RateLimitPlayer(ClientId))
 		return;
-	ExecPlayerThread(CScoreWorker::ShowTopPoints, "show top points", ClientId, "", Offset);
+	ExecPlayerThread(CScoreWorker::ShowTopPoints, "show top points", ClientId, "", Offset, m_pGameServer->IsUniqueRace());
 }
 
 void CScore::RandomMap(int ClientId, int Stars)
@@ -395,5 +400,5 @@ void CScore::GetSaves(int ClientId)
 {
 	if(RateLimitPlayer(ClientId))
 		return;
-	ExecPlayerThread(CScoreWorker::GetSaves, "get saves", ClientId, "", 0);
+	ExecPlayerThread(CScoreWorker::GetSaves, "get saves", ClientId, "", 0, m_pGameServer->IsUniqueRace());
 }
