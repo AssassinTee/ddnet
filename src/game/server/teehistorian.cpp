@@ -69,7 +69,6 @@ void CTeeHistorian::WriteHeader(const CGameInfo *pGameInfo)
 	char aMapSha256[SHA256_MAXSTRSIZE];
 
 	FormatUuid(pGameInfo->m_GameUuid, aGameUuid, sizeof(aGameUuid));
-	str_timestamp_ex(pGameInfo->m_StartTime, aStartTime, sizeof(aStartTime), "%Y-%m-%dT%H:%M:%S%z");
 	sha256_str(pGameInfo->m_MapSha256, aMapSha256, sizeof(aMapSha256));
 
 	char aCommentBuffer[128];

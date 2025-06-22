@@ -16,27 +16,13 @@ void CGameContext::ConCredits(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *) pUserData;
 
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credits",
-		"DDNet is run by the DDNet staff (DDNet.tw/staff)");
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credits",
-		"Great maps and many ideas from the great community");
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credits",
-		"Help and code by eeeee, HMH, east, CookieMichal, Learath2,");
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credits",
-		"Savander, laxa, Tobii, BeaR, Wohoo, nuborn, timakro, Shiki,");
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credits",
-		"trml, Soreu, hi_leute_gll, Lady Saavik, Chairn, heinrich5991,");
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credits",
-		"swick, oy, necropotame, Ryozuki, Redix, d3fault, marcelherd,");
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credits",
-		"BannZay, ACTom, SiuFuWong, PathosEthosLogos, TsFreddie,");
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credits",
-		"Jupeyy, noby, ChillerDragon, ZombieToad, weez15, z6zzz,");
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credits",
-		"Piepow, QingGo, RafaelFF, sctt & others.");
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credits",
-		"Based on DDRace by the DDRace developers,");
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credits",
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit",
+		"Unique Race is run by Tezcan, timakro and Ryozuki.");
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit",
+		"It is a mod of DDNet run by the DDNet staff (DDNet.tw/staff),");
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit",
+		"that is based on DDRace by the DDRace developers,");
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "credit",
 		"which is a mod of Teeworlds by the Teeworlds developers.");
 }
 
@@ -488,7 +474,7 @@ void CGameContext::ConMap(IConsole::IResult *pResult, void *pUserData)
 
 	if (pResult->NumArguments() <= 0)
 	{
-		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "map", "Example: /map adr3 to call vote for Adrenaline 3. This means that the map name must start with 'a' and contain the characters 'd', 'r' and '3' in that order");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "map", "Example: /map tez3 to call vote for run_tezcan3. This means that the map name must start with 't' or 'run_t' and contain the characters 'e', 'z' and '3' in that order");
 		return;
 	}
 
@@ -590,6 +576,9 @@ void CGameContext::ConSave(IConsole::IResult *pResult, void *pUserData)
 
 	const char* pCode = pResult->GetString(0);
 	char aCountry[5];
+	pSelf->Score()->SaveTeam(Team, pCode, pResult->m_ClientID, aCountry);
+	return;
+
 	if(str_length(pCode) > 3 && pCode[0] >= 'A' && pCode[0] <= 'Z' && pCode[1] >= 'A'
 		&& pCode[1] <= 'Z' && pCode[2] >= 'A' && pCode[2] <= 'Z')
 	{
@@ -1181,99 +1170,6 @@ bool CheckClientID(int ClientID)
 	return true;
 }
 
-void CGameContext::ConSayTime(IConsole::IResult *pResult, void *pUserData)
-{
-	CGameContext *pSelf = (CGameContext *) pUserData;
-	if (!CheckClientID(pResult->m_ClientID))
-		return;
-
-	int ClientID;
-	char aBufname[MAX_NAME_LENGTH];
-
-	if (pResult->NumArguments() > 0)
-	{
-		for(ClientID = 0; ClientID < MAX_CLIENTS; ClientID++)
-			if (str_comp(pResult->GetString(0), pSelf->Server()->ClientName(ClientID)) == 0)
-				break;
-
-		if(ClientID == MAX_CLIENTS)
-			return;
-
-		str_format(aBufname, sizeof(aBufname), "%s's", pSelf->Server()->ClientName(ClientID));
-	}
-	else
-	{
-		str_copy(aBufname, "Your", sizeof(aBufname));
-		ClientID = pResult->m_ClientID;
-	}
-
-	CPlayer *pPlayer = pSelf->m_apPlayers[ClientID];
-	if (!pPlayer)
-		return;
-	CCharacter* pChr = pPlayer->GetCharacter();
-	if (!pChr)
-		return;
-	if(pChr->m_DDRaceState != DDRACE_STARTED)
-		return;
-
-	char aBuftime[64];
-	int IntTime = (int)((float)(pSelf->Server()->Tick() - pChr->m_StartTime)
-			/ ((float)pSelf->Server()->TickSpeed()));
-	str_format(aBuftime, sizeof(aBuftime), "%s time is %s%d:%s%d",
-			aBufname,
-			((IntTime / 60) > 9) ? "" : "0", IntTime / 60,
-			((IntTime % 60) > 9) ? "" : "0", IntTime % 60);
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "time", aBuftime);
-}
-
-void CGameContext::ConSayTimeAll(IConsole::IResult *pResult, void *pUserData)
-{
-	CGameContext *pSelf = (CGameContext *) pUserData;
-	if (!CheckClientID(pResult->m_ClientID))
-		return;
-
-	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientID];
-	if (!pPlayer)
-		return;
-	CCharacter* pChr = pPlayer->GetCharacter();
-	if (!pChr)
-		return;
-	if(pChr->m_DDRaceState != DDRACE_STARTED)
-		return;
-
-	char aBuftime[64];
-	int IntTime = (int)((float)(pSelf->Server()->Tick() - pChr->m_StartTime)
-			/ ((float)pSelf->Server()->TickSpeed()));
-	str_format(aBuftime, sizeof(aBuftime),
-			"%s\'s current race time is %s%d:%s%d",
-			pSelf->Server()->ClientName(pResult->m_ClientID),
-			((IntTime / 60) > 9) ? "" : "0", IntTime / 60,
-			((IntTime % 60) > 9) ? "" : "0", IntTime % 60);
-	pSelf->SendChat(-1, CGameContext::CHAT_ALL, aBuftime, pResult->m_ClientID);
-}
-
-void CGameContext::ConTime(IConsole::IResult *pResult, void *pUserData)
-{
-	CGameContext *pSelf = (CGameContext *) pUserData;
-	if (!CheckClientID(pResult->m_ClientID))
-		return;
-
-	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientID];
-	if (!pPlayer)
-		return;
-	CCharacter* pChr = pPlayer->GetCharacter();
-	if (!pChr)
-		return;
-
-	char aBuftime[64];
-	int IntTime = (int)((float)(pSelf->Server()->Tick() - pChr->m_StartTime)
-			/ ((float)pSelf->Server()->TickSpeed()));
-	str_format(aBuftime, sizeof(aBuftime), "Your time is %s%d:%s%d",
-				((IntTime / 60) > 9) ? "" : "0", IntTime / 60,
-				((IntTime % 60) > 9) ? "" : "0", IntTime % 60);
-	pSelf->SendBroadcast(aBuftime, pResult->m_ClientID);
-}
-
 static const char s_aaMsg[3][128] = {"game/round timer.", "broadcast.", "both game/round timer and broadcast."};
 
 void CGameContext::ConSetTimerType(IConsole::IResult *pResult, void *pUserData)
@@ -1382,7 +1278,7 @@ void CGameContext::ConProtectedKill(IConsole::IResult *pResult, void *pUserData)
 	if (!pChr)
 		return;
 
-	int CurrTime = (pSelf->Server()->Tick() - pChr->m_StartTime) / pSelf->Server()->TickSpeed();
+	int CurrTime = (pSelf->Server()->Tick() - pChr->m_StartTime/20) / pSelf->Server()->TickSpeed();
 	if(g_Config.m_SvKillProtection != 0 && CurrTime >= (60 * g_Config.m_SvKillProtection) && pChr->m_DDRaceState == DDRACE_STARTED)
 	{
 			pPlayer->KillCharacter(WEAPON_SELF);
@@ -1469,6 +1365,98 @@ void CGameContext::ConModhelp(IConsole::IResult *pResult, void *pUserData)
 	}
 }
 
+void CGameContext::ConShowFlag(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *) pUserData;
+	if (!CheckClientID(pResult->m_ClientID))
+		return;
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientID];
+	if (!pPlayer)
+		return;
+
+	if (pResult->NumArguments())
+		pPlayer->m_ShowFlag = pResult->GetInteger(0);
+	else
+		pPlayer->m_ShowFlag = !pPlayer->m_ShowFlag;
+	pSelf->m_pController->UpdateRecordFlag();
+}
+
+void CGameContext::ConRed(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *) pUserData;
+	if (!CheckClientID(pResult->m_ClientID))
+		return;
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientID];
+	if (!pPlayer)
+		return;
+
+	if(!g_Config.m_SvFastcap)
+	{
+		pSelf->SendChatTarget(pPlayer->GetCID(), "You are not playing Fastcap.");
+		return;
+	}
+
+	pPlayer->m_FastcapSpawnAt = 1;
+
+	if(pPlayer->IsPaused())
+		return;
+	if(pPlayer->GetTeam() == TEAM_SPECTATORS)
+	{
+		if(g_Config.m_SvSpamprotection && pPlayer->m_LastSetTeam && pPlayer->m_LastSetTeam + pSelf->Server()->TickSpeed() * g_Config.m_SvTeamChangeDelay > pSelf->Server()->Tick())
+			return;
+		pSelf->m_VoteUpdate = true;
+		pPlayer->SetTeam(0);
+	}
+	else
+	{
+		if(pPlayer->m_LastKill && pPlayer->m_LastKill+pSelf->Server()->TickSpeed()/2 > pSelf->Server()->Tick())
+			return;
+		if(!pPlayer->GetCharacter())
+			return;
+		pPlayer->m_LastKill = pSelf->Server()->Tick();
+		pPlayer->KillCharacter(WEAPON_SELF);
+		pPlayer->Respawn();
+	}
+}
+
+void CGameContext::ConBlue(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *) pUserData;
+	if (!CheckClientID(pResult->m_ClientID))
+		return;
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientID];
+	if (!pPlayer)
+		return;
+
+	if(!g_Config.m_SvFastcap)
+	{
+		pSelf->SendChatTarget(pPlayer->GetCID(), "You are not playing Fastcap.");
+		return;
+	}
+
+	pPlayer->m_FastcapSpawnAt = 2;
+
+	if(pPlayer->IsPaused())
+		return;
+	if(pPlayer->GetTeam() == TEAM_SPECTATORS)
+	{
+		if(g_Config.m_SvSpamprotection && pPlayer->m_LastSetTeam && pPlayer->m_LastSetTeam + pSelf->Server()->TickSpeed() * g_Config.m_SvTeamChangeDelay > pSelf->Server()->Tick())
+			return;
+		pSelf->m_VoteUpdate = true;
+		pPlayer->SetTeam(0);
+	}
+	else
+	{
+		if(pPlayer->m_LastKill && pPlayer->m_LastKill+pSelf->Server()->TickSpeed()/2 > pSelf->Server()->Tick())
+			return;
+		if(!pPlayer->GetCharacter())
+			return;
+		pPlayer->m_LastKill = pSelf->Server()->Tick();
+		pPlayer->KillCharacter(WEAPON_SELF);
+		pPlayer->Respawn();
+	}
+}
+
 #if defined(CONF_SQL)
 void CGameContext::ConPoints(IConsole::IResult *pResult, void *pUserData)
 {
@@ -1528,5 +1516,31 @@ void CGameContext::ConTopPoints(IConsole::IResult *pResult, void *pUserData)
 
 	if(pSelf->m_apPlayers[pResult->m_ClientID] && g_Config.m_SvUseSQL)
 		pSelf->m_apPlayers[pResult->m_ClientID]->m_LastSQLQuery = pSelf->Server()->Tick();
+}
+#endif
+
+#if defined(CONF_SQL)
+void CGameContext::ConMapPoints(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *) pUserData;
+	if (!CheckClientID(pResult->m_ClientID))
+		return;
+
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientID];
+	if (!pPlayer)
+		return;
+
+	if(g_Config.m_SvUseSQL)
+		if(pPlayer->m_LastSQLQuery + g_Config.m_SvSqlQueriesDelay * pSelf->Server()->TickSpeed() >= pSelf->Server()->Tick())
+			return;
+
+	if (pResult->NumArguments() > 0)
+		pSelf->Score()->ShowMapPoints(pResult->m_ClientID, pResult->GetString(0));
+	else
+		pSelf->Score()->ShowMapPoints(pResult->m_ClientID,
+				pSelf->Server()->ClientName(pResult->m_ClientID));
+
+	if(g_Config.m_SvUseSQL)
+		pPlayer->m_LastSQLQuery = pSelf->Server()->Tick();
 }
 #endif

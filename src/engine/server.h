@@ -105,6 +105,8 @@ public:
 
 	bool Translate(int& Target, int Client)
 	{
+		if(IsSixup(Client))
+			return true;
 		CClientInfo Info;
 		GetClientInfo(Client, &Info);
 		if (Info.m_ClientVersion >= VERSION_DDNET_OLD)
@@ -125,6 +127,8 @@ public:
 
 	bool ReverseTranslate(int& Target, int Client)
 	{
+		if(IsSixup(Client))
+			return true;
 		CClientInfo Info;
 		GetClientInfo(Client, &Info);
 		if (Info.m_ClientVersion >= VERSION_DDNET_OLD)
@@ -187,6 +191,10 @@ public:
 	virtual void SetTimeoutProtected(int ClientID) = 0;
 
 	virtual void SetErrorShutdown(const char *pReason) = 0;
+
+	virtual bool IsSixup(int ClientID) = 0;
+	virtual bool GetJoinSpec(int ClientID) = 0;
+	virtual void SetJoinSpec(int ClientID, bool JoinSpec) = 0;
 };
 
 class IGameServer : public IInterface

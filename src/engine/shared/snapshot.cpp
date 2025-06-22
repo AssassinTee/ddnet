@@ -4,6 +4,28 @@
 #include "compression.h"
 #include "uuid_manager.h"
 
+#include <game/generated/protocol.h>
+
+static int ObjTypeToSixup(int Type)
+{
+	int Six;
+	if(Type >= NETOBJTYPE_PLAYERINPUT && Type <= NETOBJTYPE_FLAG)
+		Six = Type;
+	else if(Type >= NETOBJTYPE_CHARACTERCORE && Type <= NETOBJTYPE_PLAYERINFO)
+		Six = Type + 1;
+	else if(Type == NETOBJTYPE_SPECTATORINFO)
+		Six = Type;
+	else if(Type >= NETEVENTTYPE_COMMON && Type <= NETEVENTTYPE_DEATH)
+		Six = Type + 3;
+	else if(Type == NETEVENTTYPE_SOUNDWORLD)
+		Six = Type + 2;
+	else if(Type > 26)
+		Six = Type - 26;
+	else
+		return -1;
+	return Six;
+}
+
 // CSnapshot
 
 CSnapshotItem *CSnapshot::GetItem(int Index)
@@ -520,10 +542,11 @@ CSnapshotBuilder::CSnapshotBuilder()
 	m_NumExtendedItemTypes = 0;
 }
 
-void CSnapshotBuilder::Init()
+void CSnapshotBuilder::Init(bool Sixup)
 {
 	m_DataSize = 0;
 	m_NumItems = 0;
+	m_Sixup = Sixup;
 
 	for(int i = 0; i < m_NumExtendedItemTypes; i++)
 	{
@@ -612,6 +635,12 @@ void *CSnapshotBuilder::NewItem(int Type, int ID, int Size)
 	}
 
 	CSnapshotItem *pObj = (CSnapshotItem *)(m_aData + m_DataSize);
+
+	if(m_Sixup)
+	{
+		Type = ObjTypeToSixup(Type);
+		if(Type < 0) return pObj;
+	}
 
 	mem_zero(pObj, sizeof(CSnapshotItem) + Size);
 	pObj->m_TypeAndID = (Type<<16)|ID;

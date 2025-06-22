@@ -54,7 +54,6 @@ protected:
 
 		m_GameInfo.m_GameUuid = CalculateUuid("test@ddnet.tw");
 		m_GameInfo.m_pServerVersion = "DDNet test";
-		m_GameInfo.m_StartTime = time(0);
 
 		m_GameInfo.m_pServerName = "server name";
 		m_GameInfo.m_ServerPort = 8303;
@@ -93,7 +92,6 @@ protected:
 		static const char PREFIX3[] = "]}";
 
 		char aTimeBuf[64];
-		str_timestamp_ex(m_GameInfo.m_StartTime, aTimeBuf, sizeof(aTimeBuf), "%Y-%m-%dT%H:%M:%S%z");
 
 		CPacker Buffer;
 		Buffer.Reset();

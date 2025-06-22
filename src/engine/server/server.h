@@ -179,6 +179,9 @@ public:
 		// DNSBL
 		int m_DnsblState;
 		std::shared_ptr<CHostLookup> m_pDnsblLookup;
+
+		bool m_Sixup;
+		bool m_JoinSpec;
 	};
 
 	CClient m_aClients[MAX_CLIENTS];
@@ -213,9 +216,14 @@ public:
 	unsigned m_CurrentMapCrc;
 	unsigned char *m_pCurrentMapData;
 	unsigned int m_CurrentMapSize;
+	SHA256_DIGEST m_SixupMapSha256;
+	unsigned m_SixupMapCrc;
+	unsigned char *m_pSixupMapData;
+	unsigned int m_SixupMapSize;
 
 	CDemoRecorder m_aDemoRecorder[MAX_CLIENTS+1];
 	CRegister m_Register;
+	CRegister m_RegSixup;
 	CAuthManager m_AuthManager;
 
 	int m_RconRestrict;
@@ -266,7 +274,7 @@ public:
 
 	void DoSnapshot();
 
-	static int NewClientCallback(int ClientID, void *pUser);
+	static int NewClientCallback(int ClientID, void *pUser, bool Sixup);
 	static int NewClientNoAuthCallback(int ClientID, void *pUser);
 	static int DelClientCallback(int ClientID, const char *pReason, void *pUser);
 
@@ -288,6 +296,7 @@ public:
 	void SendServerInfo(const NETADDR *pAddr, int Token, int Type, bool SendClients);
 	void SendServerInfoConnless(const NETADDR *pAddr, int Token, int Type);
 	void UpdateServerInfo();
+	void GenerateServerInfoSixup(CPacker *pPacker, int Token);
 
 	void PumpNetwork();
 
@@ -385,6 +394,10 @@ public:
 
 	bool ErrorShutdown() const { return m_aErrorShutdownReason[0] != 0; }
 	void SetErrorShutdown(const char *pReason);
+
+	bool IsSixup(int ClientID) { return m_aClients[ClientID].m_Sixup; }
+	bool GetJoinSpec(int ClientID) { return m_aClients[ClientID].m_JoinSpec; }
+	void SetJoinSpec(int ClientID, bool JoinSpec) { m_aClients[ClientID].m_JoinSpec = JoinSpec; }
 
 #ifdef CONF_FAMILY_UNIX
 	enum CONN_LOGGING_CMD

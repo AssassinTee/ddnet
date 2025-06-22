@@ -46,6 +46,8 @@ public:
 
 	void FindDuplicateSkins();
 	void SpectatePlayerName(const char *pName);
+	void SkinToSixup();
+	void SkinFromSixup();
 
 	//---------------------------------------------------------
 	// this is used for snapping so we know how we can clip the view for the player
@@ -90,6 +92,9 @@ public:
 		int m_UseCustomColor;
 		int m_ColorBody;
 		int m_ColorFeet;
+		char m_apSkinPartNames[6][24];
+		bool m_aUseCustomColors[6];
+		int m_aSkinPartColors[6];
 	} m_TeeInfos;
 
 	int m_DieTick;
@@ -171,6 +176,9 @@ public:
 	bool m_Afk;
 	int m_KillMe;
 	bool m_HasFinishScore;
+	bool m_ShowFlag;
+	int m_SortedScore;
+	int m_FastcapSpawnAt;
 
 	int m_ChatScore;
 

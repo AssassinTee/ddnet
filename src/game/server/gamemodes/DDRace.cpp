@@ -12,7 +12,7 @@
 CGameControllerDDRace::CGameControllerDDRace(class CGameContext *pGameServer) :
 		IGameController(pGameServer), m_Teams(pGameServer)
 {
-	m_pGameType = g_Config.m_SvTestingCommands ? TEST_NAME : GAME_NAME;
+	SetGameType();
 
 	InitTeleporter();
 }
@@ -52,4 +52,12 @@ void CGameControllerDDRace::InitTeleporter()
 			}
 		}
 	}
+}
+
+void CGameControllerDDRace::SetGameType()
+{
+	if (g_Config.m_SvFastcap)
+		str_copy(m_pGameType, "FastCap", sizeof(m_pGameType));
+	else
+		str_copy(m_pGameType, "Race", sizeof(m_pGameType));
 }
