@@ -68,8 +68,10 @@ struct CScoreLoadBestTimeResult : ISqlResult
 	CScoreLoadBestTimeResult() :
 		m_CurrentRecord(0)
 	{
+		m_aCurrentRecordHolder[0] = 0;
 	}
 	float m_CurrentRecord;
+	char m_aCurrentRecordHolder[16];
 };
 
 struct CSqlLoadBestTimeRequest : ISqlData
@@ -86,7 +88,7 @@ struct CSqlLoadBestTimeRequest : ISqlData
 struct CSqlPlayerRequest : ISqlData
 {
 	CSqlPlayerRequest(std::shared_ptr<CScorePlayerResult> pResult) :
-		ISqlData(std::move(pResult))
+		ISqlData(std::move(pResult)), m_IsUnique(false)
 	{
 	}
 
@@ -98,6 +100,7 @@ struct CSqlPlayerRequest : ISqlData
 	// relevant for /top5 kind of requests
 	int m_Offset;
 	char m_aServer[5];
+	bool m_IsUnique;
 };
 
 struct CScoreRandomMapResult : ISqlResult
@@ -281,7 +284,7 @@ struct CTeamrank
 
 	bool SamePlayers(const std::vector<std::string> *pvSortedNames);
 
-	static bool GetSqlTop5Team(IDbConnection *pSqlServer, bool *pEnd, char *pError, int ErrorSize, char (*paMessages)[512], int *StartLine, int Count);
+	static bool GetSqlTop5Team(IDbConnection *pSqlServer, bool *pEnd, char *pError, int ErrorSize, char (*paMessages)[512], int *StartLine, int Count, bool IsUnique);
 };
 
 struct CScoreWorker
@@ -310,6 +313,8 @@ struct CScoreWorker
 
 	static bool SaveScore(IDbConnection *pSqlServer, const ISqlData *pGameData, Write w, char *pError, int ErrorSize);
 	static bool SaveTeamScore(IDbConnection *pSqlServer, const ISqlData *pGameData, Write w, char *pError, int ErrorSize);
+
+	static int GetFormat(bool IsUnique);
 };
 
 #endif // GAME_SERVER_SCOREWORKER_H

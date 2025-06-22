@@ -937,7 +937,10 @@ TEST(Str, Time)
 	EXPECT_EQ(str_time(123456, TIME_DAYS, aBuf, 0), -1);
 	EXPECT_STREQ(aBuf, "foobar");
 
-	EXPECT_EQ(str_time(123456, TIME_SECS_CENTISECS + 1, aBuf, sizeof(aBuf)), -1);
+	EXPECT_EQ(str_time(123456, TIME_HOURS_MILISECS, aBuf, sizeof(aBuf)), 9);
+	EXPECT_STREQ(aBuf, "02:03.456");
+
+	EXPECT_EQ(str_time(123456, TIME_SECS_MILISECS + 1, aBuf, sizeof(aBuf)), -1);
 	EXPECT_STREQ(aBuf, "");
 
 	EXPECT_EQ(str_time(-123456, TIME_MINS_CENTISECS, aBuf, sizeof(aBuf)), 5);
@@ -987,6 +990,27 @@ TEST(Str, Time)
 	EXPECT_STREQ(aBuf, "45.67");
 	EXPECT_EQ(str_time(12345678, TIME_SECS_CENTISECS, aBuf, sizeof(aBuf)), 5);
 	EXPECT_STREQ(aBuf, "36.78");
+
+	EXPECT_EQ(str_time(1234567, TIME_HOURS_MILISECS, aBuf, sizeof(aBuf)), 9);
+	EXPECT_STREQ(aBuf, "20:34.567");
+	EXPECT_EQ(str_time(12345678, TIME_HOURS_MILISECS, aBuf, sizeof(aBuf)), 12);
+	EXPECT_STREQ(aBuf, "03:25:45.678");
+	EXPECT_EQ(str_time(123456789, TIME_HOURS_MILISECS, aBuf, sizeof(aBuf)), 12);
+	EXPECT_STREQ(aBuf, "34:17:36.789");
+
+	EXPECT_EQ(str_time(1234567, TIME_MINS_MILISECS, aBuf, sizeof(aBuf)), 9);
+	EXPECT_STREQ(aBuf, "20:34.567");
+	EXPECT_EQ(str_time(12345678, TIME_MINS_MILISECS, aBuf, sizeof(aBuf)), 10);
+	EXPECT_STREQ(aBuf, "205:45.678");
+	EXPECT_EQ(str_time(123456789, TIME_MINS_MILISECS, aBuf, sizeof(aBuf)), 11);
+	EXPECT_STREQ(aBuf, "2057:36.789");
+
+	EXPECT_EQ(str_time(1234567, TIME_SECS_MILISECS, aBuf, sizeof(aBuf)), 6);
+	EXPECT_STREQ(aBuf, "34.567");
+	EXPECT_EQ(str_time(12345678, TIME_SECS_MILISECS, aBuf, sizeof(aBuf)), 6);
+	EXPECT_STREQ(aBuf, "45.678");
+	EXPECT_EQ(str_time(123456789, TIME_SECS_MILISECS, aBuf, sizeof(aBuf)), 6);
+	EXPECT_STREQ(aBuf, "36.789");
 }
 
 TEST(Str, TimeFloat)
