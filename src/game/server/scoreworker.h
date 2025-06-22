@@ -70,6 +70,7 @@ struct CScoreLoadBestTimeResult : ISqlResult
 	{
 	}
 	float m_CurrentRecord;
+	char m_CurrentRecordHolder[16];
 };
 
 struct CSqlLoadBestTimeRequest : ISqlData

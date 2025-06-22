@@ -31,6 +31,7 @@
 
 #include "entities/character.h"
 #include "gamemodes/DDRace.h"
+#include "gamemodes/Unique.h"
 #include "gamemodes/mod.h"
 #include "player.h"
 #include "score.h"
@@ -2042,7 +2043,8 @@ void *CGameContext::PreProcessMsg(int *pMsgId, CUnpacker *pUnpacker, int ClientI
 			if(pMsg7->m_Force)
 			{
 				str_format(s_aRawMsg, sizeof(s_aRawMsg), "force_vote \"%s\" \"%s\" \"%s\"", pMsg7->m_pType, pMsg7->m_pValue, pMsg7->m_pReason);
-				Console()->SetAccessLevel(Authed == AUTHED_ADMIN ? IConsole::ACCESS_LEVEL_ADMIN : Authed == AUTHED_MOD ? IConsole::ACCESS_LEVEL_MOD : IConsole::ACCESS_LEVEL_HELPER);
+				Console()->SetAccessLevel(Authed == AUTHED_ADMIN ? IConsole::ACCESS_LEVEL_ADMIN : Authed == AUTHED_MOD ? IConsole::ACCESS_LEVEL_MOD :
+                                                                                                                                         IConsole::ACCESS_LEVEL_HELPER);
 				Console()->ExecuteLine(s_aRawMsg, ClientId, false);
 				Console()->SetAccessLevel(IConsole::ACCESS_LEVEL_ADMIN);
 				return nullptr;
@@ -2249,7 +2251,8 @@ void CGameContext::OnSayNetMessage(const CNetMsg_Cl_Say *pMsg, int ClientId, con
 			Console()->SetFlagMask(CFGFLAG_CHAT);
 			int Authed = Server()->GetAuthedState(ClientId);
 			if(Authed)
-				Console()->SetAccessLevel(Authed == AUTHED_ADMIN ? IConsole::ACCESS_LEVEL_ADMIN : Authed == AUTHED_MOD ? IConsole::ACCESS_LEVEL_MOD : IConsole::ACCESS_LEVEL_HELPER);
+				Console()->SetAccessLevel(Authed == AUTHED_ADMIN ? IConsole::ACCESS_LEVEL_ADMIN : Authed == AUTHED_MOD ? IConsole::ACCESS_LEVEL_MOD :
+                                                                                                                                         IConsole::ACCESS_LEVEL_HELPER);
 			else
 				Console()->SetAccessLevel(IConsole::ACCESS_LEVEL_USER);
 
@@ -3898,6 +3901,11 @@ void CGameContext::RegisterChatCommands()
 	Console()->Register("unendless", "", CFGFLAG_CHAT | CMDFLAG_PRACTICE, ConPracticeUnEndlessHook, this, "Removes endless hook from you");
 	Console()->Register("invincible", "?i['0'|'1']", CFGFLAG_CHAT | CMDFLAG_PRACTICE, ConPracticeToggleInvincible, this, "Toggles invincible mode");
 	Console()->Register("kill", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConProtectedKill, this, "Kill yourself when kill-protected during a long game (use f1, kill for regular kill)");
+
+	// Unique
+	Console()->Register("showflag", "?i['0'|'1']", CFGFLAG_CHAT | CFGFLAG_SERVER, ConShowFlag, this, "Wether to show your own record flag or not (on by default)");
+	Console()->Register("red", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRed, this, "Change to red side on Fastcap");
+	Console()->Register("blue", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConBlue, this, "Change to blue side on Fastcap");
 }
 
 void CGameContext::OnInit(const void *pPersistentData)
@@ -3926,6 +3934,20 @@ void CGameContext::OnInit(const void *pPersistentData)
 
 	for(int i = 0; i < NUM_NETOBJTYPES; i++)
 		Server()->SnapSetStaticsize(i, m_NetObjHandler.GetObjSize(i));
+
+	//Unique - some settings need to be done before map loading
+	bool IsFastcap = !str_comp(Config()->m_SvGametype, "fastcap");
+	bool IsUnique = !str_comp(Config()->m_SvGametype, "race") || !str_comp(Config()->m_SvGametype, "unique") || IsFastcap;
+	if(IsUnique)
+	{
+		g_Config.m_SvSoloServer = 1; // forever alone
+		g_Config.m_SvDestroyBulletsOnDeath = g_Config.m_SvKillGrenades; // legacy
+		if(IsFastcap) // force damage and fastcap on fastcap
+		{
+			g_Config.m_SvFastcap = 1;
+			g_Config.m_SvHealthAndAmmo = 1;
+		}
+	}
 
 	m_Layers.Init(Kernel()->RequestInterface<IMap>(), false);
 	m_Collision.Init(&m_Layers);
@@ -4009,6 +4031,8 @@ void CGameContext::OnInit(const void *pPersistentData)
 
 	if(!str_comp(Config()->m_SvGametype, "mod"))
 		m_pController = new CGameControllerMod(this);
+	else if(IsUnique)
+		m_pController = new CGameControllerUnique(this);
 	else
 		m_pController = new CGameControllerDDRace(this);
 
@@ -5089,7 +5113,8 @@ void CGameContext::OnUpdatePlayerServerInfo(CJsonStringWriter *pJSonWriter, int 
 	pJSonWriter->WriteAttribute("afk");
 	pJSonWriter->WriteBoolValue(m_apPlayers[Id]->IsAfk());
 
-	const int Team = m_pController->IsTeamPlay() ? m_apPlayers[Id]->GetTeam() : m_apPlayers[Id]->GetTeam() == TEAM_SPECTATORS ? -1 : GetDDRaceTeam(Id);
+	const int Team = m_pController->IsTeamPlay() ? m_apPlayers[Id]->GetTeam() : m_apPlayers[Id]->GetTeam() == TEAM_SPECTATORS ? -1 :
+                                                                                                                                    GetDDRaceTeam(Id);
 
 	pJSonWriter->WriteAttribute("team");
 	pJSonWriter->WriteIntValue(Team);
@@ -5116,4 +5141,11 @@ void CGameContext::ReadCensorList()
 bool CGameContext::PracticeByDefault() const
 {
 	return g_Config.m_SvPracticeByDefault && g_Config.m_SvTestingCommands;
+}
+
+// Unique
+bool CGameContext::isUniqueRace() const
+{
+	dbg_assert(m_pController != nullptr, "can't call this without controller");
+	return m_pController->IsUniqueRace();
 }

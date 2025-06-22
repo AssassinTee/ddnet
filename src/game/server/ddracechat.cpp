@@ -16,32 +16,65 @@
 void CGameContext::ConCredits(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
-	static constexpr const char *CREDITS[] = {
-		"DDNet is run by the DDNet staff (DDNet.org/staff)",
-		"Great maps and many ideas from the great community",
-		"Help and code by eeeee, HMH, east, CookieMichal, Learath2,",
-		"Savander, laxa, Tobii, BeaR, Wohoo, nuborn, timakro, Shiki,",
-		"trml, Soreu, hi_leute_gll, Lady Saavik, Chairn, heinrich5991,",
-		"swick, oy, necropotame, Ryozuki, Redix, d3fault, marcelherd,",
-		"BannZay, ACTom, SiuFuWong, PathosEthosLogos, TsFreddie,",
-		"Jupeyy, noby, ChillerDragon, ZombieToad, weez15, z6zzz,",
-		"Piepow, QingGo, RafaelFF, sctt, jao, daverck, fokkonaut,",
-		"Bojidar, FallenKN, ardadem, archimede67, sirius1242, Aerll,",
-		"trafilaw, Zwelf, Patiga, Konsti, ElXreno, MikiGamer,",
-		"Fireball, Banana090, axblk, yangfl, Kaffeine, Zodiac,",
-		"c0d3d3v, GiuCcc, Ravie, Robyt3, simpygirl, sjrc6, Cellegen,",
-		"srdante, Nouaa, Voxel, luk51, Vy0x2, Avolicious, louis,",
-		"Marmare314, hus3h, ArijanJ, tarunsamanta2k20, Possseidon,",
-		"M0REKZ, Teero, furo, dobrykafe, Moiman, JSaurusRex,",
-		"Steinchen, ewancg, gerdoe-jr, BlaiZephyr, KebsCS, bencie,",
-		"DynamoFox, MilkeeyCat, iMilchshake, SchrodingerZhu,",
-		"catseyenebulous, Rei-Tw, Matodor, Emilcha, art0007i, SollyBunny,",
-		"0xfaulty & others",
-		"Based on DDRace by the DDRace developers,",
-		"which is a mod of Teeworlds by the Teeworlds developers.",
-	};
-	for(const char *pLine : CREDITS)
-		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp", pLine);
+	if(!pSelf->isUniqueRace())
+	{
+		static constexpr const char *CREDITS[] = {
+			"DDNet is run by the DDNet staff (DDNet.org/staff)",
+			"Great maps and many ideas from the great community",
+			"Help and code by eeeee, HMH, east, CookieMichal, Learath2,",
+			"Savander, laxa, Tobii, BeaR, Wohoo, nuborn, timakro, Shiki,",
+			"trml, Soreu, hi_leute_gll, Lady Saavik, Chairn, heinrich5991,",
+			"swick, oy, necropotame, Ryozuki, Redix, d3fault, marcelherd,",
+			"BannZay, ACTom, SiuFuWong, PathosEthosLogos, TsFreddie,",
+			"Jupeyy, noby, ChillerDragon, ZombieToad, weez15, z6zzz,",
+			"Piepow, QingGo, RafaelFF, sctt, jao, daverck, fokkonaut,",
+			"Bojidar, FallenKN, ardadem, archimede67, sirius1242, Aerll,",
+			"trafilaw, Zwelf, Patiga, Konsti, ElXreno, MikiGamer,",
+			"Fireball, Banana090, axblk, yangfl, Kaffeine, Zodiac,",
+			"c0d3d3v, GiuCcc, Ravie, Robyt3, simpygirl, sjrc6, Cellegen,",
+			"srdante, Nouaa, Voxel, luk51, Vy0x2, Avolicious, louis,",
+			"Marmare314, hus3h, ArijanJ, tarunsamanta2k20, Possseidon,",
+			"M0REKZ, Teero, furo, dobrykafe, Moiman, JSaurusRex,",
+			"Steinchen, ewancg, gerdoe-jr, BlaiZephyr, KebsCS, bencie,",
+			"DynamoFox, MilkeeyCat, iMilchshake, SchrodingerZhu,",
+			"catseyenebulous, Rei-Tw, Matodor, Emilcha, art0007i, SollyBunny,",
+			"0xfaulty & others",
+			"Based on DDRace by the DDRace developers,",
+			"which is a mod of Teeworlds by the Teeworlds developers.",
+		};
+		for(const char *pLine : CREDITS)
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp", pLine);
+	}
+	else
+	{
+		static constexpr const char *CREDITS[] = {
+			"DDNet is run by the DDNet staff (DDNet.org/staff)",
+			"Great maps and many ideas from the great community",
+			"Help and code by eeeee, HMH, east, CookieMichal, Learath2,",
+			"Savander, laxa, Tobii, BeaR, Wohoo, nuborn, timakro, Shiki,",
+			"trml, Soreu, hi_leute_gll, Lady Saavik, Chairn, heinrich5991,",
+			"swick, oy, necropotame, Ryozuki, Redix, d3fault, marcelherd,",
+			"BannZay, ACTom, SiuFuWong, PathosEthosLogos, TsFreddie,",
+			"Jupeyy, noby, ChillerDragon, ZombieToad, weez15, z6zzz,",
+			"Piepow, QingGo, RafaelFF, sctt, jao, daverck, fokkonaut,",
+			"Bojidar, FallenKN, ardadem, archimede67, sirius1242, Aerll,",
+			"trafilaw, Zwelf, Patiga, Konsti, ElXreno, MikiGamer,",
+			"Fireball, Banana090, axblk, yangfl, Kaffeine, Zodiac,",
+			"c0d3d3v, GiuCcc, Ravie, Robyt3, simpygirl, sjrc6, Cellegen,",
+			"srdante, Nouaa, Voxel, luk51, Vy0x2, Avolicious, louis,",
+			"Marmare314, hus3h, ArijanJ, tarunsamanta2k20, Possseidon,",
+			"M0REKZ, Teero, furo, dobrykafe, Moiman, JSaurusRex,",
+			"Steinchen, ewancg, gerdoe-jr, BlaiZephyr, KebsCS, bencie,",
+			"DynamoFox, MilkeeyCat, iMilchshake, SchrodingerZhu,",
+			"catseyenebulous, Rei-Tw, Matodor, Emilcha, art0007i, SollyBunny,",
+			"0xfaulty & others",
+			"Based on DDRace by the DDRace developers,",
+			"which is a mod of Teeworlds by the Teeworlds developers.",
+			"Unique Race is run by Tezcan, timakro, Ryozuki and others.",
+			"Unique port to ddnet by Assa (AssassinTee)"};
+		for(const char *pLine : CREDITS)
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp", pLine);
+	}
 }
 
 void CGameContext::ConInfo(IConsole::IResult *pResult, void *pUserData)
@@ -141,10 +174,10 @@ void CGameContext::ConSettings(IConsole::IResult *pResult, void *pUserData)
 		{
 			str_format(aBuf, sizeof(aBuf), "%s %s",
 				g_Config.m_SvTeam == SV_TEAM_ALLOWED ?
-					"Teams are available on this server" :
-					(g_Config.m_SvTeam == SV_TEAM_FORBIDDEN || g_Config.m_SvTeam == SV_TEAM_FORCED_SOLO) ?
-					"Teams are not available on this server" :
-					"You have to be in a team to play on this server", /*g_Config.m_SvTeamStrict ? "and if you die in a team all of you die" : */
+                                        "Teams are available on this server" :
+				(g_Config.m_SvTeam == SV_TEAM_FORBIDDEN || g_Config.m_SvTeam == SV_TEAM_FORCED_SOLO) ?
+                                        "Teams are not available on this server" :
+                                        "You have to be in a team to play on this server", /*g_Config.m_SvTeamStrict ? "and if you die in a team all of you die" : */
 				"and all of your team will die if the team is locked");
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp", aBuf);
 		}
@@ -152,50 +185,50 @@ void CGameContext::ConSettings(IConsole::IResult *pResult, void *pUserData)
 		{
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp",
 				g_Config.m_SvTestingCommands ?
-					"Cheats are enabled on this server" :
-					"Cheats are disabled on this server");
+                                        "Cheats are enabled on this server" :
+                                        "Cheats are disabled on this server");
 		}
 		else if(str_comp_nocase(pArg, "collision") == 0)
 		{
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp",
 				ColTemp ?
-					"Players can collide on this server" :
-					"Players can't collide on this server");
+                                        "Players can collide on this server" :
+                                        "Players can't collide on this server");
 		}
 		else if(str_comp_nocase(pArg, "hooking") == 0)
 		{
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp",
 				HookTemp ?
-					"Players can hook each other on this server" :
-					"Players can't hook each other on this server");
+                                        "Players can hook each other on this server" :
+                                        "Players can't hook each other on this server");
 		}
 		else if(str_comp_nocase(pArg, "endlesshooking") == 0)
 		{
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp",
 				g_Config.m_SvEndlessDrag ?
-					"Players hook time is unlimited" :
-					"Players hook time is limited");
+                                        "Players hook time is unlimited" :
+                                        "Players hook time is limited");
 		}
 		else if(str_comp_nocase(pArg, "hitting") == 0)
 		{
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp",
 				g_Config.m_SvHit ?
-					"Players weapons affect others" :
-					"Players weapons has no affect on others");
+                                        "Players weapons affect others" :
+                                        "Players weapons has no affect on others");
 		}
 		else if(str_comp_nocase(pArg, "oldlaser") == 0)
 		{
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp",
 				g_Config.m_SvOldLaser ?
-					"Lasers can hit you if you shot them and they pull you towards the bounce origin (Like DDRace Beta)" :
-					"Lasers can't hit you if you shot them, and they pull others towards the shooter");
+                                        "Lasers can hit you if you shot them and they pull you towards the bounce origin (Like DDRace Beta)" :
+                                        "Lasers can't hit you if you shot them, and they pull others towards the shooter");
 		}
 		else if(str_comp_nocase(pArg, "me") == 0)
 		{
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp",
 				g_Config.m_SvSlashMe ?
-					"Players can use /me commands the famous IRC Command" :
-					"Players can't use the /me command");
+                                        "Players can use /me commands the famous IRC Command" :
+                                        "Players can't use the /me command");
 		}
 		else if(str_comp_nocase(pArg, "timeout") == 0)
 		{
@@ -206,8 +239,8 @@ void CGameContext::ConSettings(IConsole::IResult *pResult, void *pUserData)
 		{
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp",
 				g_Config.m_SvVoteKick ?
-					"Players can use Callvote menu tab to kick offenders" :
-					"Players can't use the Callvote menu tab to kick offenders");
+                                        "Players can use Callvote menu tab to kick offenders" :
+                                        "Players can't use the Callvote menu tab to kick offenders");
 			if(g_Config.m_SvVoteKick)
 			{
 				str_format(aBuf, sizeof(aBuf),
@@ -215,23 +248,23 @@ void CGameContext::ConSettings(IConsole::IResult *pResult, void *pUserData)
 
 				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp",
 					g_Config.m_SvVoteKickBantime ?
-						aBuf :
-						"Players are just kicked and not banned if they get voted off");
+                                                aBuf :
+                                                "Players are just kicked and not banned if they get voted off");
 			}
 		}
 		else if(str_comp_nocase(pArg, "pause") == 0)
 		{
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp",
 				g_Config.m_SvPauseable ?
-					"/spec will pause you and your tee will vanish" :
-					"/spec will pause you but your tee will not vanish");
+                                        "/spec will pause you and your tee will vanish" :
+                                        "/spec will pause you but your tee will not vanish");
 		}
 		else if(str_comp_nocase(pArg, "scores") == 0)
 		{
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp",
 				g_Config.m_SvHideScore ?
-					"Scores are private on this server" :
-					"Scores are public on this server");
+                                        "Scores are private on this server" :
+                                        "Scores are public on this server");
 		}
 		else
 		{
@@ -418,16 +451,16 @@ void CGameContext::ConTeamTop5(IConsole::IResult *pResult, void *pUserData)
 		else
 		{
 			const char *pRequestedName = (str_comp_nocase(pResult->GetString(0), "me") == 0) ?
-							     pSelf->Server()->ClientName(pResult->m_ClientId) :
-							     pResult->GetString(0);
+                                                             pSelf->Server()->ClientName(pResult->m_ClientId) :
+                                                             pResult->GetString(0);
 			pSelf->Score()->ShowPlayerTeamTop5(pResult->m_ClientId, pRequestedName, 0);
 		}
 	}
 	else if(pResult->NumArguments() == 2 && pResult->GetInteger(1) != 0)
 	{
 		const char *pRequestedName = (str_comp_nocase(pResult->GetString(0), "me") == 0) ?
-						     pSelf->Server()->ClientName(pResult->m_ClientId) :
-						     pResult->GetString(0);
+                                                     pSelf->Server()->ClientName(pResult->m_ClientId) :
+                                                     pResult->GetString(0);
 		pSelf->Score()->ShowPlayerTeamTop5(pResult->m_ClientId, pRequestedName, pResult->GetInteger(1));
 	}
 	else
@@ -476,16 +509,16 @@ void CGameContext::ConTimes(IConsole::IResult *pResult, void *pUserData)
 		else
 		{
 			const char *pRequestedName = (str_comp_nocase(pResult->GetString(0), "me") == 0) ?
-							     pSelf->Server()->ClientName(pResult->m_ClientId) :
-							     pResult->GetString(0);
+                                                             pSelf->Server()->ClientName(pResult->m_ClientId) :
+                                                             pResult->GetString(0);
 			pSelf->Score()->ShowTimes(pResult->m_ClientId, pRequestedName, pResult->GetInteger(1));
 		}
 	}
 	else if(pResult->NumArguments() == 2 && pResult->GetInteger(1) != 0)
 	{
 		const char *pRequestedName = (str_comp_nocase(pResult->GetString(0), "me") == 0) ?
-						     pSelf->Server()->ClientName(pResult->m_ClientId) :
-						     pResult->GetString(0);
+                                                     pSelf->Server()->ClientName(pResult->m_ClientId) :
+                                                     pResult->GetString(0);
 		pSelf->Score()->ShowTimes(pResult->m_ClientId, pRequestedName, pResult->GetInteger(1));
 	}
 	else
@@ -1185,8 +1218,8 @@ void CGameContext::AttemptJoinTeam(int ClientId, int Team)
 		{
 			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp",
 				g_Config.m_SvInvite ?
-					"This team is locked using /lock. Only members of the team can unlock it using /lock." :
-					"This team is locked using /lock. Only members of the team can invite you or unlock it using /lock.");
+                                        "This team is locked using /lock. Only members of the team can unlock it using /lock." :
+                                        "This team is locked using /lock. Only members of the team can invite you or unlock it using /lock.");
 		}
 		else if(Team > 0 && Team < MAX_CLIENTS && m_pController->Teams().Count(Team) >= g_Config.m_SvMaxTeamSize && !m_pController->Teams().TeamFlock(Team) && !m_pController->Teams().IsPractice(Team))
 		{
@@ -1486,8 +1519,8 @@ void CGameContext::ConSetEyeEmote(IConsole::IResult *pResult,
 			IConsole::OUTPUT_LEVEL_STANDARD,
 			"chatresp",
 			(pPlayer->m_EyeEmoteEnabled) ?
-				"You can now use the preset eye emotes." :
-				"You don't have any eye emotes, remember to bind some.");
+                                "You can now use the preset eye emotes." :
+                                "You don't have any eye emotes, remember to bind some.");
 		return;
 	}
 	else if(str_comp_nocase(pResult->GetString(0), "on") == 0)
@@ -1500,8 +1533,8 @@ void CGameContext::ConSetEyeEmote(IConsole::IResult *pResult,
 		IConsole::OUTPUT_LEVEL_STANDARD,
 		"chatresp",
 		(pPlayer->m_EyeEmoteEnabled) ?
-			"You can now use the preset eye emotes." :
-			"You don't have any eye emotes, remember to bind some.");
+                        "You can now use the preset eye emotes." :
+                        "You don't have any eye emotes, remember to bind some.");
 }
 
 void CGameContext::ConEyeEmote(IConsole::IResult *pResult, void *pUserData)
@@ -1652,6 +1685,11 @@ void CGameContext::ConSpecTeam(IConsole::IResult *pResult, void *pUserData)
 void CGameContext::ConSayTime(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	// TODO: This is disabled in unique, I don't know why
+	if(pSelf->isUniqueRace())
+		return;
+
 	if(!CheckClientId(pResult->m_ClientId))
 		return;
 
@@ -1695,6 +1733,11 @@ void CGameContext::ConSayTime(IConsole::IResult *pResult, void *pUserData)
 void CGameContext::ConSayTimeAll(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	// TODO: This is disabled in unique, I don't know why
+	if(pSelf->isUniqueRace())
+		return;
+
 	if(!CheckClientId(pResult->m_ClientId))
 		return;
 
@@ -2498,4 +2541,108 @@ void CGameContext::ConTimeCP(IConsole::IResult *pResult, void *pUserData)
 
 	const char *pName = pResult->GetString(0);
 	pSelf->Score()->LoadPlayerTimeCp(pResult->m_ClientId, pName);
+}
+
+// Unique
+void CGameContext::ConShowFlag(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!pSelf->isUniqueRace())
+		return;
+
+	if(!CheckClientId(pResult->m_ClientId))
+		return;
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
+	if(!pPlayer)
+		return;
+
+	if(pResult->NumArguments())
+		pPlayer->m_ShowFlag = pResult->GetInteger(0);
+	else
+		pPlayer->m_ShowFlag = !pPlayer->m_ShowFlag;
+	pSelf->m_pController->UpdateRecordFlag();
+}
+
+void CGameContext::ConRed(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!pSelf->isUniqueRace())
+		return;
+
+	if(!CheckClientId(pResult->m_ClientId))
+		return;
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
+	if(!pPlayer)
+		return;
+
+	if(!g_Config.m_SvFastcap)
+	{
+		pSelf->SendChatTarget(pPlayer->GetCid(), "You are not playing Fastcap.");
+		return;
+	}
+
+	pPlayer->m_FastcapSpawnAt = 1;
+
+	if(pPlayer->IsPaused())
+		return;
+	if(pPlayer->GetTeam() == TEAM_SPECTATORS)
+	{
+		if(g_Config.m_SvSpamprotection && pPlayer->m_LastSetTeam && pPlayer->m_LastSetTeam + pSelf->Server()->TickSpeed() * g_Config.m_SvTeamChangeDelay > pSelf->Server()->Tick())
+			return;
+		pSelf->m_VoteUpdate = true;
+		pPlayer->SetTeam(0);
+	}
+	else
+	{
+		if(pPlayer->m_LastKill && pPlayer->m_LastKill + pSelf->Server()->TickSpeed() / 2 > pSelf->Server()->Tick())
+			return;
+		if(!pPlayer->GetCharacter())
+			return;
+		pPlayer->m_LastKill = pSelf->Server()->Tick();
+		pPlayer->KillCharacter(WEAPON_SELF);
+		pPlayer->Respawn();
+	}
+}
+
+// Unique
+void CGameContext::ConBlue(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	if(!pSelf->isUniqueRace())
+		return;
+
+	if(!CheckClientId(pResult->m_ClientId))
+		return;
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
+	if(!pPlayer)
+		return;
+
+	if(!g_Config.m_SvFastcap)
+	{
+		pSelf->SendChatTarget(pPlayer->GetCid(), "You are not playing Fastcap.");
+		return;
+	}
+
+	pPlayer->m_FastcapSpawnAt = 2;
+
+	if(pPlayer->IsPaused())
+		return;
+	if(pPlayer->GetTeam() == TEAM_SPECTATORS)
+	{
+		if(g_Config.m_SvSpamprotection && pPlayer->m_LastSetTeam && pPlayer->m_LastSetTeam + pSelf->Server()->TickSpeed() * g_Config.m_SvTeamChangeDelay > pSelf->Server()->Tick())
+			return;
+		pSelf->m_VoteUpdate = true;
+		pPlayer->SetTeam(0);
+	}
+	else
+	{
+		if(pPlayer->m_LastKill && pPlayer->m_LastKill + pSelf->Server()->TickSpeed() / 2 > pSelf->Server()->Tick())
+			return;
+		if(!pPlayer->GetCharacter())
+			return;
+		pPlayer->m_LastKill = pSelf->Server()->Tick();
+		pPlayer->KillCharacter(WEAPON_SELF);
+		pPlayer->Respawn();
+	}
 }
