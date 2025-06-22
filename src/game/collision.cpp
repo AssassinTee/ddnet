@@ -954,6 +954,50 @@ std::vector<int> CCollision::GetMapIndices(vec2 PrevPos, vec2 Pos, unsigned MaxI
 	}
 }
 
+std::vector<std::pair<int, float>> CCollision::GetMapIndicesWithTime(vec2 PrevPos, vec2 Pos, unsigned MaxIndices) const
+{
+	std::vector<std::pair<int, float>> vIndices;
+	float d = distance(PrevPos, Pos);
+	int End = std::ceil(d);
+	if(!d)
+	{
+		//dbg_msg("dbg", "No Iterations");
+		int Nx = std::clamp((int)Pos.x / 32, 0, m_Width - 1);
+		int Ny = std::clamp((int)Pos.y / 32, 0, m_Height - 1);
+		int Index = Ny * m_Width + Nx;
+
+		if(TileExists(Index))
+		{
+			vIndices.emplace_back(Index, 0.0f);
+			return vIndices;
+		}
+		else
+			return vIndices;
+	}
+	else
+	{
+		int LastIndex = 0;
+		//dbg_msg("dbg", "End %d iterations", End);
+		for(int i = 0; i < End; i++)
+		{
+			float a = (float)(i) / d;
+			vec2 Tmp = mix(PrevPos, Pos, a);
+			int Nx = std::clamp((int)Tmp.x / 32, 0, m_Width - 1);
+			int Ny = std::clamp((int)Tmp.y / 32, 0, m_Height - 1);
+			int Index = Ny * m_Width + Nx;
+			if(TileExists(Index) && LastIndex != Index)
+			{
+				if(MaxIndices && vIndices.size() > MaxIndices)
+					return vIndices;
+				vIndices.emplace_back(Index, a);
+				LastIndex = Index;
+			}
+		}
+
+		return vIndices;
+	}
+}
+
 vec2 CCollision::GetPos(int Index) const
 {
 	if(Index < 0)
