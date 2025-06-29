@@ -71,7 +71,7 @@ void CGameTeams::ResetSwitchers(int Team)
 	}
 }
 
-void CGameTeams::OnCharacterStart(int ClientId)
+void CGameTeams::OnCharacterStart(int ClientId, float FractionOfTick)
 {
 	int Tick = Server()->Tick();
 	CCharacter *pStartingChar = Character(ClientId);
@@ -90,6 +90,7 @@ void CGameTeams::OnCharacterStart(int ClientId)
 		m_aTeeStarted[ClientId] = true;
 		pStartingChar->m_DDRaceState = ERaceState::STARTED;
 		pStartingChar->m_StartTime = Tick;
+		pStartingChar->m_StartTimeOffset = FractionOfTick;
 		return;
 	}
 	bool Waiting = false;
@@ -163,7 +164,7 @@ void CGameTeams::OnCharacterStart(int ClientId)
 				if(pPlayer && (pPlayer->IsPlaying() || TeamLocked(m_Core.Team(ClientId))))
 				{
 					SetDDRaceState(pPlayer, ERaceState::STARTED);
-					SetStartTime(pPlayer, Tick);
+					SetStartTime(pPlayer, Tick, FractionOfTick);
 
 					if(First)
 						First = false;
@@ -189,8 +190,27 @@ void CGameTeams::OnCharacterStart(int ClientId)
 	}
 }
 
-void CGameTeams::OnCharacterFinish(int ClientId)
+void CGameTeams::OnCharacterFinish(int ClientId, float FractionOfTick)
 {
+	if(GameServer()->IsUniqueRace())
+	{
+		CPlayer *pPlayer = GetPlayer(ClientId);
+		if(pPlayer && pPlayer->IsPlaying())
+		{
+			int TimeTicks = Server()->Tick() - GetStartTime(pPlayer);
+			if(TimeTicks < 0)
+			{
+				dbg_msg("dbg", "Invalid Time ticks %d", TimeTicks);
+				return;
+			}
+			char aTimestamp[TIMESTAMP_STR_LENGTH];
+			str_timestamp_format(aTimestamp, sizeof(aTimestamp), FORMAT_SPACE); // 2019-04-02 19:41:58
+
+			OnFinish(pPlayer, TimeTicks, aTimestamp, FractionOfTick);
+		}
+		return;
+	}
+
 	if(((m_Core.Team(ClientId) == TEAM_FLOCK || m_aTeamFlock[m_Core.Team(ClientId)]) && g_Config.m_SvTeam != SV_TEAM_FORCED_SOLO) || m_Core.Team(ClientId) == TEAM_SUPER)
 	{
 		CPlayer *pPlayer = GetPlayer(ClientId);
@@ -202,7 +222,7 @@ void CGameTeams::OnCharacterFinish(int ClientId)
 			char aTimestamp[TIMESTAMP_STR_LENGTH];
 			str_timestamp_format(aTimestamp, sizeof(aTimestamp), FORMAT_SPACE); // 2019-04-02 19:41:58
 
-			OnFinish(pPlayer, TimeTicks, aTimestamp);
+			OnFinish(pPlayer, TimeTicks, aTimestamp, FractionOfTick);
 		}
 	}
 	else
@@ -314,7 +334,7 @@ void CGameTeams::Tick()
 	}
 }
 
-void CGameTeams::CheckTeamFinished(int Team)
+void CGameTeams::CheckTeamFinished(int Team, float FractionOfTick)
 {
 	if(TeamFinished(Team))
 	{
@@ -370,7 +390,7 @@ void CGameTeams::CheckTeamFinished(int Team)
 			str_timestamp_format(aTimestamp, sizeof(aTimestamp), FORMAT_SPACE); // 2019-04-02 19:41:58
 
 			for(unsigned int i = 0; i < PlayersCount; ++i)
-				OnFinish(apTeamPlayers[i], TimeTicks, aTimestamp);
+				OnFinish(apTeamPlayers[i], TimeTicks, aTimestamp, FractionOfTick);
 			ChangeTeamState(Team, ETeamState::FINISHED); // TODO: Make it better
 			OnTeamFinish(Team, apTeamPlayers, PlayersCount, TimeTicks, aTimestamp);
 		}
@@ -645,14 +665,34 @@ int CGameTeams::GetStartTime(CPlayer *Player)
 	return 0;
 }
 
-void CGameTeams::SetStartTime(CPlayer *Player, int StartTime)
+float CGameTeams::GetStartTimeOffset(CPlayer *Player)
 {
+	if(!Player)
+		return 0;
+
+	CCharacter *pChar = Player->GetCharacter();
+	if(pChar)
+		return pChar->m_StartTimeOffset;
+	return 0;
+}
+
+void CGameTeams::SetStartTime(CPlayer *Player, int StartTime, float FractionOfTick)
+{
+	//dbg_assert(FractionOfTick >= 0.0f && FractionOfTick <= 1.0f, "Set Start Time Wrong");
 	if(!Player)
 		return;
 
 	CCharacter *pChar = Player->GetCharacter();
 	if(pChar)
-		pChar->m_StartTime = StartTime;
+	{
+		if(GameServer()->IsUniqueRace())
+		{
+			pChar->m_StartTime = StartTime;
+			pChar->m_StartTimeOffset = FractionOfTick;
+		}
+		else
+			pChar->m_StartTime = StartTime;
+	}
 }
 
 void CGameTeams::SetLastTimeCp(CPlayer *Player, int LastTimeCp)
@@ -698,24 +738,38 @@ void CGameTeams::OnTeamFinish(int Team, CPlayer **Players, unsigned int Size, in
 		GameServer()->Score()->SaveTeamScore(Team, aPlayerCids, Size, TimeTicks, pTimestamp);
 }
 
-void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp)
+void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp, float FractionOfTick)
 {
+	//dbg_assert(FractionOfTick != 0.0f, "fail");
+	//dbg_assert(FractionOfTick >= 0.0f && FractionOfTick <= 1.0f, "OnFinish Wrong");
 	if(!Player || !Player->IsPlaying())
 		return;
 
 	float Time = TimeTicks / (float)Server()->TickSpeed();
+	if(GameServer()->IsUniqueRace())
+		Time = (FractionOfTick - GetStartTimeOffset(Player) + TimeTicks) / (float)Server()->TickSpeed();
 
+	//dbg_msg("dbg", "FinishTick %d Diff %d, StartOffset %f, FinishOffset %f", Server()->Tick(), TimeTicks, GetStartTimeOffset(Player), FractionOfTick);
+	//dbg_assert(TimeTicks == Server()->Tick() - GetStartTime(Player), "time ticks off");
+	//dbg_assert(FractionOfTick != 0.0f, "false");
 	// TODO:DDRace:btd: this ugly
 	const int ClientId = Player->GetCid();
 	CPlayerData *pData = GameServer()->Score()->PlayerData(ClientId);
 
 	char aBuf[128];
 	SetLastTimeCp(Player, -1);
+
+	int Precision = 2;
+	if(GameServer()->IsUniqueRace())
+		Precision = 3;
+
 	// Note that the "finished in" message is parsed by the client
 	str_format(aBuf, sizeof(aBuf),
-		"%s finished in: %d minute(s) %5.2f second(s)",
+		"%s finished in: %d minute(s) %5.*f second(s)",
 		Server()->ClientName(ClientId), (int)Time / 60,
+		Precision,
 		Time - ((int)Time / 60 * 60));
+
 	if(g_Config.m_SvHideScore || !g_Config.m_SvSaveWorseScores)
 		GameServer()->SendChatTarget(ClientId, aBuf, CGameContext::FLAG_SIX);
 	else
@@ -730,11 +784,11 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 		pData->m_RecordFinishTime = Time;
 
 		if(Diff >= 60)
-			str_format(aBuf, sizeof(aBuf), "New record: %d minute(s) %5.2f second(s) better.",
-				(int)Diff / 60, Diff - ((int)Diff / 60 * 60));
+			str_format(aBuf, sizeof(aBuf), "New record: %d minute(s) %5.*f second(s) better.",
+				(int)Diff / 60, Precision, Diff - ((int)Diff / 60 * 60));
 		else
-			str_format(aBuf, sizeof(aBuf), "New record: %5.2f second(s) better.",
-				Diff);
+			str_format(aBuf, sizeof(aBuf), "New record: %5.*f second(s) better.",
+				Precision, Diff);
 		if(g_Config.m_SvHideScore || !g_Config.m_SvSaveWorseScores)
 			GameServer()->SendChatTarget(ClientId, aBuf, CGameContext::FLAG_SIX);
 		else
@@ -744,7 +798,10 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 	{
 		Server()->StopRecord(ClientId);
 
-		if(Diff <= 0.005f)
+		float DiffMin = 0.005f;
+		if(GameServer()->IsUniqueRace())
+			DiffMin /= 10.f;
+		if(Diff <= DiffMin)
 		{
 			GameServer()->SendChatTarget(ClientId,
 				"You finished with your best time.");
@@ -752,12 +809,12 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 		else
 		{
 			if(Diff >= 60)
-				str_format(aBuf, sizeof(aBuf), "%d minute(s) %5.2f second(s) worse, better luck next time.",
-					(int)Diff / 60, Diff - ((int)Diff / 60 * 60));
+				str_format(aBuf, sizeof(aBuf), "%d minute(s) %5.*f second(s) worse, better luck next time.",
+					(int)Diff / 60, Precision, Diff - ((int)Diff / 60 * 60));
 			else
 				str_format(aBuf, sizeof(aBuf),
-					"%5.2f second(s) worse, better luck next time.",
-					Diff);
+					"%5.*f second(s) worse, better luck next time.",
+					Precision, Diff);
 			GameServer()->SendChatTarget(ClientId, aBuf, CGameContext::FLAG_SIX); // this is private, sent only to the tee
 		}
 	}
@@ -780,7 +837,7 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 
 	if(CallSaveScore)
 		if(g_Config.m_SvNamelessScore || !str_startswith(Server()->ClientName(ClientId), "nameless tee"))
-			GameServer()->Score()->SaveScore(ClientId, TimeTicks, pTimestamp,
+			GameServer()->Score()->SaveScore(ClientId, Time, TimeTicks, pTimestamp,
 				GetCurrentTimeCp(Player), Player->m_NotEligibleForFinish);
 
 	bool NeedToSendNewServerRecord = false;
@@ -794,6 +851,10 @@ void CGameTeams::OnFinish(CPlayer *Player, int TimeTicks, const char *pTimestamp
 		// check for nameless
 		if(g_Config.m_SvNamelessScore || !str_startswith(Server()->ClientName(ClientId), "nameless tee"))
 		{
+			if(GameServer()->IsUniqueRace())
+			{
+				GameServer()->m_pController->UpdateRecordFlag();
+			}
 			GameServer()->m_pController->m_CurrentRecord = Time;
 			NeedToSendNewServerRecord = true;
 		}
