@@ -506,7 +506,9 @@ void CCharacter::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
 
 	// copy new input
 	mem_copy(&m_Input, pNewInput, sizeof(m_Input));
-	//m_NumInputs++;
+	
+	if(g_Config.m_SvUniquePhysics)
+		m_NumInputs++;
 
 	// it is not allowed to aim in the center
 	if(m_Input.m_TargetX == 0 && m_Input.m_TargetY == 0)
@@ -527,7 +529,13 @@ void CCharacter::OnDirectInput(CNetObj_PlayerInput *pNewInput)
 		return;
 	}
 
-	m_NumInputs++;
+	// Unique
+	int NumInputs = 1;
+	if(!g_Config.m_SvUniquePhysics)
+		m_NumInputs++;
+	else
+		NumInputs = 2;
+
 	mem_copy(&m_LatestPrevInput, &m_LatestInput, sizeof(m_LatestInput));
 	mem_copy(&m_LatestInput, pNewInput, sizeof(m_LatestInput));
 
@@ -535,7 +543,7 @@ void CCharacter::OnDirectInput(CNetObj_PlayerInput *pNewInput)
 	if(m_LatestInput.m_TargetX == 0 && m_LatestInput.m_TargetY == 0)
 		m_LatestInput.m_TargetY = -1;
 
-	if(m_NumInputs > 1 && Team() != TEAM_SPECTATORS)
+	if(m_NumInputs > NumInputs && Team() != TEAM_SPECTATORS)
 	{
 		HandleWeaponSwitch();
 		FireWeapon();
