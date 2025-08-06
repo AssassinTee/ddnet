@@ -2,6 +2,7 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <base/math.h>
 
+#include <engine/client/sprites.h>
 #include <engine/graphics.h>
 #include <engine/map.h>
 #include <engine/textrender.h>
@@ -10,7 +11,7 @@
 #include <engine/shared/datafile.h>
 #include <engine/shared/map.h>
 
-#include "render.h"
+#include "render_map.h"
 
 #include <game/generated/client_data.h>
 
@@ -244,7 +245,7 @@ static float SolveBezier(float x, float p0, float p1, float p2, float p3)
 	}
 }
 
-void CRenderTools::RenderEvalEnvelope(const IEnvelopePointAccess *pPoints, std::chrono::nanoseconds TimeNanos, ColorRGBA &Result, size_t Channels)
+void CRenderMap::RenderEvalEnvelope(const IEnvelopePointAccess *pPoints, std::chrono::nanoseconds TimeNanos, ColorRGBA &Result, size_t Channels)
 {
 	const int NumPoints = pPoints->NumPoints();
 	if(NumPoints == 0)
@@ -358,7 +359,7 @@ static void Rotate(const CPoint *pCenter, CPoint *pPoint, float Rotation)
 	pPoint->y = (int)(x * std::sin(Rotation) + y * std::cos(Rotation) + pCenter->y);
 }
 
-void CRenderTools::RenderQuads(CQuad *pQuads, int NumQuads, int RenderFlags, ENVELOPE_EVAL pfnEval, void *pUser) const
+void CRenderMap::RenderQuads(CQuad *pQuads, int NumQuads, int RenderFlags, ENVELOPE_EVAL pfnEval, void *pUser) const
 {
 	if(!g_Config.m_ClShowQuads || g_Config.m_ClOverlayEntities == 100)
 		return;
@@ -366,7 +367,7 @@ void CRenderTools::RenderQuads(CQuad *pQuads, int NumQuads, int RenderFlags, ENV
 	ForceRenderQuads(pQuads, NumQuads, RenderFlags, pfnEval, pUser, (100 - g_Config.m_ClOverlayEntities) / 100.0f);
 }
 
-void CRenderTools::ForceRenderQuads(CQuad *pQuads, int NumQuads, int RenderFlags, ENVELOPE_EVAL pfnEval, void *pUser, float Alpha) const
+void CRenderMap::ForceRenderQuads(CQuad *pQuads, int NumQuads, int RenderFlags, ENVELOPE_EVAL pfnEval, void *pUser, float Alpha) const
 {
 	Graphics()->TrianglesBegin();
 	float Conv = 1 / 255.0f;
@@ -431,7 +432,7 @@ void CRenderTools::ForceRenderQuads(CQuad *pQuads, int NumQuads, int RenderFlags
 	Graphics()->TrianglesEnd();
 }
 
-void CRenderTools::RenderTileRectangle(int RectX, int RectY, int RectW, int RectH,
+void CRenderMap::RenderTileRectangle(int RectX, int RectY, int RectW, int RectH,
 	unsigned char IndexIn, unsigned char IndexOut,
 	float Scale, ColorRGBA Color, int RenderFlags) const
 {
@@ -524,7 +525,7 @@ void CRenderTools::RenderTileRectangle(int RectX, int RectY, int RectW, int Rect
 	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
 }
 
-void CRenderTools::RenderTilemap(CTile *pTiles, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const
+void CRenderMap::RenderTilemap(CTile *pTiles, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const
 {
 	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
 	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
@@ -685,7 +686,7 @@ void CRenderTools::RenderTilemap(CTile *pTiles, int w, int h, float Scale, Color
 	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
 }
 
-void CRenderTools::RenderTile(int x, int y, unsigned char Index, float Scale, ColorRGBA Color) const
+void CRenderMap::RenderTile(int x, int y, unsigned char Index, float Scale, ColorRGBA Color) const
 {
 	if(Graphics()->HasTextureArraysSupport())
 		Graphics()->QuadsTex3DBegin();
@@ -752,7 +753,7 @@ void CRenderTools::RenderTile(int x, int y, unsigned char Index, float Scale, Co
 	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
 }
 
-void CRenderTools::RenderTeleOverlay(CTeleTile *pTele, int w, int h, float Scale, int OverlayRenderFlag, float Alpha) const
+void CRenderMap::RenderTeleOverlay(CTeleTile *pTele, int w, int h, float Scale, int OverlayRenderFlag, float Alpha) const
 {
 	if(!(OverlayRenderFlag & OVERLAYRENDERFLAG_TEXT))
 		return;
@@ -807,7 +808,7 @@ void CRenderTools::RenderTeleOverlay(CTeleTile *pTele, int w, int h, float Scale
 	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
 }
 
-void CRenderTools::RenderSpeedupOverlay(CSpeedupTile *pSpeedup, int w, int h, float Scale, int OverlayRenderFlag, float Alpha)
+void CRenderMap::RenderSpeedupOverlay(CSpeedupTile *pSpeedup, int w, int h, float Scale, int OverlayRenderFlag, float Alpha) const
 {
 	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
 	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
@@ -855,9 +856,9 @@ void CRenderTools::RenderSpeedupOverlay(CSpeedupTile *pSpeedup, int w, int h, fl
 					Graphics()->TextureSet(g_pData->m_aImages[IMAGE_SPEEDUP_ARROW].m_Id);
 					Graphics()->QuadsBegin();
 					Graphics()->SetColor(1.0f, 1.0f, 1.0f, Alpha);
-					SelectSprite(SPRITE_SPEEDUP_ARROW);
+					Sprites()->SelectSprite(SPRITE_SPEEDUP_ARROW);
 					Graphics()->QuadsSetRotation(pSpeedup[c].m_Angle * (pi / 180.0f));
-					DrawSprite(mx * Scale + 16, my * Scale + 16, 35.0f);
+					Sprites()->DrawSprite(mx * Scale + 16, my * Scale + 16, 35.0f);
 					Graphics()->QuadsEnd();
 
 					// draw force and max speed
@@ -894,7 +895,7 @@ void CRenderTools::RenderSpeedupOverlay(CSpeedupTile *pSpeedup, int w, int h, fl
 	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
 }
 
-void CRenderTools::RenderSwitchOverlay(CSwitchTile *pSwitch, int w, int h, float Scale, int OverlayRenderFlag, float Alpha) const
+void CRenderMap::RenderSwitchOverlay(CSwitchTile *pSwitch, int w, int h, float Scale, int OverlayRenderFlag, float Alpha) const
 {
 	if(!(OverlayRenderFlag & OVERLAYRENDERFLAG_TEXT))
 		return;
@@ -952,7 +953,7 @@ void CRenderTools::RenderSwitchOverlay(CSwitchTile *pSwitch, int w, int h, float
 	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
 }
 
-void CRenderTools::RenderTuneOverlay(CTuneTile *pTune, int w, int h, float Scale, int OverlayRenderFlag, float Alpha) const
+void CRenderMap::RenderTuneOverlay(CTuneTile *pTune, int w, int h, float Scale, int OverlayRenderFlag, float Alpha) const
 {
 	if(!(OverlayRenderFlag & OVERLAYRENDERFLAG_TEXT))
 		return;
@@ -1007,7 +1008,7 @@ void CRenderTools::RenderTuneOverlay(CTuneTile *pTune, int w, int h, float Scale
 	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
 }
 
-void CRenderTools::RenderTelemap(CTeleTile *pTele, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const
+void CRenderMap::RenderTelemap(CTeleTile *pTele, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const
 {
 	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
 	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
@@ -1124,7 +1125,7 @@ void CRenderTools::RenderTelemap(CTeleTile *pTele, int w, int h, float Scale, Co
 	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
 }
 
-void CRenderTools::RenderSwitchmap(CSwitchTile *pSwitchTile, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const
+void CRenderMap::RenderSwitchmap(CSwitchTile *pSwitchTile, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const
 {
 	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
 	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
@@ -1284,7 +1285,7 @@ void CRenderTools::RenderSwitchmap(CSwitchTile *pSwitchTile, int w, int h, float
 	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
 }
 
-void CRenderTools::RenderTunemap(CTuneTile *pTune, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const
+void CRenderMap::RenderTunemap(CTuneTile *pTune, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const
 {
 	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
 	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);

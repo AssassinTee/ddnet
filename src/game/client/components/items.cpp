@@ -655,54 +655,54 @@ void CItems::OnInit()
 	m_ItemsQuadContainerIndex = Graphics()->CreateQuadContainer(false);
 
 	Graphics()->QuadsSetSubset(0, 0, 1, 1);
-	m_RedFlagOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, -21.f, -42.f, 42.f, 84.f);
+	m_RedFlagOffset = Sprites()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, -21.f, -42.f, 42.f, 84.f);
 	Graphics()->QuadsSetSubset(0, 0, 1, 1);
-	m_BlueFlagOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, -21.f, -42.f, 42.f, 84.f);
+	m_BlueFlagOffset = Sprites()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, -21.f, -42.f, 42.f, 84.f);
 
 	float ScaleX, ScaleY;
-	RenderTools()->GetSpriteScale(SPRITE_PICKUP_HEALTH, ScaleX, ScaleY);
+	Sprites()->GetSpriteScale(SPRITE_PICKUP_HEALTH, ScaleX, ScaleY);
 	Graphics()->QuadsSetSubset(0, 0, 1, 1);
-	m_PickupHealthOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 64.f * ScaleX, 64.f * ScaleY);
-	RenderTools()->GetSpriteScale(SPRITE_PICKUP_ARMOR, ScaleX, ScaleY);
+	m_PickupHealthOffset = Sprites()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 64.f * ScaleX, 64.f * ScaleY);
+	Sprites()->GetSpriteScale(SPRITE_PICKUP_ARMOR, ScaleX, ScaleY);
 	Graphics()->QuadsSetSubset(0, 0, 1, 1);
-	m_PickupArmorOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 64.f * ScaleX, 64.f * ScaleY);
+	m_PickupArmorOffset = Sprites()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 64.f * ScaleX, 64.f * ScaleY);
 
 	for(int i = 0; i < NUM_WEAPONS; ++i)
 	{
-		RenderTools()->GetSpriteScale(g_pData->m_Weapons.m_aId[i].m_pSpriteBody, ScaleX, ScaleY);
+		Sprites()->GetSpriteScale(g_pData->m_Weapons.m_aId[i].m_pSpriteBody, ScaleX, ScaleY);
 		Graphics()->QuadsSetSubset(0, 0, 1, 1);
-		m_aPickupWeaponOffset[i] = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, g_pData->m_Weapons.m_aId[i].m_VisualSize * ScaleX, g_pData->m_Weapons.m_aId[i].m_VisualSize * ScaleY);
+		m_aPickupWeaponOffset[i] = Sprites()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, g_pData->m_Weapons.m_aId[i].m_VisualSize * ScaleX, g_pData->m_Weapons.m_aId[i].m_VisualSize * ScaleY);
 	}
-	RenderTools()->GetSpriteScale(SPRITE_PICKUP_NINJA, ScaleX, ScaleY);
+	Sprites()->GetSpriteScale(SPRITE_PICKUP_NINJA, ScaleX, ScaleY);
 	Graphics()->QuadsSetSubset(0, 0, 1, 1);
-	m_PickupNinjaOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 128.f * ScaleX, 128.f * ScaleY);
+	m_PickupNinjaOffset = Sprites()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 128.f * ScaleX, 128.f * ScaleY);
 
 	for(int i = 0; i < 4; i++)
 	{
-		RenderTools()->GetSpriteScale(SPRITE_PICKUP_ARMOR_SHOTGUN + i, ScaleX, ScaleY);
+		Sprites()->GetSpriteScale(SPRITE_PICKUP_ARMOR_SHOTGUN + i, ScaleX, ScaleY);
 		Graphics()->QuadsSetSubset(0, 0, 1, 1);
-		m_aPickupWeaponArmorOffset[i] = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 64.f * ScaleX, 64.f * ScaleY);
+		m_aPickupWeaponArmorOffset[i] = Sprites()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 64.f * ScaleX, 64.f * ScaleY);
 	}
 
 	for(int &ProjectileOffset : m_aProjectileOffset)
 	{
 		Graphics()->QuadsSetSubset(0, 0, 1, 1);
-		ProjectileOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 32.f);
+		ProjectileOffset = Sprites()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 32.f);
 	}
 
 	for(int &ParticleSplatOffset : m_aParticleSplatOffset)
 	{
 		Graphics()->QuadsSetSubset(0, 0, 1, 1);
-		ParticleSplatOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 24.f);
+		ParticleSplatOffset = Sprites()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 24.f);
 	}
 
-	RenderTools()->GetSpriteScale(SPRITE_PART_PULLEY, ScaleX, ScaleY);
+	Sprites()->GetSpriteScale(SPRITE_PART_PULLEY, ScaleX, ScaleY);
 	Graphics()->QuadsSetSubset(0, 0, 1, 1);
-	m_PulleyHeadOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 20.f * ScaleX);
+	m_PulleyHeadOffset = Sprites()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 20.f * ScaleX);
 
-	RenderTools()->GetSpriteScale(SPRITE_PART_HECTAGON, ScaleX, ScaleY);
+	Sprites()->GetSpriteScale(SPRITE_PART_HECTAGON, ScaleX, ScaleY);
 	Graphics()->QuadsSetSubset(0, 0, 1, 1);
-	m_FreezeHeadOffset = RenderTools()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 20.f * ScaleX);
+	m_FreezeHeadOffset = Sprites()->QuadContainerAddSprite(m_ItemsQuadContainerIndex, 20.f * ScaleX);
 
 	IGraphics::CQuadItem Brick(0, 0, 16.0f, 16.0f);
 	m_DoorHeadOffset = Graphics()->QuadContainerAddQuads(m_ItemsQuadContainerIndex, &Brick, 1);

@@ -4,6 +4,7 @@
 #define GAME_CLIENT_COMPONENTS_MAPLAYERS_H
 #include <game/client/component.h>
 #include <game/client/render.h>
+#include <game/map/render_map.h>
 
 #include "render_layer.h"
 #include <cstdint>

@@ -326,7 +326,9 @@ void CGameClient::OnInit()
 
 	// propagate pointers
 	m_UI.Init(Kernel());
-	m_RenderTools.Init(Graphics(), TextRender());
+	m_Sprites.Init(Graphics());
+	m_RenderTools.Init(Graphics(), TextRender(), Sprites());
+	m_RenderMap.Init(Graphics(), TextRender(), Sprites());
 
 	if(GIT_SHORTREV_HASH)
 	{
@@ -2186,7 +2188,7 @@ void CGameClient::OnNewSnapshot()
 		{
 			CNetMsg_Cl_ShowDistance Msg;
 			float x, y;
-			RenderTools()->CalcScreenParams(Graphics()->ScreenAspect(), ShowDistanceZoom, &x, &y);
+			RenderMap()->CalcScreenParams(Graphics()->ScreenAspect(), ShowDistanceZoom, &x, &y);
 			Msg.m_X = x;
 			Msg.m_Y = y;
 			CMsgPacker Packer(&Msg);
@@ -2209,7 +2211,7 @@ void CGameClient::OnNewSnapshot()
 	{
 		CNetMsg_Cl_ShowDistance Msg;
 		float x, y;
-		RenderTools()->CalcScreenParams(Graphics()->ScreenAspect(), ShowDistanceZoom, &x, &y);
+		RenderMap()->CalcScreenParams(Graphics()->ScreenAspect(), ShowDistanceZoom, &x, &y);
 		Msg.m_X = x;
 		Msg.m_Y = y;
 		Client()->ChecksumData()->m_Zoom = ShowDistanceZoom;
@@ -4724,7 +4726,7 @@ bool CGameClient::InitMultiView(int Team)
 	m_MultiView.m_IsInit = true;
 
 	// get the current view coordinates
-	RenderTools()->CalcScreenParams(Graphics()->ScreenAspect(), m_Camera.m_Zoom, &Width, &Height);
+	RenderMap()->CalcScreenParams(Graphics()->ScreenAspect(), m_Camera.m_Zoom, &Width, &Height);
 	vec2 AxisX = vec2(m_Camera.m_Center.x - (Width / 2.0f), m_Camera.m_Center.x + (Width / 2.0f));
 	vec2 AxisY = vec2(m_Camera.m_Center.y - (Height / 2.0f), m_Camera.m_Center.y + (Height / 2.0f));
 

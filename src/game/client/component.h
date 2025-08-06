@@ -74,6 +74,16 @@ protected:
 	class CRenderTools *RenderTools() const;
 
 	/**
+	 * Get the render map interface.
+	 */
+	class CRenderMap *RenderMap() const;
+
+	/**
+	 * Get the sprites interface.
+	 */
+	class CSprites *Sprites() const;
+
+	/**
 	 * Get the config manager interface.
 	 */
 	class IConfigManager *ConfigManager() const;

@@ -2312,6 +2312,8 @@ if(CLIENT)
     smooth_time.h
     sound.cpp
     sound.h
+    sprites.cpp
+    sprites.h
     sqlite.cpp
     steam.cpp
     text.cpp
@@ -2446,7 +2448,6 @@ if(CLIENT)
     race.h
     render.cpp
     render.h
-    render_map.cpp
     sixup_translate_connless.cpp
     sixup_translate_game.cpp
     sixup_translate_snapshot.cpp
@@ -2537,6 +2538,11 @@ if(CLIENT)
     smooth_value.h
     tileart.cpp
   )
+  set_src(GAME_MAP GLOB_RECURSE src/game/map
+    render.cpp
+    render_map.cpp
+    render_map.h
+  )
   set(GAME_GENERATED_CLIENT
     src/game/generated/checksum.cpp
     src/game/generated/client_data.cpp
@@ -2544,7 +2550,7 @@ if(CLIENT)
     src/game/generated/client_data7.cpp
     src/game/generated/client_data7.h
   )
-  set(CLIENT_SRC ${ENGINE_CLIENT} ${PLATFORM_CLIENT} ${GAME_CLIENT} ${GAME_EDITOR} ${GAME_GENERATED_CLIENT})
+  set(CLIENT_SRC ${ENGINE_CLIENT} ${PLATFORM_CLIENT} ${GAME_CLIENT} ${GAME_EDITOR} ${GAME_MAP} ${GAME_GENERATED_CLIENT})
 
   set(DEPS_CLIENT ${DEPS} ${GLEW_DEP} ${WAVPACK_DEP})
 
