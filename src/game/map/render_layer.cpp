@@ -470,6 +470,328 @@ ColorRGBA CRenderLayerTile::GetRenderColor(const CRenderLayerParams &Params) con
 	return Color;
 }
 
+
+void CRenderLayerTile::RenderTileRectangle(int RectX, int RectY, int RectW, int RectH,
+	unsigned char IndexIn, unsigned char IndexOut,
+	float Scale, ColorRGBA Color, int RenderFlags) const
+{
+	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
+	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
+
+	// calculate the final pixelsize for the tiles
+	float TilePixelSize = 1024 / 32.0f;
+	float FinalTileSize = Scale / (ScreenX1 - ScreenX0) * Graphics()->ScreenWidth();
+	float FinalTilesetScale = FinalTileSize / TilePixelSize;
+
+	if(Graphics()->HasTextureArraysSupport())
+		Graphics()->QuadsTex3DBegin();
+	else
+		Graphics()->QuadsBegin();
+	Graphics()->SetColor(Color);
+
+	int StartY = (int)(ScreenY0 / Scale) - 1;
+	int StartX = (int)(ScreenX0 / Scale) - 1;
+	int EndY = (int)(ScreenY1 / Scale) + 1;
+	int EndX = (int)(ScreenX1 / Scale) + 1;
+
+	// adjust the texture shift according to mipmap level
+	float TexSize = 1024.0f;
+	float Frac = (1.25f / TexSize) * (1 / FinalTilesetScale);
+	float Nudge = (0.5f / TexSize) * (1 / FinalTilesetScale);
+
+	for(int y = StartY; y < EndY; y++)
+	{
+		for(int x = StartX; x < EndX; x++)
+		{
+			unsigned char Index = (x >= RectX && x < RectX + RectW && y >= RectY && y < RectY + RectH) ? IndexIn : IndexOut;
+			if(Index)
+			{
+				bool Render = false;
+				if(RenderFlags & LAYERRENDERFLAG_TRANSPARENT)
+					Render = true;
+
+				if(Render)
+				{
+					int tx = Index % 16;
+					int ty = Index / 16;
+					int Px0 = tx * (1024 / 16);
+					int Py0 = ty * (1024 / 16);
+					int Px1 = Px0 + (1024 / 16) - 1;
+					int Py1 = Py0 + (1024 / 16) - 1;
+
+					float x0 = Nudge + Px0 / TexSize + Frac;
+					float y0 = Nudge + Py0 / TexSize + Frac;
+					float x1 = Nudge + Px1 / TexSize - Frac;
+					float y1 = Nudge + Py0 / TexSize + Frac;
+					float x2 = Nudge + Px1 / TexSize - Frac;
+					float y2 = Nudge + Py1 / TexSize - Frac;
+					float x3 = Nudge + Px0 / TexSize + Frac;
+					float y3 = Nudge + Py1 / TexSize - Frac;
+
+					if(Graphics()->HasTextureArraysSupport())
+					{
+						x0 = 0;
+						y0 = 0;
+						x1 = x0 + 1;
+						y1 = y0;
+						x2 = x0 + 1;
+						y2 = y0 + 1;
+						x3 = x0;
+						y3 = y0 + 1;
+					}
+
+					if(Graphics()->HasTextureArraysSupport())
+					{
+						Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3, Index);
+						IGraphics::CQuadItem QuadItem(x * Scale, y * Scale, Scale, Scale);
+						Graphics()->QuadsTex3DDrawTL(&QuadItem, 1);
+					}
+					else
+					{
+						Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3);
+						IGraphics::CQuadItem QuadItem(x * Scale, y * Scale, Scale, Scale);
+						Graphics()->QuadsDrawTL(&QuadItem, 1);
+					}
+				}
+			}
+		}
+	}
+
+	if(Graphics()->HasTextureArraysSupport())
+		Graphics()->QuadsTex3DEnd();
+	else
+		Graphics()->QuadsEnd();
+	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
+}
+
+void CRenderLayerTile::RenderTilemap(CTile *pTiles, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const
+{
+	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
+	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
+
+	// calculate the final pixelsize for the tiles
+	float TilePixelSize = 1024 / 32.0f;
+	float FinalTileSize = Scale / (ScreenX1 - ScreenX0) * Graphics()->ScreenWidth();
+	float FinalTilesetScale = FinalTileSize / TilePixelSize;
+
+	if(Graphics()->HasTextureArraysSupport())
+		Graphics()->QuadsTex3DBegin();
+	else
+		Graphics()->QuadsBegin();
+	Graphics()->SetColor(Color);
+	const bool ColorOpaque = Color.a > 254.0f / 255.0f;
+
+	int StartY = (int)(ScreenY0 / Scale) - 1;
+	int StartX = (int)(ScreenX0 / Scale) - 1;
+	int EndY = (int)(ScreenY1 / Scale) + 1;
+	int EndX = (int)(ScreenX1 / Scale) + 1;
+
+	// adjust the texture shift according to mipmap level
+	float TexSize = 1024.0f;
+	float Frac = (1.25f / TexSize) * (1 / FinalTilesetScale);
+	float Nudge = (0.5f / TexSize) * (1 / FinalTilesetScale);
+
+	for(int y = StartY; y < EndY; y++)
+	{
+		for(int x = StartX; x < EndX; x++)
+		{
+			int mx = x;
+			int my = y;
+
+			if(RenderFlags & TILERENDERFLAG_EXTEND)
+			{
+				if(mx < 0)
+					mx = 0;
+				if(mx >= w)
+					mx = w - 1;
+				if(my < 0)
+					my = 0;
+				if(my >= h)
+					my = h - 1;
+			}
+			else
+			{
+				if(mx < 0)
+					continue; // mx = 0;
+				if(mx >= w)
+					continue; // mx = w-1;
+				if(my < 0)
+					continue; // my = 0;
+				if(my >= h)
+					continue; // my = h-1;
+			}
+
+			int c = mx + my * w;
+
+			unsigned char Index = pTiles[c].m_Index;
+			if(Index)
+			{
+				unsigned char Flags = pTiles[c].m_Flags;
+
+				bool Render = false;
+				if(ColorOpaque && Flags & TILEFLAG_OPAQUE)
+				{
+					if(RenderFlags & LAYERRENDERFLAG_OPAQUE)
+						Render = true;
+				}
+				else
+				{
+					if(RenderFlags & LAYERRENDERFLAG_TRANSPARENT)
+						Render = true;
+				}
+
+				if(Render)
+				{
+					int tx = Index % 16;
+					int ty = Index / 16;
+					int Px0 = tx * (1024 / 16);
+					int Py0 = ty * (1024 / 16);
+					int Px1 = Px0 + (1024 / 16) - 1;
+					int Py1 = Py0 + (1024 / 16) - 1;
+
+					float x0 = Nudge + Px0 / TexSize + Frac;
+					float y0 = Nudge + Py0 / TexSize + Frac;
+					float x1 = Nudge + Px1 / TexSize - Frac;
+					float y1 = Nudge + Py0 / TexSize + Frac;
+					float x2 = Nudge + Px1 / TexSize - Frac;
+					float y2 = Nudge + Py1 / TexSize - Frac;
+					float x3 = Nudge + Px0 / TexSize + Frac;
+					float y3 = Nudge + Py1 / TexSize - Frac;
+
+					if(Graphics()->HasTextureArraysSupport())
+					{
+						x0 = 0;
+						y0 = 0;
+						x1 = x0 + 1;
+						y1 = y0;
+						x2 = x0 + 1;
+						y2 = y0 + 1;
+						x3 = x0;
+						y3 = y0 + 1;
+					}
+
+					if(Flags & TILEFLAG_XFLIP)
+					{
+						x0 = x2;
+						x1 = x3;
+						x2 = x3;
+						x3 = x0;
+					}
+
+					if(Flags & TILEFLAG_YFLIP)
+					{
+						y0 = y3;
+						y2 = y1;
+						y3 = y1;
+						y1 = y0;
+					}
+
+					if(Flags & TILEFLAG_ROTATE)
+					{
+						float Tmp = x0;
+						x0 = x3;
+						x3 = x2;
+						x2 = x1;
+						x1 = Tmp;
+						Tmp = y0;
+						y0 = y3;
+						y3 = y2;
+						y2 = y1;
+						y1 = Tmp;
+					}
+
+					if(Graphics()->HasTextureArraysSupport())
+					{
+						Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3, Index);
+						IGraphics::CQuadItem QuadItem(x * Scale, y * Scale, Scale, Scale);
+						Graphics()->QuadsTex3DDrawTL(&QuadItem, 1);
+					}
+					else
+					{
+						Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3);
+						IGraphics::CQuadItem QuadItem(x * Scale, y * Scale, Scale, Scale);
+						Graphics()->QuadsDrawTL(&QuadItem, 1);
+					}
+				}
+			}
+			x += pTiles[c].m_Skip;
+		}
+	}
+
+	if(Graphics()->HasTextureArraysSupport())
+		Graphics()->QuadsTex3DEnd();
+	else
+		Graphics()->QuadsEnd();
+	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
+}
+
+void CRenderLayerTile::RenderTile(int x, int y, unsigned char Index, float Scale, ColorRGBA Color) const
+{
+	if(Graphics()->HasTextureArraysSupport())
+		Graphics()->QuadsTex3DBegin();
+	else
+		Graphics()->QuadsBegin();
+
+	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
+	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
+
+	// calculate the final pixelsize for the tiles
+	float TilePixelSize = 1024 / Scale;
+	float FinalTileSize = Scale / (ScreenX1 - ScreenX0) * Graphics()->ScreenWidth();
+	float FinalTilesetScale = FinalTileSize / TilePixelSize;
+
+	float TexSize = 1024.0f;
+	float Frac = (1.25f / TexSize) * (1 / FinalTilesetScale);
+	float Nudge = (0.5f / TexSize) * (1 / FinalTilesetScale);
+
+	int tx = Index % 16;
+	int ty = Index / 16;
+	int Px0 = tx * (1024 / 16);
+	int Py0 = ty * (1024 / 16);
+	int Px1 = Px0 + (1024 / 16) - 1;
+	int Py1 = Py0 + (1024 / 16) - 1;
+
+	float x0 = Nudge + Px0 / TexSize + Frac;
+	float y0 = Nudge + Py0 / TexSize + Frac;
+	float x1 = Nudge + Px1 / TexSize - Frac;
+	float y1 = Nudge + Py0 / TexSize + Frac;
+	float x2 = Nudge + Px1 / TexSize - Frac;
+	float y2 = Nudge + Py1 / TexSize - Frac;
+	float x3 = Nudge + Px0 / TexSize + Frac;
+	float y3 = Nudge + Py1 / TexSize - Frac;
+
+	if(Graphics()->HasTextureArraysSupport())
+	{
+		x0 = 0;
+		y0 = 0;
+		x1 = x0 + 1;
+		y1 = y0;
+		x2 = x0 + 1;
+		y2 = y0 + 1;
+		x3 = x0;
+		y3 = y0 + 1;
+	}
+
+	if(Graphics()->HasTextureArraysSupport())
+	{
+		Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3, Index);
+		IGraphics::CQuadItem QuadItem(x, y, Scale, Scale);
+		Graphics()->QuadsTex3DDrawTL(&QuadItem, 1);
+	}
+	else
+	{
+		Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3);
+		IGraphics::CQuadItem QuadItem(x, y, Scale, Scale);
+		Graphics()->QuadsDrawTL(&QuadItem, 1);
+	}
+
+	if(Graphics()->HasTextureArraysSupport())
+		Graphics()->QuadsTex3DEnd();
+	else
+		Graphics()->QuadsEnd();
+	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
+}
+
 void CRenderLayerTile::Render(const CRenderLayerParams &Params)
 {
 	UseTexture(GetTexture());
@@ -510,9 +832,9 @@ void CRenderLayerTile::RenderTileLayerNoTileBuffer(const ColorRGBA &Color, const
 {
 	CTile *pTiles = GetData<CTile>();
 	Graphics()->BlendNone();
-	RenderTools()->RenderTilemap(pTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_OPAQUE);
+	RenderTilemap(pTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_OPAQUE);
 	Graphics()->BlendNormal();
-	RenderTools()->RenderTilemap(pTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_TRANSPARENT);
+	RenderTilemap(pTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_TRANSPARENT);
 }
 
 void CRenderLayerTile::Init()
@@ -1066,68 +1388,34 @@ void CRenderLayerQuads::CalculateClipping()
 	// consider first two channels (X and Y offsets)
 	int aEnvOffsetMin[2] = {0, 0};
 	int aEnvOffsetMax[2] = {0, 0};
-	if(m_QuadRenderGroup.m_PosEnv >= 0)
-	{
-		std::shared_ptr<const CMapItemEnvelope> pItem = m_pEnvelopeEval->GetEnvelope(m_QuadRenderGroup.m_PosEnv);
-		if(pItem)
-		{
-			if(pItem->m_Channels != 3)
-			{
-				// fall back to no clip, because this is either not a position envelope or the map contains invalid data
-				log_warn("maprender", "quad layer at group %d, layer %d contains an invalid channel count (%d) for automatic quad clipping.", m_GroupId, m_LayerId, pItem->m_Channels);
-				m_QuadRenderGroup.m_Clipped = false;
-				return;
-			}
+	int aQuadOffsetMin[2] = {0, 0};
+	int aQuadOffsetMax[2] = {0, 0};
 
-			for(int Channel = 0; Channel < 2; ++Channel)
-			{
-				aEnvOffsetMin[Channel] = std::numeric_limits<int>::max(); // minimum of channel
-				aEnvOffsetMax[Channel] = std::numeric_limits<int>::min(); // maximum of channel
-			}
+	CalculateEnvelopeClipping(aEnvOffsetMin, aEnvOffsetMax);
+	CalculateQuadClipping(aQuadOffsetMin, aQuadOffsetMax);
 
-			for(int PointId = pItem->m_StartPoint; PointId < pItem->m_StartPoint + pItem->m_NumPoints; ++PointId)
-			{
-				const CEnvPoint *pEnvPoint = m_pEnvelopeEval->PointAccess(m_QuadRenderGroup.m_PosEnv).GetPoint(PointId);
+	// update clips
+	m_QuadRenderGroup.m_Clipped = true;
 
-				// rotation is not implemented for clipping
-				if(pEnvPoint->m_aValues[2] != 0)
-				{
-					m_QuadRenderGroup.m_Clipped = false;
-					return;
-				}
+	// X channel
+	m_QuadRenderGroup.m_ClipX = fx2f(aQuadOffsetMin[0]) + fx2f(aEnvOffsetMin[0]);
+	m_QuadRenderGroup.m_ClipWidth = fx2f(aQuadOffsetMax[0]) - fx2f(aQuadOffsetMin[0]) + fx2f(aEnvOffsetMax[0]) - fx2f(aEnvOffsetMin[0]);
 
-				for(int Channel = 0; Channel < 2; ++Channel)
-				{
-					aEnvOffsetMin[Channel] = std::min(pEnvPoint->m_aValues[Channel], aEnvOffsetMin[Channel]);
-					aEnvOffsetMax[Channel] = std::max(pEnvPoint->m_aValues[Channel], aEnvOffsetMax[Channel]);
+	// Y channel
+	m_QuadRenderGroup.m_ClipY = fx2f(aQuadOffsetMin[1]) + fx2f(aEnvOffsetMin[1]);
+	m_QuadRenderGroup.m_ClipHeight = fx2f(aQuadOffsetMax[1]) - fx2f(aQuadOffsetMin[1]) + fx2f(aEnvOffsetMax[1]) - fx2f(aEnvOffsetMin[1]);
+}
 
-					// bezier curves can have offsets beyond the fixed points
-					// using the bezier position is just an estimate, but clipping like this is good enough
-					if(PointId < pItem->m_StartPoint + pItem->m_NumPoints - 1 && pEnvPoint->m_Curvetype == CURVETYPE_BEZIER)
-					{
-						const CEnvPointBezier *pEnvPointBezier = m_pEnvelopeEval->PointAccess(m_QuadRenderGroup.m_PosEnv).GetBezier(PointId);
-						// we are only interested in the height not in the time, meaning we only need delta Y
-						aEnvOffsetMin[Channel] = std::min(pEnvPoint->m_aValues[Channel] + pEnvPointBezier->m_aOutTangentDeltaY[Channel], aEnvOffsetMin[Channel]);
-						aEnvOffsetMax[Channel] = std::max(pEnvPoint->m_aValues[Channel] + pEnvPointBezier->m_aOutTangentDeltaY[Channel], aEnvOffsetMax[Channel]);
-					}
-
-					if(PointId > 0 && m_pEnvelopeEval->PointAccess(m_QuadRenderGroup.m_PosEnv).GetPoint(PointId - 1)->m_Curvetype == CURVETYPE_BEZIER)
-					{
-						const CEnvPointBezier *pEnvPointBezier = m_pEnvelopeEval->PointAccess(m_QuadRenderGroup.m_PosEnv).GetBezier(PointId);
-						// we are only interested in the height not in the time, meaning we only need delta Y
-						aEnvOffsetMin[Channel] = std::min(pEnvPoint->m_aValues[Channel] + pEnvPointBezier->m_aInTangentDeltaY[Channel], aEnvOffsetMin[Channel]);
-						aEnvOffsetMax[Channel] = std::max(pEnvPoint->m_aValues[Channel] + pEnvPointBezier->m_aInTangentDeltaY[Channel], aEnvOffsetMax[Channel]);
-					}
-				}
-			}
-		}
-	}
-
+void CRenderLayerQuads::CalculateQuadClipping(int aQuadOffsetMin[2], int aQuadOffsetMax[2])
+{
 	const CQuad *pQuads = static_cast<CQuad *>(m_pMap->GetDataSwapped(m_pLayerQuads->m_Data));
 
 	// calculate quad position offsets
-	int aQuadOffsetMin[2] = {pQuads[0].m_aPoints[0].x, pQuads[0].m_aPoints[0].y};
-	int aQuadOffsetMax[2] = {pQuads[0].m_aPoints[0].x, pQuads[0].m_aPoints[0].y};
+	for(int Channel = 0; Channel < 2; ++Channel)
+	{
+		aQuadOffsetMin[Channel] = std::numeric_limits<int>::max(); // minimum of channel
+		aQuadOffsetMax[Channel] = std::numeric_limits<int>::min(); // maximum of channel
+	}
 
 	for(int i = 0; i < m_pLayerQuads->m_NumQuads; ++i)
 	{
@@ -1143,17 +1431,74 @@ void CRenderLayerQuads::CalculateClipping()
 			}
 		}
 	}
+}
 
-	// update clips
-	m_QuadRenderGroup.m_Clipped = true;
+void CRenderLayerQuads::CalculateEnvelopeClipping(int aEnvelopeOffsetMin[2], int aEnvelopeOffsetMax[2])
+{
+	if(m_QuadRenderGroup.m_PosEnv < 0)
+		return;
 
-	// X channel
-	m_QuadRenderGroup.m_ClipX = fx2f(aQuadOffsetMin[0]) + fx2f(aEnvOffsetMin[0]);
-	m_QuadRenderGroup.m_ClipWidth = fx2f(aQuadOffsetMax[0]) - fx2f(aQuadOffsetMin[0]) + fx2f(aEnvOffsetMax[0]) - fx2f(aEnvOffsetMin[0]);
+	std::shared_ptr<const CMapItemEnvelope> pItem = m_pEnvelopeEval->GetEnvelope(m_QuadRenderGroup.m_PosEnv);
+	if(!pItem)
+		return;
 
-	// Y channel
-	m_QuadRenderGroup.m_ClipY = fx2f(aQuadOffsetMin[1]) + fx2f(aEnvOffsetMin[1]);
-	m_QuadRenderGroup.m_ClipHeight = fx2f(aQuadOffsetMax[1]) - fx2f(aQuadOffsetMin[1]) + fx2f(aEnvOffsetMax[1]) - fx2f(aEnvOffsetMin[1]);
+	if(pItem->m_Channels != 3)
+	{
+		// fall back to no clip, because this is either not a position envelope or the map contains invalid data
+		log_warn("maprender", "quad layer at group %d, layer %d contains an invalid channel count (%d) for automatic quad clipping.", m_GroupId, m_LayerId, pItem->m_Channels);
+		m_QuadRenderGroup.m_Clipped = false;
+		return;
+	}
+
+	for(int Channel = 0; Channel < 2; ++Channel)
+	{
+		aEnvelopeOffsetMin[Channel] = std::numeric_limits<int>::max(); // minimum of channel
+		aEnvelopeOffsetMax[Channel] = std::numeric_limits<int>::min(); // maximum of channel
+	}
+
+	for(int PointId = pItem->m_StartPoint; PointId < pItem->m_StartPoint + pItem->m_NumPoints; ++PointId)
+	{
+		const CEnvPoint *pEnvPoint = m_pEnvelopeEval->PointAccess(m_QuadRenderGroup.m_PosEnv).GetPoint(PointId);
+
+		// rotation is not implemented for clipping
+		if(pEnvPoint->m_aValues[2] != 0)
+		{
+			m_QuadRenderGroup.m_Clipped = false;
+			return;
+		}
+
+		for(int Channel = 0; Channel < 2; ++Channel)
+		{
+			aEnvelopeOffsetMin[Channel] = std::min(pEnvPoint->m_aValues[Channel], aEnvelopeOffsetMin[Channel]);
+			aEnvelopeOffsetMax[Channel] = std::max(pEnvPoint->m_aValues[Channel], aEnvelopeOffsetMax[Channel]);
+
+			// bezier curves can have offsets beyond the fixed points
+			// using the bezier position is just an estimate, but clipping like this is good enough
+			if(PointId < pItem->m_StartPoint + pItem->m_NumPoints - 1 && pEnvPoint->m_Curvetype == CURVETYPE_BEZIER)
+			{
+				const CEnvPointBezier *pEnvPointBezier = m_pEnvelopeEval->PointAccess(m_QuadRenderGroup.m_PosEnv).GetBezier(PointId);
+				// we are only interested in the height not in the time, meaning we only need delta Y
+				aEnvelopeOffsetMin[Channel] = std::min(pEnvPoint->m_aValues[Channel] + pEnvPointBezier->m_aOutTangentDeltaY[Channel], aEnvelopeOffsetMin[Channel]);
+				aEnvelopeOffsetMax[Channel] = std::max(pEnvPoint->m_aValues[Channel] + pEnvPointBezier->m_aOutTangentDeltaY[Channel], aEnvelopeOffsetMax[Channel]);
+			}
+
+			if(PointId > 0 && m_pEnvelopeEval->PointAccess(m_QuadRenderGroup.m_PosEnv).GetPoint(PointId - 1)->m_Curvetype == CURVETYPE_BEZIER)
+			{
+				const CEnvPointBezier *pEnvPointBezier = m_pEnvelopeEval->PointAccess(m_QuadRenderGroup.m_PosEnv).GetBezier(PointId);
+				// we are only interested in the height not in the time, meaning we only need delta Y
+				aEnvelopeOffsetMin[Channel] = std::min(pEnvPoint->m_aValues[Channel] + pEnvPointBezier->m_aInTangentDeltaY[Channel], aEnvelopeOffsetMin[Channel]);
+				aEnvelopeOffsetMax[Channel] = std::max(pEnvPoint->m_aValues[Channel] + pEnvPointBezier->m_aInTangentDeltaY[Channel], aEnvelopeOffsetMax[Channel]);
+			}
+		}
+	}
+}
+
+void CRenderLayerQuads::RenderQuads(CQuad *pQuads, int NumQuads, int RenderFlags, ENVELOPE_EVAL pfnEval, void *pUser) const
+{
+	if(!g_Config.m_ClShowQuads || g_Config.m_ClOverlayEntities == 100)
+		return;
+
+	CRenderMap()->ForceRenderQuads(pQuads, NumQuads, RenderFlags, pfnEval, pUser, (100 - g_Config.m_ClOverlayEntities) / 100.0f);
 }
 
 void CRenderLayerQuads::Render(const CRenderLayerParams &Params)
@@ -1167,7 +1512,7 @@ void CRenderLayerQuads::Render(const CRenderLayerParams &Params)
 			if(!Graphics()->IsQuadBufferingEnabled() || !Params.m_TileAndQuadBuffering)
 			{
 				Graphics()->BlendNormal();
-				RenderTools()->ForceRenderQuads(pQuads, m_pLayerQuads->m_NumQuads, LAYERRENDERFLAG_TRANSPARENT, EnvelopeEvalRenderLayer, this, 1.f);
+				CRenderMap()->ForceRenderQuads(pQuads, m_pLayerQuads->m_NumQuads, LAYERRENDERFLAG_TRANSPARENT, EnvelopeEvalRenderLayer, this, 1.f);
 			}
 			else
 			{
@@ -1180,7 +1525,7 @@ void CRenderLayerQuads::Render(const CRenderLayerParams &Params)
 		if(!Graphics()->IsQuadBufferingEnabled() || !Params.m_TileAndQuadBuffering)
 		{
 			Graphics()->BlendNormal();
-			RenderTools()->RenderQuads(pQuads, m_pLayerQuads->m_NumQuads, LAYERRENDERFLAG_TRANSPARENT, EnvelopeEvalRenderLayer, this);
+			RenderQuads(pQuads, m_pLayerQuads->m_NumQuads, LAYERRENDERFLAG_TRANSPARENT, EnvelopeEvalRenderLayer, this);
 		}
 		else
 		{
@@ -1262,17 +1607,17 @@ void CRenderLayerEntityGame::RenderTileLayerNoTileBuffer(const ColorRGBA &Color,
 {
 	CTile *pGameTiles = GetData<CTile>();
 	Graphics()->BlendNone();
-	RenderTools()->RenderTilemap(pGameTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_OPAQUE);
+	RenderTilemap(pGameTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_OPAQUE);
 	Graphics()->BlendNormal();
 
 	if(Params.m_RenderTileBorder)
 	{
-		RenderTools()->RenderTileRectangle(-BorderRenderDistance, -BorderRenderDistance, m_pLayerTilemap->m_Width + 2 * BorderRenderDistance, m_pLayerTilemap->m_Height + 2 * BorderRenderDistance,
+		RenderTileRectangle(-BorderRenderDistance, -BorderRenderDistance, m_pLayerTilemap->m_Width + 2 * BorderRenderDistance, m_pLayerTilemap->m_Height + 2 * BorderRenderDistance,
 			TILE_AIR, TILE_DEATH, // display air inside, death outside
 			32.0f, Color.Multiply(GetDeathBorderColor()), TILERENDERFLAG_EXTEND | LAYERRENDERFLAG_TRANSPARENT);
 	}
 
-	RenderTools()->RenderTilemap(pGameTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_TRANSPARENT);
+	RenderTilemap(pGameTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_TRANSPARENT);
 }
 
 ColorRGBA CRenderLayerEntityGame::GetDeathBorderColor() const
@@ -1320,6 +1665,178 @@ void CRenderLayerEntityTele::Unload()
 	}
 }
 
+void CRenderLayerEntityTele::RenderTeleOverlay(CTeleTile *pTele, int w, int h, float Scale, int OverlayRenderFlag, float Alpha) const
+{
+	if(!(OverlayRenderFlag & OVERLAYRENDERFLAG_TEXT))
+		return;
+
+	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
+	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
+
+	int StartY = (int)(ScreenY0 / Scale) - 1;
+	int StartX = (int)(ScreenX0 / Scale) - 1;
+	int EndY = (int)(ScreenY1 / Scale) + 1;
+	int EndX = (int)(ScreenX1 / Scale) + 1;
+
+	if(EndX - StartX > Graphics()->ScreenWidth() / g_Config.m_GfxTextOverlay || EndY - StartY > Graphics()->ScreenHeight() / g_Config.m_GfxTextOverlay)
+		return; // its useless to render text at this distance
+
+	float Size = g_Config.m_ClTextEntitiesSize / 100.f;
+	char aBuf[16];
+
+	TextRender()->TextColor(1.0f, 1.0f, 1.0f, Alpha);
+	for(int y = StartY; y < EndY; y++)
+	{
+		for(int x = StartX; x < EndX; x++)
+		{
+			int mx = x;
+			int my = y;
+
+			if(mx < 0)
+				continue; // mx = 0;
+			if(mx >= w)
+				continue; // mx = w-1;
+			if(my < 0)
+				continue; // my = 0;
+			if(my >= h)
+				continue; // my = h-1;
+
+			int c = mx + my * w;
+
+			unsigned char Index = pTele[c].m_Number;
+			if(Index && IsTeleTileNumberUsedAny(pTele[c].m_Type))
+			{
+				str_format(aBuf, sizeof(aBuf), "%d", Index);
+				// Auto-resize text to fit inside the tile
+				float ScaledWidth = TextRender()->TextWidth(Size * Scale, aBuf, -1);
+				float Factor = std::clamp(Scale / ScaledWidth, 0.0f, 1.0f);
+				float LocalSize = Size * Factor;
+				float ToCenterOffset = (1 - LocalSize) / 2.f;
+				TextRender()->Text((mx + 0.5f) * Scale - (ScaledWidth * Factor) / 2.0f, (my + ToCenterOffset) * Scale, LocalSize * Scale, aBuf);
+			}
+		}
+	}
+	TextRender()->TextColor(TextRender()->DefaultTextColor());
+	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
+}
+
+void CRenderLayerEntityTele::RenderTelemap(CTeleTile *pTele, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const
+{
+	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
+	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
+
+	// calculate the final pixelsize for the tiles
+	float TilePixelSize = 1024 / 32.0f;
+	float FinalTileSize = Scale / (ScreenX1 - ScreenX0) * Graphics()->ScreenWidth();
+	float FinalTilesetScale = FinalTileSize / TilePixelSize;
+
+	if(Graphics()->HasTextureArraysSupport())
+		Graphics()->QuadsTex3DBegin();
+	else
+		Graphics()->QuadsBegin();
+	Graphics()->SetColor(Color);
+
+	int StartY = (int)(ScreenY0 / Scale) - 1;
+	int StartX = (int)(ScreenX0 / Scale) - 1;
+	int EndY = (int)(ScreenY1 / Scale) + 1;
+	int EndX = (int)(ScreenX1 / Scale) + 1;
+
+	// adjust the texture shift according to mipmap level
+	float TexSize = 1024.0f;
+	float Frac = (1.25f / TexSize) * (1 / FinalTilesetScale);
+	float Nudge = (0.5f / TexSize) * (1 / FinalTilesetScale);
+
+	for(int y = StartY; y < EndY; y++)
+		for(int x = StartX; x < EndX; x++)
+		{
+			int mx = x;
+			int my = y;
+
+			if(RenderFlags & TILERENDERFLAG_EXTEND)
+			{
+				if(mx < 0)
+					mx = 0;
+				if(mx >= w)
+					mx = w - 1;
+				if(my < 0)
+					my = 0;
+				if(my >= h)
+					my = h - 1;
+			}
+			else
+			{
+				if(mx < 0)
+					continue; // mx = 0;
+				if(mx >= w)
+					continue; // mx = w-1;
+				if(my < 0)
+					continue; // my = 0;
+				if(my >= h)
+					continue; // my = h-1;
+			}
+
+			int c = mx + my * w;
+
+			unsigned char Index = pTele[c].m_Type;
+			if(Index)
+			{
+				bool Render = false;
+				if(RenderFlags & LAYERRENDERFLAG_TRANSPARENT)
+					Render = true;
+
+				if(Render)
+				{
+					int tx = Index % 16;
+					int ty = Index / 16;
+					int Px0 = tx * (1024 / 16);
+					int Py0 = ty * (1024 / 16);
+					int Px1 = Px0 + (1024 / 16) - 1;
+					int Py1 = Py0 + (1024 / 16) - 1;
+
+					float x0 = Nudge + Px0 / TexSize + Frac;
+					float y0 = Nudge + Py0 / TexSize + Frac;
+					float x1 = Nudge + Px1 / TexSize - Frac;
+					float y1 = Nudge + Py0 / TexSize + Frac;
+					float x2 = Nudge + Px1 / TexSize - Frac;
+					float y2 = Nudge + Py1 / TexSize - Frac;
+					float x3 = Nudge + Px0 / TexSize + Frac;
+					float y3 = Nudge + Py1 / TexSize - Frac;
+
+					if(Graphics()->HasTextureArraysSupport())
+					{
+						x0 = 0;
+						y0 = 0;
+						x1 = x0 + 1;
+						y1 = y0;
+						x2 = x0 + 1;
+						y2 = y0 + 1;
+						x3 = x0;
+						y3 = y0 + 1;
+					}
+
+					if(Graphics()->HasTextureArraysSupport())
+					{
+						Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3, Index);
+						IGraphics::CQuadItem QuadItem(x * Scale, y * Scale, Scale, Scale);
+						Graphics()->QuadsTex3DDrawTL(&QuadItem, 1);
+					}
+					else
+					{
+						Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3);
+						IGraphics::CQuadItem QuadItem(x * Scale, y * Scale, Scale, Scale);
+						Graphics()->QuadsDrawTL(&QuadItem, 1);
+					}
+				}
+			}
+		}
+
+	if(Graphics()->HasTextureArraysSupport())
+		Graphics()->QuadsTex3DEnd();
+	else
+		Graphics()->QuadsEnd();
+	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
+}
+
 void CRenderLayerEntityTele::RenderTileLayerWithTileBuffer(const ColorRGBA &Color, const CRenderLayerParams &Params)
 {
 	Graphics()->BlendNormal();
@@ -1335,11 +1852,11 @@ void CRenderLayerEntityTele::RenderTileLayerNoTileBuffer(const ColorRGBA &Color,
 {
 	CTeleTile *pTeleTiles = GetData<CTeleTile>();
 	Graphics()->BlendNone();
-	RenderTools()->RenderTelemap(pTeleTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_OPAQUE);
+	RenderTelemap(pTeleTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_OPAQUE);
 	Graphics()->BlendNormal();
-	RenderTools()->RenderTelemap(pTeleTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_TRANSPARENT);
+	RenderTelemap(pTeleTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_TRANSPARENT);
 	int OverlayRenderFlags = (Params.m_RenderText ? OVERLAYRENDERFLAG_TEXT : 0) | (Params.m_RenderInvalidTiles ? OVERLAYRENDERFLAG_EDITOR : 0);
-	RenderTools()->RenderTeleOverlay(pTeleTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, OverlayRenderFlags, Color.a);
+	RenderTeleOverlay(pTeleTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, OverlayRenderFlags, Color.a);
 }
 
 void CRenderLayerEntityTele::GetTileData(unsigned char *pIndex, unsigned char *pFlags, int *pAngleRotate, unsigned int x, unsigned int y, int CurOverlay) const
@@ -1409,6 +1926,94 @@ void CRenderLayerEntitySpeedup::GetTileData(unsigned char *pIndex, unsigned char
 		*pIndex = MaxSpeed;
 }
 
+
+void CRenderLayerEntitySpeedup::RenderSpeedupOverlay(CSpeedupTile *pSpeedup, int w, int h, float Scale, int OverlayRenderFlag, float Alpha)
+{
+	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
+	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
+
+	int StartY = (int)(ScreenY0 / Scale) - 1;
+	int StartX = (int)(ScreenX0 / Scale) - 1;
+	int EndY = (int)(ScreenY1 / Scale) + 1;
+	int EndX = (int)(ScreenX1 / Scale) + 1;
+
+	if(EndX - StartX > Graphics()->ScreenWidth() / g_Config.m_GfxTextOverlay || EndY - StartY > Graphics()->ScreenHeight() / g_Config.m_GfxTextOverlay)
+		return; // its useless to render text at this distance
+
+	float Size = g_Config.m_ClTextEntitiesSize / 100.f;
+	float ToCenterOffset = (1 - Size) / 2.f;
+	char aBuf[16];
+
+	TextRender()->TextColor(1.0f, 1.0f, 1.0f, Alpha);
+	for(int y = StartY; y < EndY; y++)
+	{
+		for(int x = StartX; x < EndX; x++)
+		{
+			int mx = x;
+			int my = y;
+
+			if(mx < 0)
+				continue; // mx = 0;
+			if(mx >= w)
+				continue; // mx = w-1;
+			if(my < 0)
+				continue; // my = 0;
+			if(my >= h)
+				continue; // my = h-1;
+
+			int c = mx + my * w;
+
+			int Force = (int)pSpeedup[c].m_Force;
+			int MaxSpeed = (int)pSpeedup[c].m_MaxSpeed;
+			int Type = (int)pSpeedup[c].m_Type;
+			int Angle = (int)pSpeedup[c].m_Angle;
+			if((Force && Type == TILE_SPEED_BOOST_OLD) || ((Force || MaxSpeed) && Type == TILE_SPEED_BOOST) || (OverlayRenderFlag & OVERLAYRENDERFLAG_EDITOR && (Type || Force || MaxSpeed || Angle)))
+			{
+				if(IsValidSpeedupTile(Type))
+				{
+					// draw arrow
+					Graphics()->TextureSet(g_pData->m_aImages[IMAGE_SPEEDUP_ARROW].m_Id);
+					Graphics()->QuadsBegin();
+					Graphics()->SetColor(1.0f, 1.0f, 1.0f, Alpha);
+					SelectSprite(SPRITE_SPEEDUP_ARROW);
+					Graphics()->QuadsSetRotation(pSpeedup[c].m_Angle * (pi / 180.0f));
+					DrawSprite(mx * Scale + 16, my * Scale + 16, 35.0f);
+					Graphics()->QuadsEnd();
+
+					// draw force and max speed
+					if(OverlayRenderFlag & OVERLAYRENDERFLAG_TEXT)
+					{
+						str_format(aBuf, sizeof(aBuf), "%d", Force);
+						TextRender()->Text(mx * Scale, (my + 0.5f + ToCenterOffset / 2) * Scale, Size * Scale / 2.f, aBuf);
+						if(MaxSpeed)
+						{
+							str_format(aBuf, sizeof(aBuf), "%d", MaxSpeed);
+							TextRender()->Text(mx * Scale, (my + ToCenterOffset / 2) * Scale, Size * Scale / 2.f, aBuf);
+						}
+					}
+				}
+				else
+				{
+					// draw all three values
+					if(OverlayRenderFlag & OVERLAYRENDERFLAG_TEXT)
+					{
+						float LineSpacing = Size * Scale / 3.f;
+						float BaseY = (my + ToCenterOffset) * Scale;
+						str_format(aBuf, sizeof(aBuf), "%d", Force);
+						TextRender()->Text(mx * Scale, BaseY, LineSpacing, aBuf);
+						str_format(aBuf, sizeof(aBuf), "%d", MaxSpeed);
+						TextRender()->Text(mx * Scale, BaseY + LineSpacing, LineSpacing, aBuf);
+						str_format(aBuf, sizeof(aBuf), "%d", Angle);
+						TextRender()->Text(mx * Scale, BaseY + 2 * LineSpacing, LineSpacing, aBuf);
+					}
+				}
+			}
+		}
+	}
+	TextRender()->TextColor(TextRender()->DefaultTextColor());
+	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
+}
+
 void CRenderLayerEntitySpeedup::RenderTileLayerWithTileBuffer(const ColorRGBA &Color, const CRenderLayerParams &Params)
 {
 	// draw arrow -- clamp to the edge of the arrow image
@@ -1430,7 +2035,7 @@ void CRenderLayerEntitySpeedup::RenderTileLayerNoTileBuffer(const ColorRGBA &Col
 {
 	CSpeedupTile *pSpeedupTiles = GetData<CSpeedupTile>();
 	int OverlayRenderFlags = (Params.m_RenderText ? OVERLAYRENDERFLAG_TEXT : 0) | (Params.m_RenderInvalidTiles ? OVERLAYRENDERFLAG_EDITOR : 0);
-	RenderTools()->RenderSpeedupOverlay(pSpeedupTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, OverlayRenderFlags, Color.a);
+	RenderSpeedupOverlay(pSpeedupTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, OverlayRenderFlags, Color.a);
 }
 
 // SWITCH
@@ -1487,6 +2092,225 @@ void CRenderLayerEntitySwitch::GetTileData(unsigned char *pIndex, unsigned char 
 		*pIndex = pTiles[y * m_pLayerTilemap->m_Width + x].m_Delay;
 }
 
+
+void CRenderLayerEntitySwitch::RenderSwitchOverlay(CSwitchTile *pSwitch, int w, int h, float Scale, int OverlayRenderFlag, float Alpha) const
+{
+	if(!(OverlayRenderFlag & OVERLAYRENDERFLAG_TEXT))
+		return;
+
+	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
+	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
+
+	int StartY = (int)(ScreenY0 / Scale) - 1;
+	int StartX = (int)(ScreenX0 / Scale) - 1;
+	int EndY = (int)(ScreenY1 / Scale) + 1;
+	int EndX = (int)(ScreenX1 / Scale) + 1;
+
+	if(EndX - StartX > Graphics()->ScreenWidth() / g_Config.m_GfxTextOverlay || EndY - StartY > Graphics()->ScreenHeight() / g_Config.m_GfxTextOverlay)
+		return; // its useless to render text at this distance
+
+	float Size = g_Config.m_ClTextEntitiesSize / 100.f;
+	float ToCenterOffset = (1 - Size) / 2.f;
+	char aBuf[16];
+
+	TextRender()->TextColor(1.0f, 1.0f, 1.0f, Alpha);
+	for(int y = StartY; y < EndY; y++)
+	{
+		for(int x = StartX; x < EndX; x++)
+		{
+			int mx = x;
+			int my = y;
+
+			if(mx < 0)
+				continue; // mx = 0;
+			if(mx >= w)
+				continue; // mx = w-1;
+			if(my < 0)
+				continue; // my = 0;
+			if(my >= h)
+				continue; // my = h-1;
+
+			int c = mx + my * w;
+
+			unsigned char Index = pSwitch[c].m_Number;
+			if(Index && IsSwitchTileNumberUsed(pSwitch[c].m_Type))
+			{
+				str_format(aBuf, sizeof(aBuf), "%d", Index);
+				TextRender()->Text(mx * Scale, (my + ToCenterOffset / 2) * Scale, Size * Scale / 2.f, aBuf);
+			}
+
+			unsigned char Delay = pSwitch[c].m_Delay;
+			if(Delay && IsSwitchTileDelayUsed(pSwitch[c].m_Type))
+			{
+				str_format(aBuf, sizeof(aBuf), "%d", Delay);
+				TextRender()->Text(mx * Scale, (my + 0.5f + ToCenterOffset / 2) * Scale, Size * Scale / 2.f, aBuf);
+			}
+		}
+	}
+	TextRender()->TextColor(TextRender()->DefaultTextColor());
+	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
+}
+
+void CRenderLayerEntitySwitch::RenderSwitchmap(CSwitchTile *pSwitchTile, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const
+{
+	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
+	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
+
+	// calculate the final pixelsize for the tiles
+	float TilePixelSize = 1024 / 32.0f;
+	float FinalTileSize = Scale / (ScreenX1 - ScreenX0) * Graphics()->ScreenWidth();
+	float FinalTilesetScale = FinalTileSize / TilePixelSize;
+
+	if(Graphics()->HasTextureArraysSupport())
+		Graphics()->QuadsTex3DBegin();
+	else
+		Graphics()->QuadsBegin();
+	Graphics()->SetColor(Color);
+
+	int StartY = (int)(ScreenY0 / Scale) - 1;
+	int StartX = (int)(ScreenX0 / Scale) - 1;
+	int EndY = (int)(ScreenY1 / Scale) + 1;
+	int EndX = (int)(ScreenX1 / Scale) + 1;
+
+	// adjust the texture shift according to mipmap level
+	float TexSize = 1024.0f;
+	float Frac = (1.25f / TexSize) * (1 / FinalTilesetScale);
+	float Nudge = (0.5f / TexSize) * (1 / FinalTilesetScale);
+
+	for(int y = StartY; y < EndY; y++)
+		for(int x = StartX; x < EndX; x++)
+		{
+			int mx = x;
+			int my = y;
+
+			if(RenderFlags & TILERENDERFLAG_EXTEND)
+			{
+				if(mx < 0)
+					mx = 0;
+				if(mx >= w)
+					mx = w - 1;
+				if(my < 0)
+					my = 0;
+				if(my >= h)
+					my = h - 1;
+			}
+			else
+			{
+				if(mx < 0)
+					continue; // mx = 0;
+				if(mx >= w)
+					continue; // mx = w-1;
+				if(my < 0)
+					continue; // my = 0;
+				if(my >= h)
+					continue; // my = h-1;
+			}
+
+			int c = mx + my * w;
+
+			unsigned char Index = pSwitchTile[c].m_Type;
+			if(Index)
+			{
+				if(Index == TILE_SWITCHTIMEDOPEN)
+					Index = 8;
+
+				unsigned char Flags = pSwitchTile[c].m_Flags;
+
+				bool Render = false;
+				if(Flags & TILEFLAG_OPAQUE)
+				{
+					if(RenderFlags & LAYERRENDERFLAG_OPAQUE)
+						Render = true;
+				}
+				else
+				{
+					if(RenderFlags & LAYERRENDERFLAG_TRANSPARENT)
+						Render = true;
+				}
+
+				if(Render)
+				{
+					int tx = Index % 16;
+					int ty = Index / 16;
+					int Px0 = tx * (1024 / 16);
+					int Py0 = ty * (1024 / 16);
+					int Px1 = Px0 + (1024 / 16) - 1;
+					int Py1 = Py0 + (1024 / 16) - 1;
+
+					float x0 = Nudge + Px0 / TexSize + Frac;
+					float y0 = Nudge + Py0 / TexSize + Frac;
+					float x1 = Nudge + Px1 / TexSize - Frac;
+					float y1 = Nudge + Py0 / TexSize + Frac;
+					float x2 = Nudge + Px1 / TexSize - Frac;
+					float y2 = Nudge + Py1 / TexSize - Frac;
+					float x3 = Nudge + Px0 / TexSize + Frac;
+					float y3 = Nudge + Py1 / TexSize - Frac;
+
+					if(Graphics()->HasTextureArraysSupport())
+					{
+						x0 = 0;
+						y0 = 0;
+						x1 = x0 + 1;
+						y1 = y0;
+						x2 = x0 + 1;
+						y2 = y0 + 1;
+						x3 = x0;
+						y3 = y0 + 1;
+					}
+
+					if(Flags & TILEFLAG_XFLIP)
+					{
+						x0 = x2;
+						x1 = x3;
+						x2 = x3;
+						x3 = x0;
+					}
+
+					if(Flags & TILEFLAG_YFLIP)
+					{
+						y0 = y3;
+						y2 = y1;
+						y3 = y1;
+						y1 = y0;
+					}
+
+					if(Flags & TILEFLAG_ROTATE)
+					{
+						float Tmp = x0;
+						x0 = x3;
+						x3 = x2;
+						x2 = x1;
+						x1 = Tmp;
+						Tmp = y0;
+						y0 = y3;
+						y3 = y2;
+						y2 = y1;
+						y1 = Tmp;
+					}
+
+					if(Graphics()->HasTextureArraysSupport())
+					{
+						Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3, Index);
+						IGraphics::CQuadItem QuadItem(x * Scale, y * Scale, Scale, Scale);
+						Graphics()->QuadsTex3DDrawTL(&QuadItem, 1);
+					}
+					else
+					{
+						Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3);
+						IGraphics::CQuadItem QuadItem(x * Scale, y * Scale, Scale, Scale);
+						Graphics()->QuadsDrawTL(&QuadItem, 1);
+					}
+				}
+			}
+		}
+
+	if(Graphics()->HasTextureArraysSupport())
+		Graphics()->QuadsTex3DEnd();
+	else
+		Graphics()->QuadsEnd();
+	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
+}
+
 void CRenderLayerEntitySwitch::RenderTileLayerWithTileBuffer(const ColorRGBA &Color, const CRenderLayerParams &Params)
 {
 	Graphics()->BlendNormal();
@@ -1504,11 +2328,11 @@ void CRenderLayerEntitySwitch::RenderTileLayerNoTileBuffer(const ColorRGBA &Colo
 {
 	CSwitchTile *pSwitchTiles = GetData<CSwitchTile>();
 	Graphics()->BlendNone();
-	RenderTools()->RenderSwitchmap(pSwitchTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_OPAQUE);
+	RenderSwitchmap(pSwitchTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_OPAQUE);
 	Graphics()->BlendNormal();
-	RenderTools()->RenderSwitchmap(pSwitchTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_TRANSPARENT);
+	RenderSwitchmap(pSwitchTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_TRANSPARENT);
 	int OverlayRenderFlags = (Params.m_RenderText ? OVERLAYRENDERFLAG_TEXT : 0) | (Params.m_RenderInvalidTiles ? OVERLAYRENDERFLAG_EDITOR : 0);
-	RenderTools()->RenderSwitchOverlay(pSwitchTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, OverlayRenderFlags, Color.a);
+	RenderSwitchOverlay(pSwitchTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, OverlayRenderFlags, Color.a);
 }
 
 // TUNE
@@ -1528,11 +2352,183 @@ int CRenderLayerEntityTune::GetDataIndex(unsigned int &TileSize) const
 	return m_pLayerTilemap->m_Tune;
 }
 
+void CRenderLayerEntityTune::RenderTuneOverlay(CTuneTile *pTune, int w, int h, float Scale, int OverlayRenderFlag, float Alpha) const
+{
+	if(!(OverlayRenderFlag & OVERLAYRENDERFLAG_TEXT))
+		return;
+
+	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
+	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
+
+	int StartY = (int)(ScreenY0 / Scale) - 1;
+	int StartX = (int)(ScreenX0 / Scale) - 1;
+	int EndY = (int)(ScreenY1 / Scale) + 1;
+	int EndX = (int)(ScreenX1 / Scale) + 1;
+
+	if(EndX - StartX > Graphics()->ScreenWidth() / g_Config.m_GfxTextOverlay || EndY - StartY > Graphics()->ScreenHeight() / g_Config.m_GfxTextOverlay)
+		return; // its useless to render text at this distance
+
+	float Size = g_Config.m_ClTextEntitiesSize / 200.f;
+	char aBuf[16];
+
+	TextRender()->TextColor(1.0f, 1.0f, 1.0f, Alpha);
+	for(int y = StartY; y < EndY; y++)
+	{
+		for(int x = StartX; x < EndX; x++)
+		{
+			int mx = x;
+			int my = y;
+
+			if(mx < 0)
+				continue; // mx = 0;
+			if(mx >= w)
+				continue; // mx = w-1;
+			if(my < 0)
+				continue; // my = 0;
+			if(my >= h)
+				continue; // my = h-1;
+
+			int c = mx + my * w;
+
+			unsigned char Index = pTune[c].m_Number;
+			if(Index)
+			{
+				str_format(aBuf, sizeof(aBuf), "%d", Index);
+				// Auto-resize text to fit inside the tile
+				float ScaledWidth = TextRender()->TextWidth(Size * Scale, aBuf, -1);
+				float Factor = std::clamp(Scale / ScaledWidth, 0.0f, 1.0f);
+				float LocalSize = Size * Factor;
+				float ToCenterOffset = (1 - LocalSize) / 2.f;
+				TextRender()->Text((mx + 0.5f) * Scale - (ScaledWidth * Factor) / 2.0f, (my + ToCenterOffset) * Scale, LocalSize * Scale, aBuf);
+			}
+		}
+	}
+	TextRender()->TextColor(TextRender()->DefaultTextColor());
+	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
+}
+
+void CRenderLayerEntityTune::RenderTunemap(CTuneTile *pTune, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const
+{
+	float ScreenX0, ScreenY0, ScreenX1, ScreenY1;
+	Graphics()->GetScreen(&ScreenX0, &ScreenY0, &ScreenX1, &ScreenY1);
+
+	// calculate the final pixelsize for the tiles
+	float TilePixelSize = 1024 / 32.0f;
+	float FinalTileSize = Scale / (ScreenX1 - ScreenX0) * Graphics()->ScreenWidth();
+	float FinalTilesetScale = FinalTileSize / TilePixelSize;
+
+	if(Graphics()->HasTextureArraysSupport())
+		Graphics()->QuadsTex3DBegin();
+	else
+		Graphics()->QuadsBegin();
+	Graphics()->SetColor(Color);
+
+	int StartY = (int)(ScreenY0 / Scale) - 1;
+	int StartX = (int)(ScreenX0 / Scale) - 1;
+	int EndY = (int)(ScreenY1 / Scale) + 1;
+	int EndX = (int)(ScreenX1 / Scale) + 1;
+
+	// adjust the texture shift according to mipmap level
+	float TexSize = 1024.0f;
+	float Frac = (1.25f / TexSize) * (1 / FinalTilesetScale);
+	float Nudge = (0.5f / TexSize) * (1 / FinalTilesetScale);
+
+	for(int y = StartY; y < EndY; y++)
+		for(int x = StartX; x < EndX; x++)
+		{
+			int mx = x;
+			int my = y;
+
+			if(RenderFlags & TILERENDERFLAG_EXTEND)
+			{
+				if(mx < 0)
+					mx = 0;
+				if(mx >= w)
+					mx = w - 1;
+				if(my < 0)
+					my = 0;
+				if(my >= h)
+					my = h - 1;
+			}
+			else
+			{
+				if(mx < 0)
+					continue; // mx = 0;
+				if(mx >= w)
+					continue; // mx = w-1;
+				if(my < 0)
+					continue; // my = 0;
+				if(my >= h)
+					continue; // my = h-1;
+			}
+
+			int c = mx + my * w;
+
+			unsigned char Index = pTune[c].m_Type;
+			if(Index)
+			{
+				bool Render = false;
+				if(RenderFlags & LAYERRENDERFLAG_TRANSPARENT)
+					Render = true;
+
+				if(Render)
+				{
+					int tx = Index % 16;
+					int ty = Index / 16;
+					int Px0 = tx * (1024 / 16);
+					int Py0 = ty * (1024 / 16);
+					int Px1 = Px0 + (1024 / 16) - 1;
+					int Py1 = Py0 + (1024 / 16) - 1;
+
+					float x0 = Nudge + Px0 / TexSize + Frac;
+					float y0 = Nudge + Py0 / TexSize + Frac;
+					float x1 = Nudge + Px1 / TexSize - Frac;
+					float y1 = Nudge + Py0 / TexSize + Frac;
+					float x2 = Nudge + Px1 / TexSize - Frac;
+					float y2 = Nudge + Py1 / TexSize - Frac;
+					float x3 = Nudge + Px0 / TexSize + Frac;
+					float y3 = Nudge + Py1 / TexSize - Frac;
+
+					if(Graphics()->HasTextureArraysSupport())
+					{
+						x0 = 0;
+						y0 = 0;
+						x1 = x0 + 1;
+						y1 = y0;
+						x2 = x0 + 1;
+						y2 = y0 + 1;
+						x3 = x0;
+						y3 = y0 + 1;
+					}
+
+					if(Graphics()->HasTextureArraysSupport())
+					{
+						Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3, Index);
+						IGraphics::CQuadItem QuadItem(x * Scale, y * Scale, Scale, Scale);
+						Graphics()->QuadsTex3DDrawTL(&QuadItem, 1);
+					}
+					else
+					{
+						Graphics()->QuadsSetSubsetFree(x0, y0, x1, y1, x2, y2, x3, y3);
+						IGraphics::CQuadItem QuadItem(x * Scale, y * Scale, Scale, Scale);
+						Graphics()->QuadsDrawTL(&QuadItem, 1);
+					}
+				}
+			}
+		}
+
+	if(Graphics()->HasTextureArraysSupport())
+		Graphics()->QuadsTex3DEnd();
+	else
+		Graphics()->QuadsEnd();
+	Graphics()->MapScreen(ScreenX0, ScreenY0, ScreenX1, ScreenY1);
+}
+
 void CRenderLayerEntityTune::RenderTileLayerNoTileBuffer(const ColorRGBA &Color, const CRenderLayerParams &Params)
 {
 	CTuneTile *pTuneTiles = GetData<CTuneTile>();
 	Graphics()->BlendNone();
-	RenderTools()->RenderTunemap(pTuneTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_OPAQUE);
+	RenderTunemap(pTuneTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_OPAQUE);
 	Graphics()->BlendNormal();
-	RenderTools()->RenderTunemap(pTuneTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_TRANSPARENT);
+	RenderTunemap(pTuneTiles, m_pLayerTilemap->m_Width, m_pLayerTilemap->m_Height, 32.0f, Color, (Params.m_RenderTileBorder ? TILERENDERFLAG_EXTEND : 0) | LAYERRENDERFLAG_TRANSPARENT);
 }

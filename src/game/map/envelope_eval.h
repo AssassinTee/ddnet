@@ -3,8 +3,8 @@
 
 #include <base/color.h>
 #include <game/client/component.h>
-#include <game/client/render.h>
 #include <game/mapitems.h>
+#include "render.h"
 
 class CEditor;
 
@@ -27,6 +27,7 @@ public:
 	void EnvelopeEval(int TimeOffsetMillis, int Env, ColorRGBA &Result, size_t Channels, bool OnlineOnly) override;
 	const IEnvelopePointAccess &PointAccess(int Env) const override { return m_EnvelopePointAccess; }
 	std::shared_ptr<const CMapItemEnvelope> GetEnvelope(int Env) override;
+	static void RenderEvalEnvelope(const IEnvelopePointAccess *pPoints, std::chrono::nanoseconds TimeNanos, ColorRGBA &Result, size_t Channels);
 
 private:
 	IMap *m_pMap;

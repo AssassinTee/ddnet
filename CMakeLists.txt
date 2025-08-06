@@ -2444,7 +2444,6 @@ if(CLIENT)
     race.h
     render.cpp
     render.h
-    render_map.cpp
     sixup_translate_connless.cpp
     sixup_translate_game.cpp
     sixup_translate_snapshot.cpp
@@ -2540,6 +2539,8 @@ if(CLIENT)
     src/game/map/envelope_eval.h
     src/game/map/render_layer.cpp
     src/game/map/render_layer.h
+    src/game/map/render_map.cpp
+    src/game/map/render.h
   )
   set(GAME_GENERATED_CLIENT
     src/game/generated/checksum.cpp

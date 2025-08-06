@@ -114,6 +114,9 @@ protected:
 	virtual ColorRGBA GetRenderColor(const CRenderLayerParams &Params) const;
 	virtual void GetTileData(unsigned char *pIndex, unsigned char *pFlags, int *pAngleRotate, unsigned int x, unsigned int y, int CurOverlay) const;
 	IGraphics::CTextureHandle GetTexture() const override { return m_TextureHandle; }
+	void RenderTilemap(CTile *pTiles, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const;
+	void RenderTileRectangle(int RectX, int RectY, int RectW, int RectH, unsigned char IndexIn, unsigned char IndexOut, float Scale, ColorRGBA Color, int RenderFlags) const;
+	void RenderTile(int x, int y, unsigned char Index, float Scale, ColorRGBA Color) const;
 
 private:
 	IGraphics::CTextureHandle m_TextureHandle;
@@ -216,6 +219,10 @@ public:
 protected:
 	virtual IGraphics::CTextureHandle GetTexture() const override { return m_TextureHandle; }
 	void CalculateClipping();
+	void CalculateQuadClipping(int aQuadOffsetMin[2], int aQuadOffsetMax[2]);
+	void CalculateEnvelopeClipping(int aEnvelopeOffsetMin[2], int aEnvelopeOffsetMax[2]);
+
+	void RenderQuads(CQuad *pQuads, int NumQuads, int Flags, ENVELOPE_EVAL pfnEval, void *pUser) const;
 
 	class CQuadLayerVisuals : public CComponentInterfaces
 	{
@@ -302,6 +309,9 @@ protected:
 	void RenderTileLayerNoTileBuffer(const ColorRGBA &Color, const CRenderLayerParams &Params) override;
 	void GetTileData(unsigned char *pIndex, unsigned char *pFlags, int *pAngleRotate, unsigned int x, unsigned int y, int CurOverlay) const override;
 
+	void RenderTeleOverlay(CTeleTile *pTele, int w, int h, float Scale, int OverlayRenderFlags, float Alpha = 1.0f) const;
+	void RenderTelemap(CTeleTile *pTele, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const;
+
 private:
 	std::optional<CRenderLayerTile::CTileLayerVisuals> m_VisualTeleNumbers;
 };
@@ -319,6 +329,9 @@ protected:
 	void RenderTileLayerNoTileBuffer(const ColorRGBA &Color, const CRenderLayerParams &Params) override;
 	void GetTileData(unsigned char *pIndex, unsigned char *pFlags, int *pAngleRotate, unsigned int x, unsigned int y, int CurOverlay) const override;
 	IGraphics::CTextureHandle GetTexture() const override;
+
+	void RenderSpeedupOverlay(CSpeedupTile *pSpeedup, int w, int h, float Scale, int OverlayRenderFlags, float Alpha = 1.0f);
+	void RenderTuneOverlay(CTuneTile *pTune, int w, int h, float Scale, int OverlayRenderFlags, float Alpha = 1.0f) const;
 
 private:
 	std::optional<CRenderLayerTile::CTileLayerVisuals> m_VisualForce;
@@ -339,6 +352,9 @@ protected:
 	void GetTileData(unsigned char *pIndex, unsigned char *pFlags, int *pAngleRotate, unsigned int x, unsigned int y, int CurOverlay) const override;
 	IGraphics::CTextureHandle GetTexture() const override;
 
+	void RenderSwitchOverlay(CSwitchTile *pSwitch, int w, int h, float Scale, int OverlayRenderFlags, float Alpha = 1.0f) const;
+	void RenderSwitchmap(CSwitchTile *pSwitch, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const;
+
 private:
 	std::optional<CRenderLayerTile::CTileLayerVisuals> m_VisualSwitchNumberTop;
 	std::optional<CRenderLayerTile::CTileLayerVisuals> m_VisualSwitchNumberBottom;
@@ -353,5 +369,7 @@ public:
 protected:
 	void RenderTileLayerNoTileBuffer(const ColorRGBA &Color, const CRenderLayerParams &Params) override;
 	void GetTileData(unsigned char *pIndex, unsigned char *pFlags, int *pAngleRotate, unsigned int x, unsigned int y, int CurOverlay) const override;
+
+	void RenderTunemap(CTuneTile *pTune, int w, int h, float Scale, ColorRGBA Color, int RenderFlags) const;
 };
 #endif
