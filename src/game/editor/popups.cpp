@@ -787,7 +787,7 @@ CUi::EPopupMenuFunctionResult CEditor::PopupLayer(void *pContext, CUIRect View, 
 	CProperty aProps[] = {
 		{"Group", pEditor->m_SelectedGroup, PROPTYPE_INT, 0, (int)pEditor->m_Map.m_vpGroups.size() - 1},
 		{"Order", pEditor->m_vSelectedLayers[0], PROPTYPE_INT, 0, (int)pCurrentGroup->m_vpLayers.size() - 1},
-		{"Detail", pCurrentLayer->m_Flags & LAYERFLAG_DETAIL, PROPTYPE_BOOL, 0, 1},
+		{"Detail", pCurrentLayer->GetFlags() & LAYERFLAG_DETAIL, PROPTYPE_BOOL, 0, 1},
 		{nullptr},
 	};
 
@@ -827,9 +827,9 @@ CUi::EPopupMenuFunctionResult CEditor::PopupLayer(void *pContext, CUIRect View, 
 	}
 	else if(Prop == ELayerProp::PROP_HQ)
 	{
-		pCurrentLayer->m_Flags &= ~LAYERFLAG_DETAIL;
+		pCurrentLayer->GetFlags() &= ~LAYERFLAG_DETAIL;
 		if(NewVal)
-			pCurrentLayer->m_Flags |= LAYERFLAG_DETAIL;
+			pCurrentLayer->GetFlags() |= LAYERFLAG_DETAIL;
 	}
 
 	s_Tracker.End(Prop, State);

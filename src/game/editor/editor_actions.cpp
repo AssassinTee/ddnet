@@ -830,7 +830,7 @@ void CEditorActionEditLayerProp::Apply(int Value)
 	}
 	else if(m_Prop == ELayerProp::PROP_HQ)
 	{
-		m_pLayer->m_Flags = Value;
+		m_pLayer->SetFlags(Value);
 	}
 
 	m_pEditor->m_Map.OnModify();

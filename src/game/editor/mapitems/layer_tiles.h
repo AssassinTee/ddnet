@@ -109,7 +109,8 @@ public:
 	virtual void Shift(int Direction);
 
 	void MakePalette() const;
-	void Render(bool Tileset = false) override;
+	void InitRenderLayer() override;
+	void Render(const CRenderLayerParams &Params) override;
 
 	int ConvertX(float x) const;
 	int ConvertY(float y) const;
@@ -164,6 +165,7 @@ public:
 
 	void FlagModified(int x, int y, int w, int h);
 
+	CMapItemLayerTilemap m_LayerTilemap;
 	bool m_HasGame;
 	int m_Image;
 	int m_Width;

@@ -21,6 +21,7 @@ class CLayerSwitch : public CLayerTiles
 public:
 	CLayerSwitch(CEditor *pEditor, int w, int h);
 	CLayerSwitch(const CLayerSwitch &Other);
+	void InitRenderLayer() override;
 	~CLayerSwitch();
 
 	CSwitchTile *m_pSwitchTile;

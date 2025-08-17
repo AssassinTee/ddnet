@@ -8,9 +8,10 @@ class CLayerSounds : public CLayer
 public:
 	explicit CLayerSounds(CEditor *pEditor);
 	CLayerSounds(const CLayerSounds &Other);
+	void InitRenderLayer() override {}
 	~CLayerSounds();
 
-	void Render(bool Tileset = false) override;
+	void Render(const CRenderLayerParams &Params) override;
 	CSoundSource *NewSource(int x, int y);
 
 	void BrushSelecting(CUIRect Rect) override;

@@ -57,31 +57,12 @@ void CLayerGroup::MapScreen() const
 	m_pMap->Editor()->Graphics()->MapScreen(aPoints[0], aPoints[1], aPoints[2], aPoints[3]);
 }
 
-void CLayerGroup::Render()
+void CLayerGroup::Render(const CRenderLayerParams &Params)
 {
-	MapScreen();
-	IGraphics *pGraphics = m_pMap->Editor()->Graphics();
-
-	if(m_UseClipping)
-	{
-		float aPoints[4];
-		m_pMap->m_pGameGroup->Mapping(aPoints);
-		float ScreenWidth = aPoints[2] - aPoints[0];
-		float ScreenHeight = aPoints[3] - aPoints[1];
-		float Left = m_ClipX - aPoints[0];
-		float Top = m_ClipY - aPoints[1];
-		float Right = (m_ClipX + m_ClipW) - aPoints[0];
-		float Bottom = (m_ClipY + m_ClipH) - aPoints[1];
-
-		int ClipX = (int)std::round(Left * pGraphics->ScreenWidth() / ScreenWidth);
-		int ClipY = (int)std::round(Top * pGraphics->ScreenHeight() / ScreenHeight);
-
-		pGraphics->ClipEnable(
-			ClipX,
-			ClipY,
-			(int)std::round(Right * pGraphics->ScreenWidth() / ScreenWidth) - ClipX,
-			(int)std::round(Bottom * pGraphics->ScreenHeight() / ScreenHeight) - ClipY);
-	}
+	if(!m_pRenderLayer->DoRender(Params))
+		return;
+	
+	m_pRenderLayer->Render(Params);
 
 	for(auto &pLayer : m_vpLayers)
 	{
@@ -101,8 +82,8 @@ void CLayerGroup::Render()
 				if(pTiles->m_HasGame || pTiles->m_HasFront || pTiles->m_HasTele || pTiles->m_HasSpeedup || pTiles->m_HasTune || pTiles->m_HasSwitch)
 					continue;
 			}
-			if(m_pMap->Editor()->m_ShowDetail || !(pLayer->m_Flags & LAYERFLAG_DETAIL))
-				pLayer->Render();
+			if(m_pMap->Editor()->m_ShowDetail || !(pLayer->GetFlags() & LAYERFLAG_DETAIL))
+				pLayer->Render(Params);
 		}
 	}
 
@@ -113,13 +94,13 @@ void CLayerGroup::Render()
 			std::shared_ptr<CLayerTiles> pTiles = std::static_pointer_cast<CLayerTiles>(pLayer);
 			if(pTiles->m_HasGame || pTiles->m_HasFront || pTiles->m_HasTele || pTiles->m_HasSpeedup || pTiles->m_HasTune || pTiles->m_HasSwitch)
 			{
-				pLayer->Render();
+				pLayer->Render(Params);
 			}
 		}
 	}
 
 	if(m_UseClipping)
-		pGraphics->ClipDisable();
+		m_pMap->Editor()->Graphics()->ClipDisable();
 }
 
 void CLayerGroup::AddLayer(const std::shared_ptr<CLayer> &pLayer)

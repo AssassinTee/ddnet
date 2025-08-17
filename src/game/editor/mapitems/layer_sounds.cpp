@@ -23,7 +23,7 @@ CLayerSounds::CLayerSounds(const CLayerSounds &Other) :
 
 CLayerSounds::~CLayerSounds() = default;
 
-void CLayerSounds::Render(bool Tileset)
+void CLayerSounds::Render(const CRenderLayerParams &Params)
 {
 	// TODO: nice texture
 	Graphics()->TextureClear();

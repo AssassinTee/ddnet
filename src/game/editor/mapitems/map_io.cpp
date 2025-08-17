@@ -750,7 +750,7 @@ bool CEditorMap::Load(const char *pFileName, int StorageType, const std::functio
 						pTiles->m_ColorEnvOffset = pTilemapItem->m_ColorEnvOffset;
 					}
 
-					pTiles->m_Flags = pLayerItem->m_Flags;
+					pTiles->SetFlags(pLayerItem->m_Flags);
 
 					pGroup->AddLayer(pTiles);
 					pTiles->m_Image = pTilemapItem->m_Image;
@@ -874,7 +874,7 @@ bool CEditorMap::Load(const char *pFileName, int StorageType, const std::functio
 					const CMapItemLayerQuads *pQuadsItem = (CMapItemLayerQuads *)pLayerItem;
 
 					std::shared_ptr<CLayerQuads> pQuads = std::make_shared<CLayerQuads>(m_pEditor);
-					pQuads->m_Flags = pLayerItem->m_Flags;
+					pQuads->SetFlags(pLayerItem->m_Flags);
 					pQuads->m_Image = pQuadsItem->m_Image;
 
 					// validate image index
@@ -904,7 +904,7 @@ bool CEditorMap::Load(const char *pFileName, int StorageType, const std::functio
 						continue;
 
 					std::shared_ptr<CLayerSounds> pSounds = std::make_shared<CLayerSounds>(m_pEditor);
-					pSounds->m_Flags = pLayerItem->m_Flags;
+					pSounds->SetFlags(pLayerItem->m_Flags);
 					pSounds->m_Sound = pSoundsItem->m_Sound;
 
 					// validate sound index
@@ -935,7 +935,7 @@ bool CEditorMap::Load(const char *pFileName, int StorageType, const std::functio
 						continue;
 
 					std::shared_ptr<CLayerSounds> pSounds = std::make_shared<CLayerSounds>(m_pEditor);
-					pSounds->m_Flags = pLayerItem->m_Flags;
+					pSounds->SetFlags(pLayerItem->m_Flags);
 					pSounds->m_Sound = pSoundsItem->m_Sound;
 
 					// validate sound index

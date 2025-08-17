@@ -57,6 +57,8 @@ public:
 	virtual void Unload() = 0;
 
 	int GetGroup() const { return m_GroupId; }
+	void SetFlags(int Flags) { m_Flags = Flags; }
+	virtual void SetTexture(IGraphics::CTextureHandle TextureHandle) = 0;
 
 protected:
 	int m_GroupId;
@@ -85,6 +87,7 @@ public:
 	bool IsValid() const override { return m_pGroup != nullptr; }
 	bool IsGroup() const override { return true; }
 	void Unload() override {}
+	void SetTexture(IGraphics::CTextureHandle TextureHandle) override {};
 
 protected:
 	IGraphics::CTextureHandle GetTexture() const override { return IGraphics::CTextureHandle(); }
@@ -105,6 +108,7 @@ public:
 	virtual int GetDataIndex(unsigned int &TileSize) const;
 	bool IsValid() const override { return GetRawData() != nullptr; }
 	void Unload() override;
+	void SetTexture(IGraphics::CTextureHandle TextureHandle) override { m_TextureHandle = TextureHandle; }
 
 protected:
 	virtual void *GetRawData() const;
@@ -116,9 +120,6 @@ protected:
 	virtual void GetTileData(unsigned char *pIndex, unsigned char *pFlags, int *pAngleRotate, unsigned int x, unsigned int y, int CurOverlay) const;
 	IGraphics::CTextureHandle GetTexture() const override { return m_TextureHandle; }
 	CTile *m_pTiles;
-
-private:
-	IGraphics::CTextureHandle m_TextureHandle;
 
 protected:
 	class CTileLayerVisuals : public CRenderComponent
@@ -203,6 +204,7 @@ protected:
 	std::optional<CRenderLayerTile::CTileLayerVisuals> m_VisualTiles;
 	CMapItemLayerTilemap *m_pLayerTilemap;
 	ColorRGBA m_Color;
+	IGraphics::CTextureHandle m_TextureHandle;
 };
 
 class CRenderLayerQuads : public CRenderLayer
@@ -215,6 +217,7 @@ public:
 	virtual void Render(const CRenderLayerParams &Params) override;
 	virtual bool DoRender(const CRenderLayerParams &Params) override;
 	void Unload() override;
+	void SetTexture(IGraphics::CTextureHandle TextureHandle) override { m_TextureHandle = TextureHandle; }
 
 protected:
 	virtual IGraphics::CTextureHandle GetTexture() const override { return m_TextureHandle; }

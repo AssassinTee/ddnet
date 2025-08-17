@@ -22,6 +22,14 @@ CLayerSpeedup::CLayerSpeedup(const CLayerSpeedup &Other) :
 	mem_copy(m_pSpeedupTile, Other.m_pSpeedupTile, (size_t)m_Width * m_Height * sizeof(CSpeedupTile));
 }
 
+void CLayerSpeedup::InitRenderLayer()
+{
+	m_pRenderLayer = std::make_unique<CRenderLayerEntitySpeedup>(
+		0, 0,
+		m_Flags,
+		this);
+}
+
 CLayerSpeedup::~CLayerSpeedup()
 {
 	delete[] m_pSpeedupTile;

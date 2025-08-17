@@ -25,6 +25,14 @@ CLayerTune::CLayerTune(const CLayerTune &Other) :
 	mem_copy(m_pTuneTile, Other.m_pTuneTile, (size_t)m_Width * m_Height * sizeof(CTuneTile));
 }
 
+void CLayerTune::InitRenderLayer()
+{
+	m_pRenderLayer = std::make_unique<CRenderLayerEntityTune>(
+		0, 0,
+		m_Flags,
+		this);
+}
+
 CLayerTune::~CLayerTune()
 {
 	delete[] m_pTuneTile;

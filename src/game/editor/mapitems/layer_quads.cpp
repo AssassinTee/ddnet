@@ -24,16 +24,22 @@ CLayerQuads::CLayerQuads(const CLayerQuads &Other) :
 
 CLayerQuads::~CLayerQuads() = default;
 
-void CLayerQuads::Render(bool QuadPicker)
+void CLayerQuads::InitRenderLayer()
 {
-	Graphics()->TextureClear();
-	if(m_Image >= 0 && (size_t)m_Image < m_pEditor->m_Map.m_vpImages.size())
-		Graphics()->TextureSet(m_pEditor->m_Map.m_vpImages[m_Image]->m_Texture);
+	m_pRenderLayer = std::make_unique<CRenderLayerQuads>(
+		0, 0,
+		m_Flags,
+		this);
+}
 
-	Graphics()->BlendNone();
-	m_pEditor->RenderMap()->ForceRenderQuads(m_vQuads.data(), m_vQuads.size(), LAYERRENDERFLAG_OPAQUE, m_pEditor);
-	Graphics()->BlendNormal();
-	m_pEditor->RenderMap()->ForceRenderQuads(m_vQuads.data(), m_vQuads.size(), LAYERRENDERFLAG_TRANSPARENT, m_pEditor);
+void CLayerQuads::Render(const CRenderLayerParams &Params)
+{
+	IGraphics::CTextureHandle Texture;
+	if(m_Image >= 0 && (size_t)m_Image < m_pEditor->m_Map.m_vpImages.size())
+		Texture = m_pEditor->m_Map.m_vpImages[m_Image]->m_Texture;
+
+	m_pRenderLayer->SetTexture(Texture);
+	m_pRenderLayer->Render(Params);
 }
 
 CQuad *CLayerQuads::NewQuad(int x, int y, int Width, int Height)

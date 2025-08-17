@@ -7,6 +7,14 @@ CLayerFront::CLayerFront(CEditor *pEditor, int w, int h) :
 	m_HasFront = true;
 }
 
+void CLayerFront::InitRenderLayer()
+{
+	m_pRenderLayer = std::make_unique<CRenderLayerEntityFront>(
+		0, 0,
+		m_Flags,
+		this);
+}
+
 void CLayerFront::SetTile(int x, int y, CTile Tile)
 {
 	if(Tile.m_Index == TILE_THROUGH_CUT)

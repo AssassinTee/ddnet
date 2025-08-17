@@ -34,7 +34,8 @@ public:
 	~CLayerGroup();
 
 	void Convert(CUIRect *pRect) const;
-	void Render();
+	void InitRenderLayer();
+	void Render(const CRenderLayerParams &Params);
 	void MapScreen() const;
 	void Mapping(float *pPoints) const;
 
@@ -51,6 +52,9 @@ public:
 	void ModifyImageIndex(const FIndexModifyFunction &IndexModifyFunction);
 	void ModifyEnvelopeIndex(const FIndexModifyFunction &IndexModifyFunction);
 	void ModifySoundIndex(const FIndexModifyFunction &IndexModifyFunction);
+
+private:
+	std::shared_ptr<CRenderLayer> m_pRenderLayer;
 };
 
 #endif

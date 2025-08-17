@@ -3094,6 +3094,17 @@ void CEditor::DoMapEditor(CUIRect View)
 		wx = x + w * mx / Screen.w;
 		wy = y + h * my / Screen.h;
 		std::shared_ptr<CLayerTiles> pTileLayer = std::static_pointer_cast<CLayerTiles>(GetSelectedLayerType(0, LAYERTYPE_TILES));
+
+		CRenderLayerParams Params;
+		Params.m_Center = vec2(0, 0);
+		Params.m_EntityOverlayVal = pTileLayer->m_HasGame || pTileLayer->m_HasTele || pTileLayer->m_HasSpeedup || pTileLayer->m_HasFront || pTileLayer->m_HasSwitch || pTileLayer->m_HasTune ? 100 : 0;
+		Params.m_RenderInvalidTiles = true;
+		Params.m_RenderText = g_Config.m_ClTextEntitiesEditor;
+		Params.m_RenderTileBorder = false;
+		Params.m_RenderType = ERenderType::RENDERTYPE_ALL;
+		Params.m_TileAndQuadBuffering = false;
+		Params.m_Zoom = m_PreviewZoom; // TODO untested
+
 		if(pTileLayer)
 		{
 			Graphics()->MapScreen(x, y, x + w, y + h);
@@ -3115,7 +3126,7 @@ void CEditor::DoMapEditor(CUIRect View)
 			m_pTilesetPicker->m_HasSwitch = pTileLayer->m_HasSwitch;
 			m_pTilesetPicker->m_HasTune = pTileLayer->m_HasTune;
 
-			m_pTilesetPicker->Render(true);
+			m_pTilesetPicker->Render(Params);
 
 			if(m_ShowTileInfo != SHOW_TILE_OFF)
 				m_pTilesetPicker->ShowInfo();
@@ -3136,7 +3147,7 @@ void CEditor::DoMapEditor(CUIRect View)
 				m_pQuadsetPicker->m_vQuads[0].m_aPoints[3].y = f2fx((View.y + View.h));
 				m_pQuadsetPicker->m_vQuads[0].m_aPoints[4].x = f2fx((View.x + View.w / 2));
 				m_pQuadsetPicker->m_vQuads[0].m_aPoints[4].y = f2fx((View.y + View.h / 2));
-				m_pQuadsetPicker->Render();
+				m_pQuadsetPicker->Render(Params);
 			}
 		}
 	}

@@ -7,6 +7,7 @@ class CLayerGame : public CLayerTiles
 {
 public:
 	CLayerGame(CEditor *pEditor, int w, int h);
+	void InitRenderLayer() override;
 	~CLayerGame();
 
 	[[nodiscard]] CTile GetTile(int x, int y) const override;

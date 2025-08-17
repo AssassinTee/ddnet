@@ -15,9 +15,8 @@
 #include "image.h"
 
 CLayerTiles::CLayerTiles(CEditor *pEditor, int w, int h) :
-	CLayer(pEditor)
+	CLayer(pEditor, LAYERTYPE_TILES)
 {
-	m_Type = LAYERTYPE_TILES;
 	m_aName[0] = '\0';
 	m_Width = w;
 	m_Height = h;
@@ -42,6 +41,12 @@ CLayerTiles::CLayerTiles(CEditor *pEditor, int w, int h) :
 
 	m_pTiles = new CTile[m_Width * m_Height];
 	mem_zero(m_pTiles, (size_t)m_Width * m_Height * sizeof(CTile));
+
+	// init rendering
+	InitRenderLayer();
+	std::optional<FRenderUploadCallback> NoCallback;
+	std::shared_ptr<CMapBasedEnvelopePointAccess> NoAccess = nullptr;
+	m_pRenderLayer->OnInit(Graphics(), TextRender(), RenderMap(), m_pEditor, nullptr, nullptr, NoAccess, NoCallback);
 }
 
 CLayerTiles::CLayerTiles(const CLayerTiles &Other) :
@@ -69,6 +74,20 @@ CLayerTiles::CLayerTiles(const CLayerTiles &Other) :
 	m_HasTune = Other.m_HasTune;
 
 	str_copy(m_aFileName, Other.m_aFileName);
+
+	// init rendering
+	InitRenderLayer();
+	std::optional<FRenderUploadCallback> NoCallback;
+	std::shared_ptr<CMapBasedEnvelopePointAccess> NoAccess = nullptr;
+	m_pRenderLayer->OnInit(Graphics(), TextRender(), RenderMap(), m_pEditor, nullptr, nullptr, NoAccess, NoCallback);
+}
+
+void CLayerTiles::InitRenderLayer()
+{
+	m_pRenderLayer = std::make_unique<CRenderLayerTile>(
+		0, 0,
+		m_Flags,
+		this);
 }
 
 CLayerTiles::~CLayerTiles()
@@ -153,7 +172,7 @@ void CLayerTiles::MakePalette() const
 			m_pTiles[y * m_Width + x].m_Index = y * 16 + x;
 }
 
-void CLayerTiles::Render(bool Tileset)
+void CLayerTiles::Render(const CRenderLayerParams &Params)
 {
 	IGraphics::CTextureHandle Texture;
 	if(m_Image >= 0 && (size_t)m_Image < m_pEditor->m_Map.m_vpImages.size())
@@ -170,30 +189,9 @@ void CLayerTiles::Render(bool Tileset)
 		Texture = m_pEditor->GetSwitchTexture();
 	else if(m_HasTune)
 		Texture = m_pEditor->GetTuneTexture();
-	Graphics()->TextureSet(Texture);
-
-	ColorRGBA ColorEnv = ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
-	m_pEditor->EnvelopeEval(m_ColorEnvOffset, m_ColorEnv, ColorEnv, 4);
-	const ColorRGBA Color = ColorRGBA(m_Color.r / 255.0f, m_Color.g / 255.0f, m_Color.b / 255.0f, m_Color.a / 255.0f).Multiply(ColorEnv);
-
-	Graphics()->BlendNone();
-	m_pEditor->RenderMap()->RenderTilemap(m_pTiles, m_Width, m_Height, 32.0f, Color, LAYERRENDERFLAG_OPAQUE);
-	Graphics()->BlendNormal();
-	m_pEditor->RenderMap()->RenderTilemap(m_pTiles, m_Width, m_Height, 32.0f, Color, LAYERRENDERFLAG_TRANSPARENT);
-
-	// Render DDRace Layers
-	if(!Tileset)
-	{
-		int OverlayRenderFlags = (g_Config.m_ClTextEntitiesEditor ? OVERLAYRENDERFLAG_TEXT : 0) | OVERLAYRENDERFLAG_EDITOR;
-		if(m_HasTele)
-			m_pEditor->RenderMap()->RenderTeleOverlay(static_cast<CLayerTele *>(this)->m_pTeleTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
-		if(m_HasSpeedup)
-			m_pEditor->RenderMap()->RenderSpeedupOverlay(static_cast<CLayerSpeedup *>(this)->m_pSpeedupTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
-		if(m_HasSwitch)
-			m_pEditor->RenderMap()->RenderSwitchOverlay(static_cast<CLayerSwitch *>(this)->m_pSwitchTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
-		if(m_HasTune)
-			m_pEditor->RenderMap()->RenderTuneOverlay(static_cast<CLayerTune *>(this)->m_pTuneTile, m_Width, m_Height, 32.0f, OverlayRenderFlags);
-	}
+	
+	m_pRenderLayer->SetTexture(Texture);
+	m_pRenderLayer->Render(Params);
 }
 
 int CLayerTiles::ConvertX(float x) const { return (int)(x / 32.0f); }

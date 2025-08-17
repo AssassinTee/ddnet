@@ -7,6 +7,7 @@ class CLayerFront : public CLayerTiles
 {
 public:
 	CLayerFront(CEditor *pEditor, int w, int h);
+	void InitRenderLayer() override;
 
 	void SetTile(int x, int y, CTile Tile) override;
 	void Resize(int NewW, int NewH) override;

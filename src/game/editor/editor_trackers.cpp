@@ -435,7 +435,7 @@ int CLayerPropTracker::PropToValue(ELayerProp Prop)
 	switch(Prop)
 	{
 	case ELayerProp::PROP_GROUP: return m_CurrentGroupIndex;
-	case ELayerProp::PROP_HQ: return m_pObject->m_Flags;
+	case ELayerProp::PROP_HQ: return m_pObject->GetFlags();
 	case ELayerProp::PROP_ORDER: return m_CurrentLayerIndex;
 	default: return 0;
 	}

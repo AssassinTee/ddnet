@@ -24,6 +24,14 @@ CLayerSwitch::CLayerSwitch(const CLayerSwitch &Other) :
 	mem_copy(m_pSwitchTile, Other.m_pSwitchTile, (size_t)m_Width * m_Height * sizeof(CSwitchTile));
 }
 
+void CLayerSwitch::InitRenderLayer()
+{
+	m_pRenderLayer = std::make_unique<CRenderLayerEntitySwitch>(
+		0, 0,
+		m_Flags,
+		this);
+}
+
 CLayerSwitch::~CLayerSwitch()
 {
 	delete[] m_pSwitchTile;

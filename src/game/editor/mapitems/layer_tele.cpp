@@ -25,6 +25,14 @@ CLayerTele::CLayerTele(const CLayerTele &Other) :
 	mem_copy(m_pTeleTile, Other.m_pTeleTile, (size_t)m_Width * m_Height * sizeof(CTeleTile));
 }
 
+void CLayerTele::InitRenderLayer()
+{
+	m_pRenderLayer = std::make_unique<CRenderLayerEntityTele>(
+		0, 0,
+		m_Flags,
+		this);
+}
+
 CLayerTele::~CLayerTele()
 {
 	delete[] m_pTeleTile;

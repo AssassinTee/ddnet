@@ -19,6 +19,7 @@ class CLayerTune : public CLayerTiles
 public:
 	CLayerTune(CEditor *pEditor, int w, int h);
 	CLayerTune(const CLayerTune &Other);
+	void InitRenderLayer() override;
 	~CLayerTune();
 
 	CTuneTile *m_pTuneTile;

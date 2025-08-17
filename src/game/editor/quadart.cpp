@@ -183,7 +183,7 @@ void CEditor::AddQuadArt(bool IgnoreHistory)
 	std::shared_ptr<CLayerQuads> pLayer = std::make_shared<CLayerQuads>(this);
 	str_copy(pLayer->m_aName, aQuadArtName);
 	pGroup->AddLayer(pLayer);
-	pLayer->m_Flags |= LAYERFLAG_DETAIL;
+	pLayer->GetFlags() |= LAYERFLAG_DETAIL;
 
 	CQuadArt QuadArt(m_QuadArtParameters, std::move(m_QuadArtImageInfo));
 	QuadArt.Create(pLayer);

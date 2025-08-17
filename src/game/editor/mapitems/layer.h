@@ -4,6 +4,7 @@
 #include <base/system.h>
 #include <game/client/ui.h>
 #include <game/client/ui_rect.h>
+#include <game/map/render_layer.h>
 #include <game/mapitems.h>
 
 #include <memory>
@@ -18,10 +19,10 @@ public:
 	class CEditor *m_pEditor;
 	class IGraphics *Graphics();
 	class ITextRender *TextRender();
+	CRenderMap *RenderMap();
 
-	explicit CLayer(CEditor *pEditor)
+	explicit CLayer(CEditor *pEditor, int Type) : m_Type(Type)
 	{
-		m_Type = LAYERTYPE_INVALID;
 		str_copy(m_aName, "(invalid)");
 		m_Visible = true;
 		m_Readonly = false;
@@ -29,12 +30,11 @@ public:
 		m_pEditor = pEditor;
 	}
 
-	CLayer(const CLayer &Other)
+	CLayer(const CLayer &Other) : m_Type(Other.m_Type)
 	{
 		str_copy(m_aName, Other.m_aName);
 		m_Flags = Other.m_Flags;
 		m_pEditor = Other.m_pEditor;
-		m_Type = Other.m_Type;
 		m_Visible = true;
 		m_Readonly = false;
 	}
@@ -52,7 +52,8 @@ public:
 
 	virtual bool IsEntitiesLayer() const { return false; }
 
-	virtual void Render(bool Tileset = false) {}
+	virtual void InitRenderLayer() = 0;
+	virtual void Render(const CRenderLayerParams &Params) { m_pRenderLayer->Render(Params); }
 	virtual CUi::EPopupMenuFunctionResult RenderProperties(CUIRect *pToolbox) { return CUi::POPUP_KEEP_OPEN; }
 
 	virtual void ModifyImageIndex(const FIndexModifyFunction &IndexModifyFunction) {}
@@ -68,12 +69,25 @@ public:
 		*pHeight = 0;
 	}
 
+	inline void SetFlags(int Flags)
+	{
+		m_Flags = Flags;
+		if(m_pRenderLayer)
+			m_pRenderLayer->SetFlags(m_Flags);
+	}
+
+	int GetFlags() const { return m_Flags; }
+	const int m_Type;
+
 	char m_aName[12];
-	int m_Type;
-	int m_Flags;
 
 	bool m_Readonly;
 	bool m_Visible;
+
+protected:
+
+	int m_Flags;
+	std::shared_ptr<CRenderLayer> m_pRenderLayer;
 };
 
 #endif

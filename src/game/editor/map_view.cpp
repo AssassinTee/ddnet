@@ -95,20 +95,31 @@ void CMapView::RenderEditorMap()
 			Editor()->m_Map.m_pSwitchLayer->m_Visible = AnyHidden;
 	}
 
+	CRenderLayerParams Params;
+	Params.m_Center = vec2(0, 0);
+	Params.m_EntityOverlayVal = 0;
+	Params.m_RenderInvalidTiles = true;
+	Params.m_RenderText = g_Config.m_ClTextEntitiesEditor;
+	Params.m_RenderTileBorder = false;
+	Params.m_RenderType = ERenderType::RENDERTYPE_ALL;
+	Params.m_TileAndQuadBuffering = false;
+	Params.m_Zoom = m_WorldZoom; // TODO untested
+
 	for(auto &pGroup : Editor()->m_Map.m_vpGroups)
 	{
 		if(pGroup->m_Visible)
-			pGroup->Render();
+			pGroup->Render(Params);
 	}
 
 	// render the game, tele, speedup, front, tune and switch above everything else
 	if(Editor()->m_Map.m_pGameGroup->m_Visible)
 	{
+		Params.m_EntityOverlayVal = 100;
 		Editor()->m_Map.m_pGameGroup->MapScreen();
 		for(auto &pLayer : Editor()->m_Map.m_pGameGroup->m_vpLayers)
 		{
 			if(pLayer->m_Visible && pLayer->IsEntitiesLayer())
-				pLayer->Render();
+				pLayer->Render(Params);
 		}
 	}
 

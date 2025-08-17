@@ -10,7 +10,8 @@ public:
 	CLayerQuads(const CLayerQuads &Other);
 	~CLayerQuads();
 
-	void Render(bool QuadPicker = false) override;
+	void InitRenderLayer() override;
+	void Render(const CRenderLayerParams &Params) override;
 	CQuad *NewQuad(int x, int y, int Width, int Height);
 	int SwapQuads(int Index0, int Index1);
 

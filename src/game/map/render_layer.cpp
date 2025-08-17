@@ -819,7 +819,8 @@ void *CRenderLayerTile::GetRawData() const
 void CRenderLayerTile::OnInit(IGraphics *pGraphics, ITextRender *pTextRender, CRenderMap *pRenderMap, IEnvelopeEval *pEnvelopeEval, IMap *pMap, IMapImages *pMapImages, std::shared_ptr<CMapBasedEnvelopePointAccess> &pEnvelopePoints, std::optional<FRenderUploadCallback> &FRenderUploadCallbackOptional)
 {
 	CRenderLayer::OnInit(pGraphics, pTextRender, pRenderMap, pEnvelopeEval, pMap, pMapImages, pEnvelopePoints, FRenderUploadCallbackOptional);
-	InitTileData();
+	if(m_pMap)
+		InitTileData();
 }
 
 void CRenderLayerTile::InitTileData()
@@ -867,15 +868,13 @@ void CRenderLayerQuads::RenderQuadLayer(bool Force)
 	if(!Force && (!g_Config.m_ClShowQuads || g_Config.m_ClOverlayEntities == 100))
 		return;
 
-	CQuad *pQuads = (CQuad *)m_pMap->GetDataSwapped(m_pLayerQuads->m_Data);
-
 	size_t QuadsRenderCount = 0;
 	size_t CurQuadOffset = 0;
 	if(!m_Grouped)
 	{
 		for(int i = 0; i < m_pLayerQuads->m_NumQuads; ++i)
 		{
-			CQuad *pQuad = &pQuads[i];
+			CQuad *pQuad = &m_pQuads[i];
 
 			ColorRGBA Color = ColorRGBA(1.0f, 1.0f, 1.0f, 1.0f);
 			m_pEnvelopeEval->EnvelopeEval(pQuad->m_ColorEnvOffset, pQuad->m_ColorEnv, Color, 4);
@@ -940,9 +939,12 @@ void CRenderLayerQuads::RenderQuadLayer(bool Force)
 void CRenderLayerQuads::OnInit(IGraphics *pGraphics, ITextRender *pTextRender, CRenderMap *pRenderMap, IEnvelopeEval *pEnvelopeEval, IMap *pMap, IMapImages *pMapImages, std::shared_ptr<CMapBasedEnvelopePointAccess> &pEnvelopePoints, std::optional<FRenderUploadCallback> &FRenderUploadCallbackOptional)
 {
 	CRenderLayer::OnInit(pGraphics, pTextRender, pRenderMap, pEnvelopeEval, pMap, pMapImages, pEnvelopePoints, FRenderUploadCallbackOptional);
-	int DataSize = m_pMap->GetDataSize(m_pLayerQuads->m_Data);
-	if(m_pLayerQuads->m_NumQuads > 0 && DataSize / (int)sizeof(CQuad) >= m_pLayerQuads->m_NumQuads)
-		m_pQuads = (CQuad *)m_pMap->GetDataSwapped(m_pLayerQuads->m_Data);
+	if(m_pMap)
+	{
+		int DataSize = m_pMap->GetDataSize(m_pLayerQuads->m_Data);
+		if(m_pLayerQuads->m_NumQuads > 0 && DataSize / (int)sizeof(CQuad) >= m_pLayerQuads->m_NumQuads)
+			m_pQuads = (CQuad *)m_pMap->GetDataSwapped(m_pLayerQuads->m_Data);
+	}
 }
 
 void CRenderLayerQuads::Init()
@@ -1105,7 +1107,7 @@ void CRenderLayerQuads::CQuadLayerVisuals::Unload()
 void CRenderLayerQuads::CalculateClipping()
 {
 	// calculate clipping if not too expensive
-	if(!m_Grouped)
+	if(!m_Grouped || !m_pMap)
 		return;
 
 	// calculate envelope position offsets
@@ -1281,7 +1283,10 @@ bool CRenderLayerEntityBase::DoRender(const CRenderLayerParams &Params)
 
 IGraphics::CTextureHandle CRenderLayerEntityBase::GetTexture() const
 {
-	return m_pMapImages->GetEntities(MAP_IMAGE_ENTITY_LAYER_TYPE_ALL_EXCEPT_SWITCH);
+	// make sure the entities update if you change them in settings
+	if(m_pMapImages)
+		return m_pMapImages->GetEntities(MAP_IMAGE_ENTITY_LAYER_TYPE_ALL_EXCEPT_SWITCH);
+	return m_TextureHandle;
 }
 
 // GAME
@@ -1407,7 +1412,9 @@ CRenderLayerEntitySpeedup::CRenderLayerEntitySpeedup(int GroupId, int LayerId, i
 
 IGraphics::CTextureHandle CRenderLayerEntitySpeedup::GetTexture() const
 {
-	return m_pMapImages->GetSpeedupArrow();
+	if(m_pMapImages)
+		return m_pMapImages->GetSpeedupArrow();
+	return m_TextureHandle;
 }
 
 int CRenderLayerEntitySpeedup::GetDataIndex(unsigned int &TileSize) const
@@ -1487,7 +1494,9 @@ CRenderLayerEntitySwitch::CRenderLayerEntitySwitch(int GroupId, int LayerId, int
 
 IGraphics::CTextureHandle CRenderLayerEntitySwitch::GetTexture() const
 {
-	return m_pMapImages->GetEntities(MAP_IMAGE_ENTITY_LAYER_TYPE_SWITCH);
+	if(m_pMapImages)
+		return m_pMapImages->GetEntities(MAP_IMAGE_ENTITY_LAYER_TYPE_SWITCH);
+	return m_TextureHandle;
 }
 
 int CRenderLayerEntitySwitch::GetDataIndex(unsigned int &TileSize) const
