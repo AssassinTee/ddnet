@@ -132,6 +132,8 @@ void CMapRenderer::Render(const CRenderLayerParams &Params)
 {
 	float ScreenXLeft, ScreenYTop, ScreenXRight, ScreenYBottom;
 	Graphics()->GetScreen(&ScreenXLeft, &ScreenYTop, &ScreenXRight, &ScreenYBottom);
+	dbg_msg("dbg", "ScreenX %d ScreenX2 %d", ScreenXLeft, ScreenXRight);
+	dbg_assert(m_vpRenderLayers.size() > 0, "fuck it's empty");
 
 	bool DoRenderGroup = true;
 	for(auto &pRenderLayer : m_vpRenderLayers)

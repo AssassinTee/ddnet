@@ -2146,6 +2146,40 @@ set_src(ENGINE_GFX GLOB src/engine/gfx
   image_manipulation.cpp
   image_manipulation.h
 )
+set(ENGINE_GFX_MAPSCREENSHOT src/engine/client
+  src/engine/client/backend/backend_base.cpp
+  src/engine/client/backend/backend_base.h
+  src/engine/client/backend/glsl_shader_compiler.cpp
+  src/engine/client/backend/glsl_shader_compiler.h
+  src/engine/client/backend/null/backend_null.cpp
+  src/engine/client/backend/null/backend_null.h
+  src/engine/client/backend/opengl/backend_opengl.cpp
+  src/engine/client/backend/opengl/backend_opengl.h
+  src/engine/client/backend/opengl/backend_opengl3.cpp
+  src/engine/client/backend/opengl/backend_opengl3.h
+  src/engine/client/backend/opengl/opengl_sl.cpp
+  src/engine/client/backend/opengl/opengl_sl.h
+  src/engine/client/backend/opengl/opengl_sl_program.cpp
+  src/engine/client/backend/opengl/opengl_sl_program.h
+  src/engine/client/backend/opengles/backend_opengles.cpp
+  src/engine/client/backend/opengles/backend_opengles3.cpp
+  src/engine/client/backend/opengles/backend_opengles3.h
+  src/engine/client/backend/opengles/gles_class_defines.h
+  src/engine/client/backend/opengles/opengles_sl.cpp
+  src/engine/client/backend/opengles/opengles_sl_program.cpp
+  src/engine/client/backend/vulkan/backend_vulkan.cpp
+  src/engine/client/backend/vulkan/backend_vulkan.h
+  src/engine/client/backend_sdl.cpp
+  src/engine/client/backend_sdl.h
+  src/engine/client/blocklist_driver.cpp
+  src/engine/client/blocklist_driver.h
+  src/engine/client/graphics_defines.h
+  src/engine/client/graphics_threaded.cpp
+  src/engine/client/graphics_threaded.h
+  src/engine/client/graphics_threaded_sprites.cpp
+  src/engine/client/text.cpp
+  src/engine/client/warning.cpp
+)
 set_src(GAME_SHARED GLOB src/game
   alloc.h
   collision.cpp
@@ -2202,6 +2236,13 @@ set(GAME_GENERATED_SHARED
   src/game/generated/protocol7.h
   src/game/generated/protocolglue.h
 )
+set(GAME_GENERATED_CLIENT
+  src/game/generated/checksum.cpp
+  src/game/generated/client_data.cpp
+  src/game/generated/client_data.h
+  src/game/generated/client_data7.cpp
+  src/game/generated/client_data7.h
+)
 set(DEPS ${DEP_JSON} ${DEP_MD5} ${ZLIB_DEP})
 
 # Libraries
@@ -2219,10 +2260,25 @@ set(LIBS
 
 # Targets
 add_library(engine-gfx EXCLUDE_FROM_ALL OBJECT ${ENGINE_GFX})
+add_library(engine-gfx-mapscreenshot EXCLUDE_FROM_ALL OBJECT ${ENGINE_GFX_MAPSCREENSHOT} ${ENGINE_GFX} ${GAME_GENERATED_CLIENT})
 target_include_directories(engine-gfx PRIVATE ${PNG_INCLUDE_DIRS})
+target_include_directories(engine-gfx-mapscreenshot PRIVATE
+  ${FREETYPE_INCLUDE_DIRS}
+  ${GLEW_INCLUDE_DIRS}
+  ${OGG_INCLUDE_DIRS}
+  ${OPUSFILE_INCLUDE_DIRS}
+  ${OPUS_INCLUDE_DIRS}
+  ${PNG_INCLUDE_DIRS}
+  ${SDL2_INCLUDE_DIRS}
+  ${WAVPACK_INCLUDE_DIRS}
+  ${FFMPEG_INCLUDE_DIRS}
+  ${DISCORDSDK_INCLUDE_DIRS}
+  ${VULKAN_INCLUDE_DIRS}
+  ${PLATFORM_CLIENT_INCLUDE_DIRS}
+)
 add_library(engine-shared EXCLUDE_FROM_ALL OBJECT ${ENGINE_INTERFACE} ${ENGINE_SHARED} ${ENGINE_UUID_SHARED} ${BASE})
 add_library(game-shared EXCLUDE_FROM_ALL OBJECT ${GAME_SHARED} ${GAME_GENERATED_SHARED})
-list(APPEND TARGETS_OWN engine-gfx engine-shared game-shared)
+list(APPEND TARGETS_OWN engine-gfx engine-gfx-mapscreenshot engine-shared game-shared)
 
 if(DISCORD AND NOT DISCORD_DYNAMIC)
   add_library(discord-shared SHARED IMPORTED)
@@ -2550,13 +2606,6 @@ if(CLIENT)
     render_layer.h
     render_map.cpp
     render_map.h
-  )
-  set(GAME_GENERATED_CLIENT
-    src/game/generated/checksum.cpp
-    src/game/generated/client_data.cpp
-    src/game/generated/client_data.h
-    src/game/generated/client_data7.cpp
-    src/game/generated/client_data7.h
   )
   set(CLIENT_SRC ${ENGINE_CLIENT} ${PLATFORM_CLIENT} ${GAME_CLIENT} ${GAME_EDITOR} ${GAME_MAP} ${GAME_GENERATED_CLIENT})
 
@@ -2923,6 +2972,7 @@ if(TOOLS)
     map_replace_area.cpp
     map_replace_image.cpp
     map_resave.cpp
+    map_screenshot.cpp
     map_test.cpp
     packetgen.cpp
     stun.cpp
@@ -2941,6 +2991,31 @@ if(TOOLS)
         list(APPEND TOOL_INCLUDE_DIRS ${PNG_INCLUDE_DIRS})
         list(APPEND TOOL_DEPS $<TARGET_OBJECTS:engine-gfx>)
         list(APPEND TOOL_LIBS ${PNG_LIBRARIES})
+      endif()
+      if(TOOL MATCHES "^map_screenshot")
+        list(APPEND TOOL_INCLUDE_DIRS ${PNG_INCLUDE_DIRS} ${SDL2_INCLUDE_DIRS} ${VULKAN_INCLUDE_DIRS} ${PLATFORM_CLIENT_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS})
+        list(APPEND TOOL_DEPS $<TARGET_OBJECTS:engine-gfx-mapscreenshot> ${DEPS_CLIENT} ${GAME_MAP})
+        list(APPEND TOOL_LIBS 
+          ${FREETYPE_LIBRARIES}
+          ${GLEW_LIBRARIES}
+          ${PNG_LIBRARIES}
+          ${SDL2_LIBRARIES}
+          ${WAVPACK_LIBRARIES}
+          ${FFMPEG_LIBRARIES}
+      
+          # Order of these three is important.
+          ${OPUSFILE_LIBRARIES}
+          ${OPUS_LIBRARIES}
+          ${OGG_LIBRARIES}
+      
+          ${VULKAN_LIBRARIES}
+      
+          ${TARGET_STEAMAPI}
+          rust_engine_shared
+      
+          ${PLATFORM_CLIENT_LIBS}
+          ${LIBS}
+        )
       endif()
       if(TOOL MATCHES "^config_")
         list(APPEND EXTRA_TOOL_SRC "src/tools/config_common.h")
