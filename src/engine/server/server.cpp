@@ -3194,7 +3194,9 @@ int CServer::Run()
 							break;
 						}
 					}
-					if(!ClientHadInput)
+
+					// Unique
+					if(!ClientHadInput && !g_Config.m_SvUniquePhysics)
 						GameServer()->OnClientPredictedEarlyInput(c, nullptr);
 				}
 
@@ -3216,7 +3218,7 @@ int CServer::Run()
 							break;
 						}
 					}
-					if(!ClientHadInput)
+					if(!ClientHadInput && !g_Config.m_SvUniquePhysics)
 						GameServer()->OnClientPredictedInput(c, nullptr);
 				}
 

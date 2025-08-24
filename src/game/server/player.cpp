@@ -115,6 +115,10 @@ void CPlayer::Reset()
 	m_SpecTeam = false;
 	m_NinjaJetpack = false;
 
+	// Unique
+	m_ShowFlag = true;
+	m_FastcapSpawnAt = 1;
+
 	m_Paused = PAUSE_NONE;
 	m_DND = false;
 	m_Whispers = true;
@@ -739,7 +743,7 @@ void CPlayer::TryRespawn()
 {
 	vec2 SpawnPos;
 
-	if(!GameServer()->m_pController->CanSpawn(m_Team, &SpawnPos, GameServer()->GetDDRaceTeam(m_ClientId)))
+	if(!GameServer()->m_pController->CanSpawn(m_Team, g_Config.m_SvFastcap ? m_FastcapSpawnAt : 0, &SpawnPos, GameServer()->GetDDRaceTeam(m_ClientId)))
 		return;
 
 	m_WeakHookSpawn = false;
@@ -1007,7 +1011,7 @@ void CPlayer::ProcessScoreResult(CScorePlayerResult &Result)
 		case CScorePlayerResult::PLAYER_TIMECP:
 			GameServer()->Score()->PlayerData(m_ClientId)->SetBestTimeCp(Result.m_Data.m_Info.m_aTimeCp);
 			char aBuf[128], aTime[32];
-			str_time_float(Result.m_Data.m_Info.m_Time.value(), TIME_HOURS_CENTISECS, aTime, sizeof(aTime));
+			str_time_float(Result.m_Data.m_Info.m_Time.value(), GameServer()->IsUniqueRace() ? TIME_HOURS_MILISECS : TIME_HOURS_CENTISECS, aTime, sizeof(aTime));
 			str_format(aBuf, sizeof(aBuf), "Showing the checkpoint times for '%s' with a race time of %s", Result.m_Data.m_Info.m_aRequestedPlayer, aTime);
 			GameServer()->SendChatTarget(m_ClientId, aBuf);
 			break;
