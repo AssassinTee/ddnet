@@ -230,7 +230,7 @@ protected:
 		int m_BufferContainerIndex;
 		bool m_IsTextured;
 	};
-	void RenderQuadLayer(bool ForceRender = false);
+	void RenderQuadLayer(bool ForceRender, const CRenderLayerParams &Params);
 
 	std::optional<CRenderLayerQuads::CQuadLayerVisuals> m_VisualQuad;
 	CMapItemLayerQuads *m_pLayerQuads;
@@ -261,7 +261,7 @@ protected:
 		CClipRegion m_ClipRegion;
 	};
 
-	bool ShowClipped(const CClipRegion &ClipRegion);
+	bool ShowClipped(const CClipRegion &ClipRegion, const CRenderLayerParams &Params);
 	void CalculateClipping(CQuadCluster &QuadCluster);
 	bool CalculateQuadClipping(CQuadCluster &QuadCluster, int aQuadOffsetMin[2], int aQuadOffsetMax[2]);
 

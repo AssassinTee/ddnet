@@ -856,7 +856,7 @@ CRenderLayerQuads::CRenderLayerQuads(int GroupId, int LayerId, int Flags, CMapIt
 	m_pQuads = nullptr;
 }
 
-void CRenderLayerQuads::RenderQuadLayer(bool Force)
+void CRenderLayerQuads::RenderQuadLayer(bool Force, const CRenderLayerParams &Params)
 {
 	CQuadLayerVisuals &Visuals = m_VisualQuad.value();
 	if(Visuals.m_BufferContainerIndex == -1)
@@ -867,7 +867,7 @@ void CRenderLayerQuads::RenderQuadLayer(bool Force)
 
 	for(auto &QuadCluster : m_vQuadClusters)
 	{
-		if(!ShowClipped(QuadCluster.m_ClipRegion))
+		if(!ShowClipped(QuadCluster.m_ClipRegion, Params))
 			continue;
 
 		if(!QuadCluster.m_Grouped)
@@ -1252,7 +1252,7 @@ void CRenderLayerQuads::Render(const CRenderLayerParams &Params)
 			}
 			else
 			{
-				RenderQuadLayer(true);
+				RenderQuadLayer(true, Params);
 			}
 		}
 	}
@@ -1265,12 +1265,12 @@ void CRenderLayerQuads::Render(const CRenderLayerParams &Params)
 		}
 		else
 		{
-			RenderQuadLayer(false);
+			RenderQuadLayer(false, Params);
 		}
 	}
 }
 
-bool CRenderLayerQuads::ShowClipped(const CClipRegion &ClipRegion)
+bool CRenderLayerQuads::ShowClipped(const CClipRegion &ClipRegion, const CRenderLayerParams &Params)
 {
 	// always show unclipped regions
 	if(!ClipRegion.m_Clipped)
@@ -1283,7 +1283,18 @@ bool CRenderLayerQuads::ShowClipped(const CClipRegion &ClipRegion)
 	float Right = ClipRegion.m_ClipX + ClipRegion.m_ClipWidth;
 	float Bottom = ClipRegion.m_ClipY + ClipRegion.m_ClipHeight;
 
-	return Right >= ScreenX0 && Left <= ScreenX1 && Bottom >= ScreenY0 && Top <= ScreenY1;
+	if(Right < ScreenX0 || Left > ScreenX1 || Bottom < ScreenY0 || Top > ScreenY1)
+		return false;
+
+	// ignore a clip region if it's too small, here if it's under 4 pixels in screen size
+	if(m_Flags & LAYERFLAG_DETAIL && Params.m_RenderType != ERenderType::RENDERTYPE_FULL_DESIGN && Params.m_Zoom > 1.0f)
+	{
+		bool IsWideEnough = ClipRegion.m_ClipWidth * Graphics()->ScreenWidth() / (ScreenX1 - ScreenX0) > 4;
+		bool IsHighEnough = ClipRegion.m_ClipHeight * Graphics()->ScreenHeight() / (ScreenY1 - ScreenY0) > 4;
+	 	if(!IsHighEnough || !IsWideEnough)
+			return false;
+	}
+	return true;
 }
 
 bool CRenderLayerQuads::DoRender(const CRenderLayerParams &Params)
@@ -1296,7 +1307,7 @@ bool CRenderLayerQuads::DoRender(const CRenderLayerParams &Params)
 	if(m_Flags & LAYERFLAG_DETAIL && !g_Config.m_GfxHighDetail && Params.m_RenderType != ERenderType::RENDERTYPE_FULL_DESIGN) // detail but no details
 		return false;
 
-	return ShowClipped(m_LayerClip);
+	return ShowClipped(m_LayerClip, Params);
 }
 
 /****************
