@@ -118,6 +118,11 @@ protected:
 	IGraphics::CTextureHandle GetTexture() const override { return m_TextureHandle; }
 	CTile *m_pTiles;
 
+	ivec2 m_RenderPosTL;
+	ivec2 m_RenderPosBR;
+	std::vector<char *> m_vpIndexOffsets;
+	std::vector<unsigned int> m_vDrawCounts;
+
 private:
 	IGraphics::CTextureHandle m_TextureHandle;
 

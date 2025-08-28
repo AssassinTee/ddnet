@@ -297,10 +297,6 @@ void CRenderLayerTile::RenderTileLayer(const ColorRGBA &Color, const CRenderLaye
 
 	if(ScreenRectX1 > 0 && ScreenRectY1 > 0 && ScreenRectX0 < (int)Visuals.m_Width && ScreenRectY0 < (int)Visuals.m_Height)
 	{
-		// create the indice buffers we want to draw -- reuse them
-		std::vector<char *> vpIndexOffsets;
-		std::vector<unsigned int> vDrawCounts;
-
 		int X0 = std::max(ScreenRectX0, 0);
 		int X1 = std::min(ScreenRectX1, (int)Visuals.m_Width);
 		if(X0 <= X1)
@@ -308,29 +304,48 @@ void CRenderLayerTile::RenderTileLayer(const ColorRGBA &Color, const CRenderLaye
 			int Y0 = std::max(ScreenRectY0, 0);
 			int Y1 = std::min(ScreenRectY1, (int)Visuals.m_Height);
 
-			unsigned long long Reserve = absolute(Y1 - Y0) + 1;
-			vpIndexOffsets.reserve(Reserve);
-			vDrawCounts.reserve(Reserve);
-
-			for(int y = Y0; y < Y1; ++y)
+			// check if we're just rerendering the same
+			if(m_RenderPosTL.x == X0 && m_RenderPosTL.y == Y0 && m_RenderPosBR.x == X1 && m_RenderPosBR.y == Y1)
 			{
-				int XR = X1 - 1;
-
-				dbg_assert(Visuals.m_vTilesOfLayer[y * Visuals.m_Width + XR].IndexBufferByteOffset() >= Visuals.m_vTilesOfLayer[y * Visuals.m_Width + X0].IndexBufferByteOffset(), "Tile count wrong.");
-
-				unsigned int NumVertices = ((Visuals.m_vTilesOfLayer[y * Visuals.m_Width + XR].IndexBufferByteOffset() - Visuals.m_vTilesOfLayer[y * Visuals.m_Width + X0].IndexBufferByteOffset()) / sizeof(unsigned int)) + (Visuals.m_vTilesOfLayer[y * Visuals.m_Width + XR].DoDraw() ? 6lu : 0lu);
-
-				if(NumVertices)
+				int DrawCount = m_vpIndexOffsets.size();
+				if(DrawCount != 0)
 				{
-					vpIndexOffsets.push_back((offset_ptr_size)Visuals.m_vTilesOfLayer[y * Visuals.m_Width + X0].IndexBufferByteOffset());
-					vDrawCounts.push_back(NumVertices);
+					Graphics()->RenderTileLayer(Visuals.m_BufferContainerIndex, Color, m_vpIndexOffsets.data(), m_vDrawCounts.data(), DrawCount);
 				}
 			}
-
-			int DrawCount = vpIndexOffsets.size();
-			if(DrawCount != 0)
+			else
 			{
-				Graphics()->RenderTileLayer(Visuals.m_BufferContainerIndex, Color, vpIndexOffsets.data(), vDrawCounts.data(), DrawCount);
+				m_RenderPosTL.x = X0;
+				m_RenderPosTL.y = Y0;
+				m_RenderPosBR.x = X1;
+				m_RenderPosBR.y = Y1;
+				m_vpIndexOffsets.clear();
+				m_vDrawCounts.clear();
+
+				unsigned long long Reserve = absolute(Y1 - Y0) + 1;
+				m_vpIndexOffsets.reserve(Reserve);
+				m_vDrawCounts.reserve(Reserve);
+
+				for(int y = Y0; y < Y1; ++y)
+				{
+					int XR = X1 - 1;
+
+					dbg_assert(Visuals.m_vTilesOfLayer[y * Visuals.m_Width + XR].IndexBufferByteOffset() >= Visuals.m_vTilesOfLayer[y * Visuals.m_Width + X0].IndexBufferByteOffset(), "Tile count wrong.");
+
+					unsigned int NumVertices = ((Visuals.m_vTilesOfLayer[y * Visuals.m_Width + XR].IndexBufferByteOffset() - Visuals.m_vTilesOfLayer[y * Visuals.m_Width + X0].IndexBufferByteOffset()) / sizeof(unsigned int)) + (Visuals.m_vTilesOfLayer[y * Visuals.m_Width + XR].DoDraw() ? 6lu : 0lu);
+
+					if(NumVertices)
+					{
+						m_vpIndexOffsets.push_back((offset_ptr_size)Visuals.m_vTilesOfLayer[y * Visuals.m_Width + X0].IndexBufferByteOffset());
+						m_vDrawCounts.push_back(NumVertices);
+					}
+				}
+
+				int DrawCount = m_vpIndexOffsets.size();
+				if(DrawCount != 0)
+				{
+					Graphics()->RenderTileLayer(Visuals.m_BufferContainerIndex, Color, m_vpIndexOffsets.data(), m_vDrawCounts.data(), DrawCount);
+				}
 			}
 		}
 	}
