@@ -3159,8 +3159,8 @@ void CClient::Run()
 	bool LastE = false;
 	bool LastG = false;
 
-	auto LastTime = time_get_nanoseconds();
-	int64_t LastRenderTime = time_get();
+	m_RenderThreadRunning.store(true);
+	std::thread RenderThread = std::thread([this] { RenderThreaded(); });
 
 	while(true)
 	{
@@ -3209,9 +3209,14 @@ void CClient::Run()
 		if(Input()->Update())
 		{
 			if(State() == IClient::STATE_QUITTING)
+			{
 				break;
+			}
 			else
+			{
+				m_RenderThreadRunning = false;
 				SetState(IClient::STATE_QUITTING); // SDL_QUIT
+			}
 		}
 
 		char aFile[IO_MAX_PATH_LENGTH];
@@ -3245,6 +3250,49 @@ void CClient::Run()
 			g_Config.m_ClEditor = g_Config.m_ClEditor ^ 1;
 		}
 
+		Update();
+	}
+
+	GameClient()->RenderShutdownMessage();
+	Disconnect();
+
+	if(!m_pConfigManager->Save())
+	{
+		char aError[128];
+		str_format(aError, sizeof(aError), Localize("Saving settings to '%s' failed"), CONFIG_FILE);
+		m_vQuittingWarnings.emplace_back(Localize("Error saving settings"), aError);
+	}
+
+	m_Fifo.Shutdown();
+	m_Http.Shutdown();
+	Engine()->ShutdownJobs();
+
+	GameClient()->RenderShutdownMessage();
+	GameClient()->OnShutdown();
+	delete m_pEditor;
+
+	// close sockets
+	for(unsigned int i = 0; i < std::size(m_aNetClient); i++)
+		m_aNetClient[i].Close();
+
+	// shutdown text render while graphics are still available
+	m_pTextRender->Shutdown();
+
+	if(RenderThread.joinable())
+		RenderThread.join();
+}
+
+void CClient::RenderThreaded()
+{
+	auto LastTime = time_get_nanoseconds();
+	int64_t LastRenderTime = time_get();
+
+	while(m_RenderThreadRunning.load())
+	{
+		//dbg_msg("dbg", "Render thread running %d", (bool)(this->m_RenderThreadRunning));
+		if(State() == IClient::STATE_QUITTING || State() == IClient::STATE_RESTARTING)
+			break;
+		
 		// render
 		{
 			if(g_Config.m_ClEditor)
@@ -3262,7 +3310,6 @@ void CClient::Run()
 				m_EditorActive = false;
 			}
 
-			Update();
 			int64_t Now = time_get();
 
 			bool IsRenderActive = (g_Config.m_GfxBackgroundRender || m_pGraphics->WindowOpen());
@@ -3376,31 +3423,7 @@ void CClient::Run()
 		m_LocalTime = (time_get() - m_LocalStartTime) / (float)time_freq();
 		m_GlobalTime = (time_get() - m_GlobalStartTime) / (float)time_freq();
 	}
-
-	GameClient()->RenderShutdownMessage();
-	Disconnect();
-
-	if(!m_pConfigManager->Save())
-	{
-		char aError[128];
-		str_format(aError, sizeof(aError), Localize("Saving settings to '%s' failed"), CONFIG_FILE);
-		m_vQuittingWarnings.emplace_back(Localize("Error saving settings"), aError);
-	}
-
-	m_Fifo.Shutdown();
-	m_Http.Shutdown();
-	Engine()->ShutdownJobs();
-
-	GameClient()->RenderShutdownMessage();
-	GameClient()->OnShutdown();
-	delete m_pEditor;
-
-	// close sockets
-	for(unsigned int i = 0; i < std::size(m_aNetClient); i++)
-		m_aNetClient[i].Close();
-
-	// shutdown text render while graphics are still available
-	m_pTextRender->Shutdown();
+	dbg_msg("dbg", "closing thread");
 }
 
 bool CClient::InitNetworkClient(char *pError, size_t ErrorSize)

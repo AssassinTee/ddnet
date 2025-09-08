@@ -406,7 +406,11 @@ public:
 	void InitInterfaces();
 
 	void Run();
+	void RenderThreaded();
+private:
+	std::atomic<bool> m_RenderThreadRunning{false};
 
+public:
 	bool InitNetworkClient(char *pError, size_t ErrorSize);
 	bool CtrlShiftKey(int Key, bool &Last);
 
