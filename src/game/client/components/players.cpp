@@ -214,9 +214,8 @@ void CPlayers::RenderHookCollLine(
 
 	bool DoBreak = false;
 
-	std::vector<std::pair<vec2, vec2>> vLineSegments;
-
 	// Calculate hook coll line position
+	std::vector<IGraphics::CLineItem> vLineSegments;
 	do
 	{
 		OldPos = NewPos;
@@ -245,10 +244,10 @@ void CPlayers::RenderHookCollLine(
 			}
 			else
 			{
-				std::pair<vec2, vec2> NewPair = std::make_pair(InitPos, FinishPos);
-				if(std::find(vLineSegments.begin(), vLineSegments.end(), NewPair) != vLineSegments.end())
+				IGraphics::CLineItem NewLineSegment(InitPos.x, InitPos.y, FinishPos.x, FinishPos.y);
+				if(std::find(vLineSegments.begin(), vLineSegments.end(), NewLineSegment) != vLineSegments.end())
 					break;
-				vLineSegments.push_back(NewPair);
+				vLineSegments.push_back(NewLineSegment);
 				InitPos = NewPos = Collision()->TeleOuts(Tele - 1)[0];
 			}
 		}
@@ -274,9 +273,9 @@ void CPlayers::RenderHookCollLine(
 		Direction.y = round_to_int(Direction.y * 256.0f) / 256.0f;
 	} while(!DoBreak);
 
-	std::pair<vec2, vec2> NewPair = std::make_pair(InitPos, FinishPos);
-	if(std::find(vLineSegments.begin(), vLineSegments.end(), NewPair) == vLineSegments.end())
-		vLineSegments.push_back(NewPair);
+	IGraphics::CLineItem NewLineSegment(InitPos.x, InitPos.y, FinishPos.x, FinishPos.y);
+	if(std::find(vLineSegments.begin(), vLineSegments.end(), NewLineSegment) == vLineSegments.end())
+		vLineSegments.push_back(NewLineSegment);
 
 	if(AlwaysRenderHookColl && RenderHookCollPlayer)
 	{
@@ -285,43 +284,42 @@ void CPlayers::RenderHookCollLine(
 	}
 
 	// Render hook coll line
-	Graphics()->TextureClear();
 	const int HookCollSize = Local ? g_Config.m_ClHookCollSize : g_Config.m_ClHookCollSizeOther;
-	if(HookCollSize > 0)
-		Graphics()->QuadsBegin();
-	else
-		Graphics()->LinesBegin();
 
 	bool OtherTeam = GameClient()->IsOtherTeam(ClientId);
 	float Alpha = (OtherTeam || ClientId < 0) ? g_Config.m_ClShowOthersAlpha / 100.0f : 1.0f;
 	Alpha *= (float)g_Config.m_ClHookCollAlpha / 100;
-	Graphics()->SetColor(HookCollColor.WithAlpha(Alpha));
 
-	for(const auto &[DrawInitPos, DrawFinishPos] : vLineSegments)
+	Graphics()->TextureClear();
+	if(HookCollSize > 0)
 	{
-		if(HookCollSize > 0)
+		std::vector<IGraphics::CFreeformItem> vLineQuadSegments;
+		vLineQuadSegments.reserve(vLineSegments.size());
+
+		float LineWidth = 0.5f + (float)(HookCollSize - 1) * 0.25f;
+		const vec2 PerpToAngle = normalize(vec2(Direction.y, -Direction.x)) * GameClient()->m_Camera.m_Zoom;
+
+		for(const auto &LineSegment : vLineSegments)
 		{
-			float LineWidth = 0.5f + (float)(HookCollSize - 1) * 0.25f;
-			vec2 PerpToAngle = normalize(vec2(Direction.y, -Direction.x)) * GameClient()->m_Camera.m_Zoom;
+			vec2 DrawInitPos(LineSegment.m_X0, LineSegment.m_Y0);
+			vec2 DrawFinishPos(LineSegment.m_X1, LineSegment.m_Y1);
 			vec2 Pos0 = DrawFinishPos + PerpToAngle * -LineWidth;
 			vec2 Pos1 = DrawFinishPos + PerpToAngle * LineWidth;
 			vec2 Pos2 = DrawInitPos + PerpToAngle * -LineWidth;
 			vec2 Pos3 = DrawInitPos + PerpToAngle * LineWidth;
 			IGraphics::CFreeformItem FreeformItem(Pos0.x, Pos0.y, Pos1.x, Pos1.y, Pos2.x, Pos2.y, Pos3.x, Pos3.y);
-			Graphics()->QuadsDrawFreeform(&FreeformItem, 1);
+			vLineQuadSegments.push_back(FreeformItem);
 		}
-		else
-		{
-			IGraphics::CLineItem LineItem(DrawInitPos.x, DrawInitPos.y, DrawFinishPos.x, DrawFinishPos.y);
-			Graphics()->LinesDraw(&LineItem, 1);
-		}
-	}
-	if(HookCollSize > 0)
-	{
+		Graphics()->QuadsBegin();
+		Graphics()->SetColor(HookCollColor.WithAlpha(Alpha));
+		Graphics()->QuadsDrawFreeform(vLineQuadSegments.data(), vLineQuadSegments.size());
 		Graphics()->QuadsEnd();
 	}
 	else
 	{
+		Graphics()->LinesBegin();
+		Graphics()->SetColor(HookCollColor.WithAlpha(Alpha));
+		Graphics()->LinesDraw(vLineSegments.data(), vLineSegments.size());
 		Graphics()->LinesEnd();
 	}
 }
