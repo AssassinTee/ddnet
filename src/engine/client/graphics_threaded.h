@@ -120,6 +120,7 @@ public:
 		CMD_RENDER_BORDER_TILE, // render one tile multiple times
 		CMD_RENDER_QUAD_LAYER, // render a quad layer
 		CMD_RENDER_QUAD_LAYER_GROUPED, // render a quad layer in groups meaning they all share the same envelope and offset (which can be none)
+		CMD_RENDER_TEES_6, // render multiple tees and their parts at once
 		CMD_RENDER_TEXT, // render text
 		CMD_RENDER_QUAD_CONTAINER, // render a quad buffer container
 		CMD_RENDER_QUAD_CONTAINER_EX, // render a quad buffer container with extended parameters
@@ -394,6 +395,16 @@ public:
 		SQuadRenderInfo *m_pQuadInfo;
 		size_t m_QuadNum;
 		int m_QuadOffset;
+	};
+
+	struct SCommand_RenderTees6 : public SCommand
+	{
+		SCommand_RenderTees6() : SCommand(CMD_RENDER_TEES_6) {}
+		SState m_State;
+		int m_BufferContainerIndex;
+		STeeRenderInfo6 *m_pTeeInfo;
+		size_t m_TeeNum;
+		int m_TeeOffset;
 	};
 
 	struct SCommand_RenderText : public SCommand

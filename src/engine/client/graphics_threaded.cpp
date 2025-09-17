@@ -1460,6 +1460,29 @@ void CGraphics_Threaded::RenderQuadLayer(int BufferContainerIndex, SQuadRenderIn
 	m_pCommandBuffer->AddRenderCalls(((QuadNum - 1) / gs_GraphicsMaxQuadsRenderCount) + 1);
 }
 
+void CGraphics_Threaded::RenderTees6(int BufferContainerIndex, STeeRenderInfo6 *pTeeRenderInfo, size_t TeeNum, int TeeOffset)
+{
+	if(TeeNum == 0)
+		return;
+
+	CCommandBuffer::SCommand_RenderTees6 Cmd;
+	Cmd.m_State = m_State;
+	Cmd.m_TeeNum = TeeNum;
+	Cmd.m_TeeOffset = TeeOffset;
+	Cmd.m_BufferContainerIndex = BufferContainerIndex;
+
+	Cmd.m_pTeeInfo = (STeeRenderInfo6 *)AllocCommandBufferData(Cmd.m_TeeNum * sizeof(STeeRenderInfo6));
+
+	AddCmd(Cmd, [&] {
+		Cmd.m_pTeeInfo = (STeeRenderInfo6 *)m_pCommandBuffer->AllocData(TeeNum * sizeof(STeeRenderInfo6));
+		return Cmd.m_pTeeInfo != nullptr;
+	});
+
+	mem_copy(Cmd.m_pTeeInfo, pTeeRenderInfo, sizeof(STeeRenderInfo6) * TeeNum);
+
+	m_pCommandBuffer->AddRenderCalls(1);
+}
+
 void CGraphics_Threaded::RenderText(int BufferContainerIndex, int TextQuadNum, int TextureSize, int TextureTextIndex, int TextureTextOutlineIndex, const ColorRGBA &TextColor, const ColorRGBA &TextOutlineColor)
 {
 	if(BufferContainerIndex == -1)

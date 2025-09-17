@@ -50,6 +50,21 @@ struct SQuadRenderInfo
 	float m_Padding;
 };
 
+struct STeePartRenderInfo6
+{
+	vec4 m_Offset;
+	float m_Rotation;
+	vec2 m_Scale;
+	ColorRGBA m_Color;
+	vec4 m_UVRect;
+	bool m_FlipX;
+};
+
+struct STeeRenderInfo6
+{
+	STeePartRenderInfo6 m_SkinPartRenderInfo[6]; // NUM_SKINPARTS
+};
+
 class CGraphicTile
 {
 public:
@@ -312,6 +327,7 @@ public:
 	virtual void RenderTileLayer(int BufferContainerIndex, const ColorRGBA &Color, char **pOffsets, unsigned int *pIndicedVertexDrawNum, size_t NumIndicesOffset) = 0;
 	virtual void RenderBorderTiles(int BufferContainerIndex, const ColorRGBA &Color, char *pIndexBufferOffset, const vec2 &Offset, const vec2 &Scale, uint32_t DrawNum) = 0;
 	virtual void RenderQuadLayer(int BufferContainerIndex, SQuadRenderInfo *pQuadInfo, size_t QuadNum, int QuadOffset, bool Grouped = false) = 0;
+	virtual void RenderTees6(int BufferContainerIndex, STeeRenderInfo6 *pTeeRenderInfo, size_t TeeNum, int TeeOffset) = 0;
 	virtual void RenderText(int BufferContainerIndex, int TextQuadNum, int TextureSize, int TextureTextIndex, int TextureTextOutlineIndex, const ColorRGBA &TextColor, const ColorRGBA &TextOutlineColor) = 0;
 
 	// opengl 3.3 functions

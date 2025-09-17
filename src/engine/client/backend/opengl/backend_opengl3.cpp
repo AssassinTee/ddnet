@@ -106,6 +106,7 @@ bool CCommandProcessorFragment_OpenGL3_3::Cmd_Init(const SCommand_Init *pCommand
 	m_pQuadProgramTextured = new CGLSLQuadProgram;
 	m_pQuadProgramGrouped = new CGLSLQuadProgram;
 	m_pQuadProgramTexturedGrouped = new CGLSLQuadProgram;
+	m_pTee6Program = new CGLSLQuadProgram;
 	m_pTextProgram = new CGLSLTextProgram;
 	m_pPrimitiveExProgram = new CGLSLPrimitiveExProgram;
 	m_pPrimitiveExProgramTextured = new CGLSLPrimitiveExProgram;
@@ -359,6 +360,28 @@ bool CCommandProcessorFragment_OpenGL3_3::Cmd_Init(const SCommand_Init *pCommand
 	{
 		CGLSL VertexShader;
 		CGLSL FragmentShader;
+		VertexShader.LoadShader(&ShaderCompiler, pCommand->m_pStorage, "shader/tee6.vert", GL_VERTEX_SHADER);
+		FragmentShader.LoadShader(&ShaderCompiler, pCommand->m_pStorage, "shader/tee6.frag", GL_FRAGMENT_SHADER);
+		ShaderCompiler.ClearDefines();
+
+		m_pTee6Program->CreateProgram();
+		m_pTee6Program->AddShader(&VertexShader);
+		m_pTee6Program->AddShader(&FragmentShader);
+		m_pTee6Program->LinkProgram();
+
+		UseProgram(m_pTee6Program);
+
+		m_pTee6Program->m_LocPos = m_pTee6Program->GetUniformLoc("gPos");
+		m_pTee6Program->m_LocTextureSampler = m_pTee6Program->GetUniformLoc("gTextureSampler");
+		m_pTee6Program->m_LocColors = m_pTee6Program->GetUniformLoc("gVertColors");
+		m_pTee6Program->m_LocRotations = m_pTee6Program->GetUniformLoc("gRotations");
+		m_pTee6Program->m_LocOffsets = m_pTee6Program->GetUniformLoc("gOffsets");
+		m_pTee6Program->m_LocQuadOffset = m_pTee6Program->GetUniformLoc("gQuadOffset");
+		// TODO maybe set other things if required
+	}
+	{
+		CGLSL VertexShader;
+		CGLSL FragmentShader;
 		VertexShader.LoadShader(&ShaderCompiler, pCommand->m_pStorage, "shader/text.vert", GL_VERTEX_SHADER);
 		FragmentShader.LoadShader(&ShaderCompiler, pCommand->m_pStorage, "shader/text.frag", GL_FRAGMENT_SHADER);
 
@@ -466,6 +489,37 @@ bool CCommandProcessorFragment_OpenGL3_3::Cmd_Init(const SCommand_Init *pCommand
 	// fix the alignment to allow even 1byte changes, e.g. for alpha components
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
+	// Tee skin buffer
+	glGenBuffers(1, &m_TeeDrawIndexBufferId);
+	glBindBuffer(GL_ARRAY_BUFFER, m_TeeDrawIndexVertexId);
+
+	// layout = 1..N for instance attributes
+	GLsizei stride = sizeof(STeePartRenderInfo6);
+
+	glEnableVertexAttribArray(1); // offset
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(STeePartRenderInfo6, m_Offset));
+	glVertexAttribDivisor(1, 1);
+
+	glEnableVertexAttribArray(2); // rotation
+	glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(STeePartRenderInfo6, m_Rotation));
+	glVertexAttribDivisor(2, 1);
+
+	glEnableVertexAttribArray(3); // scale
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(STeePartRenderInfo6, m_Scale));
+	glVertexAttribDivisor(3, 1);
+
+	glEnableVertexAttribArray(4); // color
+	glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(STeePartRenderInfo6, m_Color));
+	glVertexAttribDivisor(4, 1);
+
+	glEnableVertexAttribArray(5); // uvRect
+	glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, stride, (void*)offsetof(STeePartRenderInfo6, m_UVRect));
+	glVertexAttribDivisor(5, 1);
+
+	glVertexAttribPointer(6, 1, GL_BOOL, GL_FALSE, stride, (void*)offsetof(STeePartRenderInfo6, m_FlipX));
+	glVertexAttribDivisor(6, 1);
+
+	glBindVertexArray(0);
 	return true;
 }
 
@@ -1202,6 +1256,41 @@ void CCommandProcessorFragment_OpenGL3_3::Cmd_RenderQuadLayer(const CCommandBuff
 		pProgram->SetUniform(pProgram->m_LocRotations, 1, &Rotations);
 		glDrawElements(GL_TRIANGLES, QuadsLeft * 6, GL_UNSIGNED_INT, (void *)((QuadOffset + QuadOffsetExtra) * 6 * sizeof(unsigned int)));
 	}
+}
+
+void CCommandProcessorFragment_OpenGL3_3::Cmd_RenderTees6(const CCommandBuffer::SCommand_RenderTees6 *pCommand)
+{
+	int Index = pCommand->m_BufferContainerIndex;
+	// if space not there return
+	if((size_t)Index >= m_vBufferContainers.size())
+		return;
+
+	SBufferContainer &BufferContainer = m_vBufferContainers[Index];
+	if(BufferContainer.m_VertArrayId == 0)
+		return;
+
+	if(pCommand->m_TeeNum == 0)
+	{
+		return; // nothing to draw
+	}
+
+	CGLSLQuadProgram *pProgram = m_pTee6Program;
+
+	UseProgram(pProgram);
+	SetState(pCommand->m_State, pProgram);
+
+	glBindVertexArray(BufferContainer.m_VertArrayId);
+	if(BufferContainer.m_LastIndexBufferBound != m_TeeDrawIndexBufferId)
+	{
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_TeeDrawIndexBufferId);
+		BufferContainer.m_LastIndexBufferBound = m_TeeDrawIndexBufferId;
+	}
+
+	size_t Size = pCommand->m_TeeNum * 6 * sizeof(STeePartRenderInfo6);
+	glBindBuffer(GL_ARRAY_BUFFER, m_TeeDrawIndexBufferId);
+	glBufferData(GL_ARRAY_BUFFER, Size, pCommand->m_pTeeInfo, GL_STREAM_DRAW);
+
+	glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, (void*)0, (GLsizei)Size);
 }
 
 void CCommandProcessorFragment_OpenGL3_3::RenderText(const CCommandBuffer::SState &State, int DrawNum, int TextTextureIndex, int TextOutlineTextureIndex, int TextureSize, const ColorRGBA &TextColor, const ColorRGBA &TextOutlineColor)

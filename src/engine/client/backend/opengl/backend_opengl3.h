@@ -32,6 +32,7 @@ protected:
 	CGLSLQuadProgram *m_pQuadProgramTextured;
 	CGLSLQuadProgram *m_pQuadProgramGrouped;
 	CGLSLQuadProgram *m_pQuadProgramTexturedGrouped;
+	CGLSLQuadProgram *m_pTee6Program;
 	CGLSLTextProgram *m_pTextProgram;
 	CGLSLPrimitiveExProgram *m_pPrimitiveExProgram;
 	CGLSLPrimitiveExProgram *m_pPrimitiveExProgramTextured;
@@ -52,6 +53,9 @@ protected:
 
 	TWGLuint m_QuadDrawIndexBufferId;
 	unsigned int m_CurrentIndicesInBuffer;
+
+	TWGLuint m_TeeDrawIndexBufferId;
+	TWGLuint m_TeeDrawIndexVertexId;
 
 	void DestroyBufferContainer(int Index, bool DeleteBOs = true);
 
@@ -107,6 +111,7 @@ protected:
 	void Cmd_RenderTileLayer(const CCommandBuffer::SCommand_RenderTileLayer *pCommand) override;
 	void Cmd_RenderBorderTile(const CCommandBuffer::SCommand_RenderBorderTile *pCommand) override;
 	void Cmd_RenderQuadLayer(const CCommandBuffer::SCommand_RenderQuadLayer *pCommand, bool Grouped) override;
+	void Cmd_RenderTees6(const CCommandBuffer::SCommand_RenderTees6 *pCommand) override;
 	void Cmd_RenderText(const CCommandBuffer::SCommand_RenderText *pCommand) override;
 	void Cmd_RenderQuadContainer(const CCommandBuffer::SCommand_RenderQuadContainer *pCommand) override;
 	void Cmd_RenderQuadContainerEx(const CCommandBuffer::SCommand_RenderQuadContainerEx *pCommand) override;
