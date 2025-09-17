@@ -204,27 +204,26 @@ void CPlayers::RenderHookCollLine(
 			Direction = vec2(1.0f, 0.0f);
 	}
 
-	vec2 InitPos = Position;
-	vec2 FinishPos = InitPos + Direction * (GameClient()->m_aClients[ClientId].m_Predicted.m_Tuning.m_HookLength - 42.0f);
+	//vec2 InitPos = Position;
+	vec2 FinishPos = Position + Direction * (GameClient()->m_aClients[ClientId].m_Predicted.m_Tuning.m_HookLength - 42.0f);
 
 	ColorRGBA HookCollColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClHookCollColorNoColl));
 
-	vec2 OldPos = InitPos + Direction * CCharacterCore::PhysicalSize() * 1.5f;
+	vec2 OldPos = Position + Direction * CCharacterCore::PhysicalSize() * 1.5f;
 	vec2 NewPos = OldPos;
-
-	bool DoBreak = false;
 
 	// Calculate hook coll line position
 	std::vector<IGraphics::CLineItem> vLineSegments;
-	do
+
+	int Size = GameClient()->m_aClients[ClientId].m_Predicted.m_Tuning.m_HookLength;
+	while(Size > 0)
 	{
 		OldPos = NewPos;
 		NewPos = OldPos + Direction * GameClient()->m_aClients[ClientId].m_Predicted.m_Tuning.m_HookFireSpeed;
 
-		if(distance(InitPos, NewPos) > GameClient()->m_aClients[ClientId].m_Predicted.m_Tuning.m_HookLength)
+		if(distance(OldPos, NewPos) > Size)
 		{
-			NewPos = InitPos + normalize(NewPos - InitPos) * GameClient()->m_aClients[ClientId].m_Predicted.m_Tuning.m_HookLength;
-			DoBreak = true;
+			NewPos = OldPos + normalize(NewPos - OldPos) * Size;
 		}
 
 		int Tele;
@@ -233,49 +232,54 @@ void CPlayers::RenderHookCollLine(
 		if(ClientId >= 0 && GameClient()->IntersectCharacter(OldPos, FinishPos, FinishPos, ClientId) != -1)
 		{
 			HookCollColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClHookCollColorTeeColl));
+			//IGraphics::CLineItem NewLineSegment();
+			vLineSegments.emplace_back(OldPos.x, OldPos.y, FinishPos.x, FinishPos.y);
 			break;
 		}
 
-		if(!DoBreak && Hit == TILE_TELEINHOOK)
+		if(Hit == TILE_TELEINHOOK)
 		{
-			if(Collision()->TeleOuts(Tele - 1).size() != 1)
+			auto TeleOuts = Collision()->TeleOuts(Tele - 1);
+
+			if(TeleOuts.size() == 1)
 			{
-				Hit = Collision()->IntersectLineTeleHook(OldPos, NewPos, &FinishPos, nullptr);
+				//IGraphics::CLineItem NewLineSegment(OldPos.x, OldPos.y, FinishPos.x, FinishPos.y);
+				vLineSegments.emplace_back(OldPos.x, OldPos.y, FinishPos.x, FinishPos.y);
+				Size -= distance(OldPos, FinishPos);
+				NewPos = TeleOuts[0];
+				continue;
+			}
+			else if(TeleOuts.size() > 1)
+			{
+				// we don't know where the hook teleports to, could be anyhting anywhere
+				HookCollColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClHookCollColorHookableColl));
+				//IGraphics::CLineItem NewLineSegment(OldPos.x, OldPos.y, FinishPos.x, FinishPos.y);
+				vLineSegments.emplace_back(OldPos.x, OldPos.y, FinishPos.x, FinishPos.y);
+				break;
 			}
 			else
 			{
-				IGraphics::CLineItem NewLineSegment(InitPos.x, InitPos.y, FinishPos.x, FinishPos.y);
-				if(std::find(vLineSegments.begin(), vLineSegments.end(), NewLineSegment) != vLineSegments.end())
-					break;
-				vLineSegments.push_back(NewLineSegment);
-				InitPos = NewPos = Collision()->TeleOuts(Tele - 1)[0];
+				// recalculate without teleporter as it's not working
+				Hit = Collision()->IntersectLineTeleHook(OldPos, NewPos, &FinishPos, nullptr);
 			}
 		}
 
-		if(!DoBreak && Hit && Hit != TILE_TELEINHOOK)
+		if(Hit > TILE_AIR)
 		{
-			if(Hit != TILE_NOHOOK)
+			if(Hit == TILE_SOLID)
 			{
 				HookCollColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClHookCollColorHookableColl));
 			}
+
+			//IGraphics::CLineItem NewLineSegment(OldPos.x, OldPos.y, FinishPos.x, FinishPos.y);
+			vLineSegments.emplace_back(OldPos.x, OldPos.y, FinishPos.x, FinishPos.y);
+			break;
 		}
 
-		if(Hit && Hit != TILE_TELEINHOOK)
-			break;
-
-		NewPos.x = round_to_int(NewPos.x);
-		NewPos.y = round_to_int(NewPos.y);
-
-		if(OldPos == NewPos)
-			break;
-
-		Direction.x = round_to_int(Direction.x * 256.0f) / 256.0f;
-		Direction.y = round_to_int(Direction.y * 256.0f) / 256.0f;
-	} while(!DoBreak);
-
-	IGraphics::CLineItem NewLineSegment(InitPos.x, InitPos.y, FinishPos.x, FinishPos.y);
-	if(std::find(vLineSegments.begin(), vLineSegments.end(), NewLineSegment) == vLineSegments.end())
-		vLineSegments.push_back(NewLineSegment);
+		//IGraphics::CLineItem NewLineSegment(OldPos.x, OldPos.y, NewPos.x, NewPos.y);
+		vLineSegments.emplace_back(OldPos.x, OldPos.y, NewPos.x, NewPos.y);
+		break;
+	}
 
 	if(AlwaysRenderHookColl && RenderHookCollPlayer)
 	{
