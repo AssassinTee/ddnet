@@ -204,80 +204,105 @@ void CPlayers::RenderHookCollLine(
 			Direction = vec2(1.0f, 0.0f);
 	}
 
-	// Calculate hook coll line position
-	int HookSpeed = GameClient()->m_aClients[ClientId].m_Predicted.m_Tuning.m_HookFireSpeed;
-	if(HookSpeed <= 0)
+	static constexpr float HOOK_START_DISTANCE = CCharacterCore::PhysicalSize() * 1.5f;
+	float HookLength = (float)GameClient()->m_aClients[ClientId].m_Predicted.m_Tuning.m_HookLength;
+	float HookFireSpeed = (float)GameClient()->m_aClients[ClientId].m_Predicted.m_Tuning.m_HookFireSpeed;
+
+	// janky physics
+	if(HookLength < HOOK_START_DISTANCE || HookFireSpeed <= 0.0f)
 		return;
 
-	int HookLength = GameClient()->m_aClients[ClientId].m_Predicted.m_Tuning.m_HookLength;
+	// pre calculate quantization
+	vec2 QuantizedPos = Position + Direction * HookFireSpeed;
+	QuantizedPos.x = round_to_int(QuantizedPos.x);
+	QuantizedPos.y = round_to_int(QuantizedPos.y);
+	vec2 QuantizedDirection = normalize(QuantizedPos - Position);
 
-	const float LineOffset = CCharacterCore::PhysicalSize() * 1.5f;
-	vec2 InitPos = Position;
-	vec2 FinishPos = InitPos + Direction * (HookLength - LineOffset);
+	vec2 StartOffset = Direction * HOOK_START_DISTANCE;
+	vec2 BasePos = Position;
+	vec2 LineStartPos = BasePos + StartOffset;
+	vec2 SegmentStartPos = LineStartPos;
 
 	ColorRGBA HookCollColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClHookCollColorNoColl));
-
-	vec2 OldPos = InitPos + Direction * LineOffset;
-	vec2 NewPos = OldPos;
-
-	bool DoBreak = false;
 	std::vector<IGraphics::CLineItem> vLineSegments;
-	vLineSegments.reserve(HookLength / HookSpeed + 1);
-	do
-	{
-		OldPos = NewPos;
-		NewPos = OldPos + Direction * HookSpeed;
 
-		if(distance(InitPos, NewPos) > HookLength)
+	static constexpr int MAX_LINE_SEGMENT_CALCULATIONS = 250;
+
+	int SegmentCount;
+	for(SegmentCount = 0; SegmentCount < MAX_LINE_SEGMENT_CALCULATIONS; ++SegmentCount)
+	{
+		int Tele;
+		vec2 HitPos;
+		vec2 SegmentEndPos = SegmentStartPos + QuantizedDirection * HookFireSpeed;
+
+		// check if a hook would enter retracting state in this tick
+		if(distance(BasePos, SegmentEndPos) > HookLength)
 		{
-			NewPos = InitPos + normalize(NewPos - InitPos) * HookLength;
-			DoBreak = true;
+			// the line is too long here, and the hook starts to retract, use old position
+			vLineSegments.emplace_back(LineStartPos, SegmentStartPos);
+			break;
 		}
 
-		int Tele;
-		int Hit = Collision()->IntersectLineTeleHook(OldPos, NewPos, &FinishPos, nullptr, &Tele);
+		// check for map collisions
+		int Hit = Collision()->IntersectLineTeleHook(SegmentStartPos, SegmentEndPos, &HitPos, nullptr, &Tele);
 
-		if(ClientId >= 0 && GameClient()->IntersectCharacter(OldPos, FinishPos, FinishPos, ClientId) != -1)
+		// check if we intersect a player
+		if(ClientId >= 0 && GameClient()->IntersectCharacter(SegmentStartPos, HitPos, SegmentEndPos, ClientId) != -1)
 		{
 			HookCollColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClHookCollColorTeeColl));
+			vLineSegments.emplace_back(LineStartPos, SegmentEndPos);
 			break;
 		}
 
-		if(!DoBreak && Hit == TILE_TELEINHOOK)
+		// we hit nothing, continue calculating segments
+		if(!Hit)
 		{
-			if(Collision()->TeleOuts(Tele - 1).size() != 1)
-			{
-				Hit = Collision()->IntersectLineTeleHook(OldPos, NewPos, &FinishPos, nullptr);
-			}
-			else
-			{
-				vLineSegments.emplace_back(InitPos, FinishPos);
-				InitPos = NewPos = Collision()->TeleOuts(Tele - 1)[0];
-			}
+			SegmentStartPos = SegmentEndPos;
+			SegmentStartPos.x = round_to_int(SegmentStartPos.x);
+			SegmentStartPos.y = round_to_int(SegmentStartPos.y);
+			continue;
 		}
 
-		if(!DoBreak && Hit && Hit != TILE_TELEINHOOK)
+		// we hit a solid / hook stopper
+		if(Hit != TILE_TELEINHOOK)
 		{
 			if(Hit != TILE_NOHOOK)
-			{
 				HookCollColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClHookCollColorHookableColl));
-			}
+			vLineSegments.emplace_back(LineStartPos, HitPos);
+			break;
 		}
 
-		if(Hit && Hit != TILE_TELEINHOOK)
+		// we are hitting TILE_TELEINHOOK
+		vLineSegments.emplace_back(LineStartPos, HitPos);
+
+		// check tele outs
+		const std::vector<vec2> &vTeleOuts = Collision()->TeleOuts(Tele - 1);
+		if(vTeleOuts.empty())
+		{
+			// the hook gets stuck, this is a feature or a bug
+			HookCollColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClHookCollColorHookableColl));
 			break;
-
-		NewPos.x = round_to_int(NewPos.x);
-		NewPos.y = round_to_int(NewPos.y);
-
-		if(OldPos == NewPos)
+		}
+		else if(vTeleOuts.size() > 1)
+		{
+			// we don't know which teleout the hook takes, just invent a new color
+			HookCollColor = color_invert(color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClHookCollColorTeeColl)));
 			break;
+		}
 
-		Direction.x = round_to_int(Direction.x * 256.0f) / 256.0f;
-		Direction.y = round_to_int(Direction.y * 256.0f) / 256.0f;
-	} while(!DoBreak);
+		// go through one teleout, update positions and continue
+		BasePos = vTeleOuts[0];
+		LineStartPos = BasePos + QuantizedDirection * HOOK_START_DISTANCE;
+		SegmentStartPos = LineStartPos;
+	}
 
-	vLineSegments.emplace_back(InitPos, FinishPos);
+	// The hook line is too expensive to calculate and didn't hit anything before, just set a straight line
+	if(SegmentCount == MAX_LINE_SEGMENT_CALCULATIONS && vLineSegments.empty())
+	{
+		// we simply don't know if we hit anything or not
+		HookCollColor = color_invert(color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClHookCollColorTeeColl)));
+		vLineSegments.emplace_back(LineStartPos, BasePos + QuantizedDirection * HookLength);
+	}
 
 	if(AlwaysRenderHookColl && RenderHookCollPlayer)
 	{
