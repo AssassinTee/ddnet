@@ -43,6 +43,16 @@ void CGameContext::ConCredits(IConsole::IResult *pResult, void *pUserData)
 	};
 	for(const char *pLine : CREDITS)
 		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp", pLine);
+
+	if(pSelf->IsUniqueRace())
+	{
+		static constexpr const char *UNIQUE_CREDITS[] = {
+			"Unique Race is run by Tezcan, timakro, Ryozuki and others.",
+			"Unique port to ddnet by Assa (AssassinTee).",
+		};
+		for(const char *pLine : UNIQUE_CREDITS)
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp", pLine);
+	}
 }
 
 void CGameContext::ConInfo(IConsole::IResult *pResult, void *pUserData)
@@ -1633,6 +1643,11 @@ void CGameContext::ConSpecTeam(IConsole::IResult *pResult, void *pUserData)
 void CGameContext::ConSayTime(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	// TODO: This is disabled in unique, I don't know why
+	if(pSelf->IsUniqueRace())
+		return;
+
 	if(!CheckClientId(pResult->m_ClientId))
 		return;
 
@@ -1676,6 +1691,11 @@ void CGameContext::ConSayTime(IConsole::IResult *pResult, void *pUserData)
 void CGameContext::ConSayTimeAll(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	// TODO: This is disabled in unique, I don't know why
+	if(pSelf->IsUniqueRace())
+		return;
+
 	if(!CheckClientId(pResult->m_ClientId))
 		return;
 
@@ -2480,4 +2500,108 @@ void CGameContext::ConTimeCP(IConsole::IResult *pResult, void *pUserData)
 
 	const char *pName = pResult->GetString(0);
 	pSelf->Score()->LoadPlayerTimeCp(pResult->m_ClientId, pName);
+}
+
+// Unique
+void CGameContext::ConShowFlag(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!pSelf->IsUniqueRace())
+		return;
+
+	if(!CheckClientId(pResult->m_ClientId))
+		return;
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
+	if(!pPlayer)
+		return;
+
+	if(pResult->NumArguments())
+		pPlayer->m_ShowFlag = pResult->GetInteger(0);
+	else
+		pPlayer->m_ShowFlag = !pPlayer->m_ShowFlag;
+	pSelf->m_pController->UpdateRecordFlag();
+}
+
+void CGameContext::ConRed(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!pSelf->IsUniqueRace())
+		return;
+
+	if(!CheckClientId(pResult->m_ClientId))
+		return;
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
+	if(!pPlayer)
+		return;
+
+	if(!g_Config.m_SvFastcap)
+	{
+		pSelf->SendChatTarget(pPlayer->GetCid(), "You are not playing Fastcap.");
+		return;
+	}
+
+	pPlayer->m_FastcapSpawnAt = 1;
+
+	if(pPlayer->IsPaused())
+		return;
+	if(pPlayer->GetTeam() == TEAM_SPECTATORS)
+	{
+		if(g_Config.m_SvSpamprotection && pPlayer->m_LastSetTeam && pPlayer->m_LastSetTeam + pSelf->Server()->TickSpeed() * g_Config.m_SvTeamChangeDelay > pSelf->Server()->Tick())
+			return;
+		pSelf->m_VoteUpdate = true;
+		pPlayer->SetTeam(0);
+	}
+	else
+	{
+		if(pPlayer->m_LastKill && pPlayer->m_LastKill + pSelf->Server()->TickSpeed() / 2 > pSelf->Server()->Tick())
+			return;
+		if(!pPlayer->GetCharacter())
+			return;
+		pPlayer->m_LastKill = pSelf->Server()->Tick();
+		pPlayer->KillCharacter(WEAPON_SELF);
+		pPlayer->Respawn();
+	}
+}
+
+// Unique
+void CGameContext::ConBlue(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	if(!pSelf->IsUniqueRace())
+		return;
+
+	if(!CheckClientId(pResult->m_ClientId))
+		return;
+	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
+	if(!pPlayer)
+		return;
+
+	if(!g_Config.m_SvFastcap)
+	{
+		pSelf->SendChatTarget(pPlayer->GetCid(), "You are not playing Fastcap.");
+		return;
+	}
+
+	pPlayer->m_FastcapSpawnAt = 2;
+
+	if(pPlayer->IsPaused())
+		return;
+	if(pPlayer->GetTeam() == TEAM_SPECTATORS)
+	{
+		if(g_Config.m_SvSpamprotection && pPlayer->m_LastSetTeam && pPlayer->m_LastSetTeam + pSelf->Server()->TickSpeed() * g_Config.m_SvTeamChangeDelay > pSelf->Server()->Tick())
+			return;
+		pSelf->m_VoteUpdate = true;
+		pPlayer->SetTeam(0);
+	}
+	else
+	{
+		if(pPlayer->m_LastKill && pPlayer->m_LastKill + pSelf->Server()->TickSpeed() / 2 > pSelf->Server()->Tick())
+			return;
+		if(!pPlayer->GetCharacter())
+			return;
+		pPlayer->m_LastKill = pSelf->Server()->Tick();
+		pPlayer->KillCharacter(WEAPON_SELF);
+		pPlayer->Respawn();
+	}
 }
