@@ -31,6 +31,7 @@
 
 #include "entities/character.h"
 #include "gamemodes/DDRace.h"
+#include "gamemodes/Unique.h"
 #include "gamemodes/mod.h"
 #include "player.h"
 #include "score.h"
@@ -2867,7 +2868,10 @@ void CGameContext::OnKillNetMessage(const CNetMsg_Cl_Kill *pMsg, int ClientId)
 		return;
 	}
 	CPlayer *pPlayer = m_apPlayers[ClientId];
-	if(pPlayer->m_LastKill && pPlayer->m_LastKill + Server()->TickSpeed() * g_Config.m_SvKillDelay > Server()->Tick())
+
+	// Unique - Other kill delay for grenade lineups
+	int KillDelay = IsUniqueRace() ? Server()->TickSpeed() / 2 : Server()->TickSpeed() * g_Config.m_SvKillDelay;
+	if(pPlayer->m_LastKill && pPlayer->m_LastKill + KillDelay > Server()->Tick())
 		return;
 	if(pPlayer->IsPaused())
 		return;
@@ -3932,6 +3936,11 @@ void CGameContext::RegisterChatCommands()
 	Console()->Register("unendless", "", CFGFLAG_CHAT | CMDFLAG_PRACTICE, ConPracticeUnEndlessHook, this, "Removes endless hook from you");
 	Console()->Register("invincible", "?i['0'|'1']", CFGFLAG_CHAT | CMDFLAG_PRACTICE, ConPracticeToggleInvincible, this, "Toggles invincible mode");
 	Console()->Register("kill", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConProtectedKill, this, "Kill yourself when kill-protected during a long game (use f1, kill for regular kill)");
+
+	// Unique
+	Console()->Register("showflag", "?i['0'|'1']", CFGFLAG_CHAT | CFGFLAG_SERVER, ConShowFlag, this, "Wether to show your own record flag or not (on by default)");
+	Console()->Register("red", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConRed, this, "Change to red side on Fastcap");
+	Console()->Register("blue", "", CFGFLAG_CHAT | CFGFLAG_SERVER, ConBlue, this, "Change to blue side on Fastcap");
 }
 
 void CGameContext::OnInit(const void *pPersistentData)
@@ -4029,6 +4038,23 @@ void CGameContext::OnInit(const void *pPersistentData)
 
 	m_MapBugs.Dump();
 
+	// Unique - some settings need to be done before map loading
+	bool IsFastcap = !str_comp(Config()->m_SvGametype, "fastcap");
+	bool IsUnique = !str_comp(Config()->m_SvGametype, "race") || !str_comp(Config()->m_SvGametype, "unique") || IsFastcap;
+	if(IsUnique)
+	{
+		g_Config.m_SvSoloServer = 1; // forever alone
+		g_Config.m_SvDestroyBulletsOnDeath = g_Config.m_SvKillGrenades; // legacy
+		g_Config.m_SvProximityChecks = 1; // forever buggy
+		g_Config.m_SvSaveWorseScores = 0; // do not spam to much in /times
+		g_Config.m_SvUniquePhysics = 1; // different input handling
+		if(IsFastcap) // force damage and fastcap on fastcap
+		{
+			g_Config.m_SvFastcap = 1;
+			g_Config.m_SvHealthAndAmmo = 1;
+		}
+	}
+
 	if(g_Config.m_SvSoloServer)
 	{
 		g_Config.m_SvTeam = SV_TEAM_FORCED_SOLO;
@@ -4046,6 +4072,8 @@ void CGameContext::OnInit(const void *pPersistentData)
 
 	if(!str_comp(Config()->m_SvGametype, "mod"))
 		m_pController = new CGameControllerMod(this);
+	else if(IsUnique)
+		m_pController = new CGameControllerUnique(this);
 	else
 		m_pController = new CGameControllerDDRace(this);
 
@@ -5191,4 +5219,11 @@ void CGameContext::ReadCensorList()
 bool CGameContext::PracticeByDefault() const
 {
 	return g_Config.m_SvPracticeByDefault && g_Config.m_SvTestingCommands;
+}
+
+// Unique
+bool CGameContext::IsUniqueRace() const
+{
+	dbg_assert(m_pController != nullptr, "can't call this without controller");
+	return m_pController->IsUniqueRace();
 }

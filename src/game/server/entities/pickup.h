@@ -29,6 +29,9 @@ private:
 
 	void Move();
 	vec2 m_Core;
+
+	// Unique
+	int m_aSpawnTick[MAX_CLIENTS];
 };
 
 #endif

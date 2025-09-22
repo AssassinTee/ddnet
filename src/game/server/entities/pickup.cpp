@@ -3,7 +3,10 @@
 #include "pickup.h"
 #include "character.h"
 
+#include <engine/shared/config.h>
+
 #include <generated/protocol.h>
+#include <generated/server_data.h>
 
 #include <game/mapitems.h>
 #include <game/server/gamecontext.h>
@@ -22,6 +25,7 @@ CPickup::CPickup(CGameWorld *pGameWorld, int Type, int SubType, int Layer, int N
 	m_Layer = Layer;
 	m_Number = Number;
 	m_Flags = Flags;
+	std::fill_n(m_aSpawnTick, MAX_CLIENTS, -1);
 
 	GameWorld()->InsertEntity(this);
 }
@@ -29,11 +33,32 @@ CPickup::CPickup(CGameWorld *pGameWorld, int Type, int SubType, int Layer, int N
 void CPickup::Reset()
 {
 	m_MarkedForDestroy = true;
+	std::fill_n(m_aSpawnTick, MAX_CLIENTS, -1);
 }
 
 void CPickup::Tick()
 {
 	Move();
+
+	// wait for
+	if(g_Config.m_SvHealthAndAmmo)
+	{
+		for(int i = 0; i < MAX_CLIENTS; ++i)
+		{
+			if(!GameServer()->m_apPlayers[i] || !GameServer()->m_apPlayers[i]->GetCharacter())
+			{
+				m_aSpawnTick[i] = -1;
+			}
+			else if(m_aSpawnTick[i] > 0 && Server()->Tick() > m_aSpawnTick[i])
+			{
+				// respawn
+				m_aSpawnTick[i] = -1;
+
+				if(m_Type == POWERUP_WEAPON)
+					GameServer()->CreateSound(m_Pos, SOUND_WEAPON_SPAWN, GameServer()->m_apPlayers[i]->GetCharacter()->TeamMask());
+			}
+		}
+	}
 
 	// Check if a player intersected us
 	CEntity *apEnts[MAX_CLIENTS];
@@ -44,39 +69,65 @@ void CPickup::Tick()
 
 		if(pChr && pChr->IsAlive())
 		{
+			if(g_Config.m_SvHealthAndAmmo && m_aSpawnTick[pChr->GetPlayer()->GetCid()] != -1)
+				continue;
 			if(m_Layer == LAYER_SWITCH && m_Number > 0 && !Switchers()[m_Number].m_aStatus[pChr->Team()])
 				continue;
+
+			int RespawnTime = -1;
 			bool Sound = false;
 			// player picked us up, is someone was hooking us, let them go
 			switch(m_Type)
 			{
 			case POWERUP_HEALTH:
-				if(pChr->Freeze())
-					GameServer()->CreateSound(m_Pos, SOUND_PICKUP_HEALTH, pChr->TeamMask());
+				if(g_Config.m_SvHealthAndAmmo)
+				{
+					if(pChr->IncreaseHealth(1))
+					{
+						GameServer()->CreateSound(m_Pos, SOUND_PICKUP_HEALTH, pChr->TeamMask());
+						RespawnTime = g_pData->m_aPickups[m_Type].m_Respawntime;
+					}
+				}
+				else
+				{
+					if(pChr->Freeze())
+						GameServer()->CreateSound(m_Pos, SOUND_PICKUP_HEALTH, pChr->TeamMask());
+				}
 				break;
 
 			case POWERUP_ARMOR:
-				if(pChr->Team() == TEAM_SUPER)
-					continue;
-				for(int j = WEAPON_SHOTGUN; j < NUM_WEAPONS; j++)
+				if(g_Config.m_SvHealthAndAmmo)
 				{
-					if(pChr->GetWeaponGot(j))
+					if(pChr->IncreaseArmor(1))
 					{
-						pChr->SetWeaponGot(j, false);
-						pChr->SetWeaponAmmo(j, 0);
-						Sound = true;
+						GameServer()->CreateSound(m_Pos, SOUND_PICKUP_ARMOR, pChr->TeamMask());
+						RespawnTime = g_pData->m_aPickups[m_Type].m_Respawntime;
 					}
 				}
-				pChr->SetNinjaActivationDir(vec2(0, 0));
-				pChr->SetNinjaActivationTick(-500);
-				pChr->SetNinjaCurrentMoveTime(0);
-				if(Sound)
+				else
 				{
-					pChr->SetLastWeapon(WEAPON_GUN);
-					GameServer()->CreateSound(m_Pos, SOUND_PICKUP_ARMOR, pChr->TeamMask());
+					if(pChr->Team() == TEAM_SUPER)
+						continue;
+					for(int j = WEAPON_SHOTGUN; j < NUM_WEAPONS; j++)
+					{
+						if(pChr->GetWeaponGot(j))
+						{
+							pChr->SetWeaponGot(j, false);
+							pChr->SetWeaponAmmo(j, 0);
+							Sound = true;
+						}
+					}
+					pChr->SetNinjaActivationDir(vec2(0, 0));
+					pChr->SetNinjaActivationTick(-500);
+					pChr->SetNinjaCurrentMoveTime(0);
+					if(Sound)
+					{
+						pChr->SetLastWeapon(WEAPON_GUN);
+						GameServer()->CreateSound(m_Pos, SOUND_PICKUP_ARMOR, pChr->TeamMask());
+					}
+					if(pChr->GetActiveWeapon() >= WEAPON_SHOTGUN)
+						pChr->SetActiveWeapon(WEAPON_HAMMER);
 				}
-				if(pChr->GetActiveWeapon() >= WEAPON_SHOTGUN)
-					pChr->SetActiveWeapon(WEAPON_HAMMER);
 				break;
 
 			case POWERUP_ARMOR_SHOTGUN:
@@ -131,9 +182,12 @@ void CPickup::Tick()
 
 			case POWERUP_WEAPON:
 
-				if(m_Subtype >= 0 && m_Subtype < NUM_WEAPONS && (!pChr->GetWeaponGot(m_Subtype) || pChr->GetWeaponAmmo(m_Subtype) != -1))
+				if(m_Subtype >= 0 && m_Subtype < NUM_WEAPONS && (!pChr->GetWeaponGot(m_Subtype) || pChr->GetWeaponAmmo(m_Subtype) != -1) && (!g_Config.m_SvHealthAndAmmo || pChr->GetWeaponAmmo(m_Subtype) != g_pData->m_Weapons.m_aId[m_Subtype].m_Maxammo))
 				{
 					pChr->GiveWeapon(m_Subtype);
+
+					if(g_Config.m_SvHealthAndAmmo)
+						RespawnTime = g_pData->m_aPickups[m_Type].m_Respawntime;
 
 					if(m_Subtype == WEAPON_GRENADE)
 						GameServer()->CreateSound(m_Pos, SOUND_PICKUP_GRENADE, pChr->TeamMask());
@@ -156,17 +210,23 @@ void CPickup::Tick()
 			default:
 				break;
 			};
+
+			if(RespawnTime >= 0 && g_Config.m_SvHealthAndAmmo)
+				m_aSpawnTick[pChr->GetPlayer()->GetCid()] = Server()->Tick() + Server()->TickSpeed() * RespawnTime;
 		}
 	}
 }
 
 void CPickup::TickPaused()
 {
+	for(int &SpawnTick : m_aSpawnTick)
+		if(SpawnTick != -1)
+			++SpawnTick;
 }
 
 void CPickup::Snap(int SnappingClient)
 {
-	if(NetworkClipped(SnappingClient))
+	if(NetworkClipped(SnappingClient) || (SnappingClient >= 0 && m_aSpawnTick[SnappingClient] != -1 && g_Config.m_SvHealthAndAmmo))
 		return;
 
 	int SnappingClientVersion = GameServer()->GetClientVersion(SnappingClient);
