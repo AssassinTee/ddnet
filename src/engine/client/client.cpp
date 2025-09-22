@@ -52,6 +52,9 @@
 #include <game/localization.h>
 #include <game/version.h>
 
+#include <game/map/map_renderer.h>
+#include <game/client/components/mapimages.h>
+
 #include "client.h"
 #include "demoedit.h"
 #include "friends.h"
@@ -3311,8 +3314,64 @@ void CClient::Run()
 				LastRenderTime = Now - AdditionalTime;
 				m_LastRenderTime = Now;
 
-				Render();
-				m_pGraphics->Swap();
+				//Render();
+
+				//init
+				m_pMap->Unload();
+				if(!m_pMap->Load("maps/dm1.map"))
+				{
+					dbg_msg("dbg", "map could not be loaded");
+					std::exit(0);
+				}
+				CMapRenderer MapRenderer;
+				CRenderMap RenderMap;
+				MapRenderer.OnInit(Graphics(), m_pTextRender, &RenderMap);
+				CLayers Layers;
+				Layers.Init(m_pMap, false);
+
+				CMapImages MapImages;
+				MapImages.OnInterfacesInit((CGameClient*)m_pGameClient);
+				MapImages.OnInit();
+				MapImages.OnMapLoadImpl(&Layers, m_pMap);
+
+				class NoEval : public IEnvelopeEval
+				{
+					void EnvelopeEval(int TimeOffsetMillis, int Env, ColorRGBA &Result, size_t Channels) override {
+						Result = ColorRGBA(1.0f, 1.0f, 1.0f);
+					}
+				} NoEvalInst;
+
+				FRenderUploadCallback FRenderCallback = [&](const char *pTitle, const char *pMessage, int IncreaseCounter) { dbg_msg("dbg", "MapRenderer: %s: %s, %d", pTitle, pMessage, IncreaseCounter); };
+				std::optional<FRenderUploadCallback> NoCallback = FRenderCallback;
+
+				CRenderLayerParams Params;
+				Params.m_Center = vec2(0, 0);
+				Params.m_DebugRenderClusterClips = false;
+				Params.m_DebugRenderGroupClips = false;
+				Params.m_DebugRenderQuadClips = false;
+				Params.m_EntityOverlayVal = 50;
+				Params.m_RenderInvalidTiles = false;
+				Params.m_RenderText = true;
+				Params.m_RenderTileBorder = true;
+				Params.m_TileAndQuadBuffering = true;
+				Params.m_Zoom = 1.0f;
+
+				// load
+				for(int i = 0; i <= (int)ERenderType::RENDERTYPE_FULL_DESIGN; ++i)
+				{
+					ERenderType Type = (ERenderType)i;
+
+					MapRenderer.Load(Type, &Layers, &MapImages, &NoEvalInst, NoCallback);
+
+					Params.m_RenderType = Type;
+					MapRenderer.Render(Params);
+					auto SleepTimeInNanoSeconds = std::chrono::nanoseconds(1s);
+					std::this_thread::sleep_for(SleepTimeInNanoSeconds);
+					m_pGraphics->Swap();
+				}
+				// render
+
+				std::exit(0);
 			}
 			else if(!IsRenderActive)
 			{
