@@ -463,7 +463,8 @@ void CGameContext::ConKill(IConsole::IResult *pResult, void *pUserData)
 		return;
 	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientId];
 
-	if(!pPlayer || (pPlayer->m_LastKill && pPlayer->m_LastKill + pSelf->Server()->TickSpeed() * g_Config.m_SvKillDelay > pSelf->Server()->Tick()))
+	int KillDelay = pSelf->IsUniqueRace() ? pSelf->Server()->TickSpeed() / 2 : pSelf->Server()->TickSpeed() * g_Config.m_SvKillDelay;
+	if(!pPlayer || (pPlayer->m_LastKill && pPlayer->m_LastKill + KillDelay > pSelf->Server()->Tick()))
 		return;
 
 	pPlayer->m_LastKill = pSelf->Server()->Tick();
