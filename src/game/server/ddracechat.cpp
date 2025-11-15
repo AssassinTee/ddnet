@@ -1342,8 +1342,7 @@ void CGameContext::ConCancelInvite(IConsole::IResult *pResult, void *pUserData)
 
 		if(pSelf->m_apPlayers[ClientID] && pSelf->m_apPlayers[ClientID]->m_LastInvited + g_Config.m_SvInviteFrequency * pSelf->Server()->TickSpeed() >pSelf->Server()->Tick())
 		{
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD,
-				"chatresp", "Can't cancel this quickly");
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp", "Can't cancel this quickly");
 			return;
 		}
 
