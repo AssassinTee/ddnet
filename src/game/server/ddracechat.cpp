@@ -1340,7 +1340,7 @@ void CGameContext::ConCancelInvite(IConsole::IResult *pResult, void *pUserData)
 			return;
 		}
 
-		if(pSelf->m_apPlayers[ClientID] && pSelf->m_apPlayers[ClientID]->m_LastInvited + g_Config.m_SvCancelInviteFrequency * pSelf->Server()->TickSpeed() >pSelf->Server()->Tick())
+		if(pSelf->m_apPlayers[ClientID] && pSelf->m_apPlayers[ClientID]->m_LastInvited + g_Config.m_SvInviteFrequency * pSelf->Server()->TickSpeed() >pSelf->Server()->Tick())
 		{
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD,
 				"chatresp", "Can't cancel this quickly");
@@ -1361,11 +1361,11 @@ void CGameContext::ConCancelInvite(IConsole::IResult *pResult, void *pUserData)
 		str_format(aBuf, sizeof(aBuf), "You canceled the invite for %s", pSelf->Server()->ClientName(Target));
 		pSelf->SendChatTarget(ClientID, aBuf);
 
-		str_format(aBuf, sizeof(aBuf), "'%s' cancelled your team %d invitation.", pSelf->Server()->ClientName(ClientID), Team);
+		str_format(aBuf, sizeof(aBuf), "'%s' canceled your team %d invitation.", pSelf->Server()->ClientName(ClientID), Team);
 		pSelf->SendChatTarget(Target, aBuf);
 	}
 	else
-		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp", "Can't cancel invites on this team");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "chatresp", "Can't cancel invites in this team");
 }
 
 void CGameContext::ConBlockInvites(IConsole::IResult *pResult, void *pUserData)
