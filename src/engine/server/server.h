@@ -318,6 +318,7 @@ public:
 	bool HasAuthHidden(int ClientId) const override;
 	void GetMapInfo(char *pMapName, int MapNameSize, int *pMapSize, SHA256_DIGEST *pMapSha256, int *pMapCrc) override;
 	bool GetClientInfo(int ClientId, CClientInfo *pInfo) const override;
+	bool CanShowIps(int ClientId) const override;
 	void SetClientDDNetVersion(int ClientId, int DDNetVersion) override;
 	const NETADDR *ClientAddr(int ClientId) const override;
 	const std::array<char, NETADDR_MAXSTRSIZE> &ClientAddrStringImpl(int ClientId, bool IncludePort) const override;

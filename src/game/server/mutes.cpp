@@ -29,7 +29,7 @@ CMutes::CMutes(const char *pSystemName) :
 {
 }
 
-bool CMutes::Mute(const NETADDR *pAddr, int Seconds, const char *pReason, bool InitialDelay)
+bool CMutes::Mute(const NETADDR *pAddr, int Seconds, const char *pReason, const char *pClientName, bool InitialDelay)
 {
 	if(!in_range(Seconds, 1, 365 * 24 * 60 * 60))
 	{
@@ -45,6 +45,7 @@ bool CMutes::Mute(const NETADDR *pAddr, int Seconds, const char *pReason, bool I
 		Mute.m_Initialized = true;
 		Mute.m_Expire = Expire;
 		str_copy(Mute.m_aReason, pReason);
+		str_copy(Mute.m_aClientName, pClientName);
 		Mute.m_InitialDelay = InitialDelay;
 		return true;
 	}
@@ -116,7 +117,7 @@ void CMutes::UnmuteExpired()
 	}
 }
 
-void CMutes::Print(int Page) const
+void CMutes::Print(int Page, bool ShowIps) const
 {
 	if(m_Mutes.empty())
 	{
@@ -148,10 +149,21 @@ void CMutes::Print(int Page) const
 		{
 			break;
 		}
-		char aAddrString[NETADDR_MAXSTRSIZE];
-		net_addr_str(&Addr, aAddrString, sizeof(aAddrString), false);
-		log_info(m_pSystemName, "#%d '%s' muted for %d seconds (%s)",
-			Count, aAddrString, MuteEntry.SecondsLeft(), MuteEntry.m_aReason[0] == '\0' ? "No reason given" : MuteEntry.m_aReason);
+
+		if(ShowIps)
+		{
+			char aAddrString[NETADDR_MAXSTRSIZE];
+			net_addr_str(&Addr, aAddrString, sizeof(aAddrString), false);
+
+			log_info(m_pSystemName, "#%d %s: '%s' muted for %d seconds (%s)",
+				Count, MuteEntry.m_aClientName, aAddrString, MuteEntry.SecondsLeft(), MuteEntry.m_aReason[0] == '\0' ? "No reason given" : MuteEntry.m_aReason);
+		}
+		else
+		{
+			log_info(m_pSystemName, "#%d %s: muted for %d seconds (%s)",
+				Count, MuteEntry.m_aClientName, MuteEntry.SecondsLeft(), MuteEntry.m_aReason[0] == '\0' ? "No reason given" : MuteEntry.m_aReason);
+		}
+
 		Count++;
 	}
 	log_info(m_pSystemName, "%d %s, showing entries %d - %d (page %d/%d)",
@@ -160,7 +172,7 @@ void CMutes::Print(int Page) const
 
 void CGameContext::MuteWithMessage(const NETADDR *pAddr, int Seconds, const char *pReason, const char *pDisplayName)
 {
-	if(!m_Mutes.Mute(pAddr, Seconds, pReason, false))
+	if(!m_Mutes.Mute(pAddr, Seconds, pReason, pDisplayName, false))
 	{
 		return;
 	}
@@ -179,7 +191,7 @@ void CGameContext::MuteWithMessage(const NETADDR *pAddr, int Seconds, const char
 
 void CGameContext::VoteMuteWithMessage(const NETADDR *pAddr, int Seconds, const char *pReason, const char *pDisplayName)
 {
-	if(!m_VoteMutes.Mute(pAddr, Seconds, pReason, false))
+	if(!m_VoteMutes.Mute(pAddr, Seconds, pReason, pDisplayName, false))
 	{
 		return;
 	}
@@ -228,7 +240,9 @@ void CGameContext::ConMuteIp(IConsole::IResult *pResult, void *pUserData)
 	}
 
 	const char *pReason = pResult->NumArguments() > 2 ? pResult->GetString(2) : "";
-	pSelf->m_Mutes.Mute(&Addr, pResult->GetInteger(1), pReason, false);
+
+	// We don't have a muted client name here, this is a mute by ip ban
+	pSelf->m_Mutes.Mute(&Addr, pResult->GetInteger(1), pReason, "[MUTED-BY-IP]", false);
 }
 
 void CGameContext::ConUnmute(IConsole::IResult *pResult, void *pUserData)
@@ -270,7 +284,8 @@ void CGameContext::ConMutes(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 
-	pSelf->m_Mutes.Print(pResult->NumArguments() > 0 ? pResult->GetInteger(0) : 1);
+	bool ShowIps = pSelf->Server()->CanShowIps(pResult->m_ClientId);
+	pSelf->m_Mutes.Print(pResult->NumArguments() > 0 ? pResult->GetInteger(0) : 1, ShowIps);
 }
 
 void CGameContext::ConVoteMute(IConsole::IResult *pResult, void *pUserData)
@@ -305,7 +320,7 @@ void CGameContext::ConVoteMuteIp(IConsole::IResult *pResult, void *pUserData)
 	}
 
 	const char *pReason = pResult->NumArguments() > 2 ? pResult->GetString(2) : "";
-	pSelf->m_VoteMutes.Mute(&Addr, pResult->GetInteger(1), pReason, false);
+	pSelf->m_VoteMutes.Mute(&Addr, pResult->GetInteger(1), pReason, "[NOVOTE-BY-IP]", false);
 }
 
 void CGameContext::ConVoteUnmute(IConsole::IResult *pResult, void *pUserData)
@@ -346,6 +361,6 @@ void CGameContext::ConVoteUnmuteIp(IConsole::IResult *pResult, void *pUserData)
 void CGameContext::ConVoteMutes(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
-
-	pSelf->m_VoteMutes.Print(pResult->NumArguments() > 0 ? pResult->GetInteger(0) : 1);
+	bool ShowIps = pSelf->Server()->CanShowIps(pResult->m_ClientId);
+	pSelf->m_VoteMutes.Print(pResult->NumArguments() > 0 ? pResult->GetInteger(0) : 1, ShowIps);
 }

@@ -62,6 +62,7 @@ public:
 	virtual bool ClientSlotEmpty(int ClientId) const = 0;
 	virtual bool ClientIngame(int ClientId) const = 0;
 	virtual bool GetClientInfo(int ClientId, CClientInfo *pInfo) const = 0;
+	virtual bool CanShowIps(int ClientId) const = 0;
 	virtual void SetClientDDNetVersion(int ClientId, int DDNetVersion) = 0;
 	virtual const NETADDR *ClientAddr(int ClientId) const = 0;
 	virtual const std::array<char, NETADDR_MAXSTRSIZE> &ClientAddrStringImpl(int ClientId, bool IncludePort) const = 0;

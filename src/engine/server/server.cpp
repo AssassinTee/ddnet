@@ -680,6 +680,14 @@ bool CServer::GetClientInfo(int ClientId, CClientInfo *pInfo) const
 	return false;
 }
 
+bool CServer::CanShowIps(int ClientId) const
+{
+	dbg_assert(ClientId >= 0 && ClientId < MAX_CLIENTS, "Invalid ClientId: %d", ClientId);
+	if(m_aClients[ClientId].m_State != CClient::STATE_INGAME)
+		return false;
+	return m_aClients[ClientId].m_ShowIps;
+}
+
 void CServer::SetClientDDNetVersion(int ClientId, int DDNetVersion)
 {
 	dbg_assert(ClientId >= 0 && ClientId < MAX_CLIENTS, "Invalid ClientId: %d", ClientId);
