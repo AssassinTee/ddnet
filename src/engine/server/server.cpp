@@ -1404,30 +1404,67 @@ void CServer::SendRconLine(int ClientId, const char *pLine)
 void CServer::SendRconLogLine(int ClientId, const CLogMessage *pMessage)
 {
 	const char *pLine = pMessage->m_aLine;
-	const char *pStart = str_find(pLine, "<{");
-	const char *pEnd = pStart == nullptr ? nullptr : str_find(pStart + 2, "}>");
-	const char *pLineWithoutIps;
+	const char *pLineWithoutIps = nullptr;
+
+	constexpr int LengthEscapeString = 2;
+	constexpr int MaxEscapes = 10;
+	constexpr char SecretStart[] = "<{";
+	constexpr char SecretEnd[] = "}>";
+
 	char aLine[512];
 	char aLineWithoutIps[512];
+
 	aLine[0] = '\0';
 	aLineWithoutIps[0] = '\0';
 
-	if(pStart == nullptr || pEnd == nullptr)
+	auto FindSecretStart = [&](const char* pCurrentLine)
 	{
-		pLineWithoutIps = pLine;
-	}
-	else
-	{
-		str_append(aLine, pLine, pStart - pLine + 1);
-		str_append(aLine, pStart + 2, pStart - pLine + pEnd - pStart - 1);
-		str_append(aLine, pEnd + 2);
+		return str_find(pCurrentLine, SecretStart);
+	};
 
-		str_append(aLineWithoutIps, pLine, pStart - pLine + 1);
-		str_append(aLineWithoutIps, "XXX");
-		str_append(aLineWithoutIps, pEnd + 2);
+	if(FindSecretStart(pLine) != nullptr)
+	{
+		auto FindSecretEnd = [&](const char* pCurrentLine)
+		{
+			return str_find(pCurrentLine, SecretEnd);
+		};
+
+		const char* pCurrentLinePart = pLine;
+		int EscapeId;
+		for(EscapeId = 0; EscapeId < MaxEscapes; ++EscapeId)
+		{
+			const char* pStart = FindSecretStart(pCurrentLinePart);
+			if(pStart == nullptr)
+				break;
+
+			const char* pEnd = FindSecretEnd(pStart + 2);
+			if(pEnd == nullptr)
+				break;
+
+			// append part before secret
+			str_append(aLine, pCurrentLinePart, pStart - pCurrentLinePart + 1);
+			str_append(aLineWithoutIps, pCurrentLinePart, pStart - pCurrentLinePart + 1);
+
+			// append part between secret brackets
+			str_append(aLine, pStart + LengthEscapeString, pStart - pCurrentLinePart + pEnd - pStart - LengthEscapeString + 1);
+			str_append(aLineWithoutIps, "XXX");
+
+			pCurrentLinePart = pEnd + LengthEscapeString;
+		}
+
+		if(EscapeId >= MaxEscapes)
+			log_error("console", "Console ran out of escapes on rcon message '%s'", pLine);
+
+		// append end of the string
+		str_append(aLine, pCurrentLinePart);
+		str_append(aLineWithoutIps, pCurrentLinePart);
 
 		pLine = aLine;
 		pLineWithoutIps = aLineWithoutIps;
+	}
+	else
+	{
+		pLineWithoutIps = pLine;
 	}
 
 	if(ClientId == -1)
