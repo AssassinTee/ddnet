@@ -610,8 +610,6 @@ bool CServer::StrHideIps(const char *pInput, char *pOutputWithIps, int OutputWit
 {
 	const char *pStart = str_find(pInput, "<{");
 	const char *pEnd = pStart == nullptr ? nullptr : str_find(pStart + 2, "}>");
-	pOutputWithIps[0] = '\0';
-	pOutputWithoutIps[0] = '\0';
 
 	if(pStart == nullptr || pEnd == nullptr)
 	{
@@ -620,13 +618,30 @@ bool CServer::StrHideIps(const char *pInput, char *pOutputWithIps, int OutputWit
 		return false;
 	}
 
-	str_append(pOutputWithIps, pInput, minimum<size_t>(pStart - pInput + 1, OutputWithIpsSize));
-	str_append(pOutputWithIps, pStart + 2, minimum<size_t>(pEnd - pInput - 1, OutputWithIpsSize));
-	str_append(pOutputWithIps, pEnd + 2, OutputWithIpsSize);
+	dbg_assert(OutputWithIpsSize > 0, "OutputWithIpsSize has no size");
+	dbg_assert(OutputWithoutIpsSize > 0, "OutputWithIpsSize has no size");
+	dbg_assert(pOutputWithIps != nullptr, "pOutputWithIps does not exist");
+	dbg_assert(pOutputWithoutIps != nullptr, "pOutputWithoutIps does not exist");
 
-	str_append(pOutputWithoutIps, pInput, minimum<size_t>(pStart - pInput + 1, OutputWithoutIpsSize));
-	str_append(pOutputWithoutIps, "XXX", OutputWithoutIpsSize);
-	str_append(pOutputWithoutIps, pEnd + 2, OutputWithoutIpsSize);
+	pOutputWithIps[0] = '\0';
+	pOutputWithoutIps[0] = '\0';
+
+	while(pStart && pEnd)
+	{
+		str_append(pOutputWithIps, pInput, minimum<size_t>(pStart - pInput + 1, OutputWithIpsSize));
+		str_append(pOutputWithIps, pStart + 2, minimum<size_t>(pEnd - pInput - 1, OutputWithIpsSize));
+
+		str_append(pOutputWithoutIps, pInput, minimum<size_t>(pStart - pInput + 1, OutputWithoutIpsSize));
+		str_append(pOutputWithoutIps, "XXX", OutputWithoutIpsSize);
+
+		pInput = pEnd + 2;
+		pStart = str_find(pInput, "<{");
+		pEnd = pStart == nullptr ? nullptr : str_find(pStart + 2, "}>");
+	}
+
+	str_append(pOutputWithIps, pInput, OutputWithIpsSize);
+	str_append(pOutputWithoutIps, pInput, OutputWithoutIpsSize);
+
 	return true;
 }
 
