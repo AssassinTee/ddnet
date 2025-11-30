@@ -7,6 +7,7 @@
 #include "entities/door.h"
 #include "entities/dragger.h"
 #include "entities/laser.h"
+#include "entities/light.h"
 #include "entities/pickup.h"
 #include "entities/plasma.h"
 #include "entities/projectile.h"
@@ -567,6 +568,19 @@ void CGameWorld::NetObjAdd(int ObjId, int ObjType, const void *pObjData, const C
 			}
 			CDoor *pEnt = new CDoor(NetDoor);
 			pEnt->ResetCollision();
+			InsertEntity(pEnt);
+		}
+		else if(Data.m_Type == LASERTYPE_FREEZE)
+		{
+			CLight NetFreezeLaser = CLight(this, ObjId, &Data);
+			auto *pDoor = dynamic_cast<CLight *>(GetEntity(ObjId, ENTTYPE_LIGHT));
+			if(pDoor && NetFreezeLaser.Match(pDoor))
+			{
+				pDoor->Keep();
+				pDoor->Read(&Data);
+				return;
+			}
+			CLight *pEnt = new CLight(NetFreezeLaser);
 			InsertEntity(pEnt);
 		}
 		else if(Data.m_Type == LASERTYPE_PLASMA)
