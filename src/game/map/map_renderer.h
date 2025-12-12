@@ -5,7 +5,8 @@
 
 #include <game/layers.h>
 #include <game/map/render_component.h>
-#include <game/map/render_layer.h>
+#include <game/map/render_params.h>
+#include <game/map/renderlayers/render_layer.h>
 
 class CMapRenderer : public CRenderComponent
 {

@@ -2,7 +2,19 @@
 
 #include <base/log.h>
 
+#include <engine/shared/config.h>
+
 #include <game/map/envelope_manager.h>
+#include <game/map/renderlayers/render_entities.h>
+#include <game/map/renderlayers/render_group.h>
+#include <game/map/renderlayers/render_quads.h>
+#include <game/map/renderlayers/render_tilelayer.h>
+#include <game/map/renderlayers/renderentities/render_front.h>
+#include <game/map/renderlayers/renderentities/render_game.h>
+#include <game/map/renderlayers/renderentities/render_tune.h>
+#include <game/map/renderlayers/renderentities/render_tele.h>
+#include <game/map/renderlayers/renderentities/render_speedtiles.h>
+#include <game/map/renderlayers/renderentities/render_switch.h>
 
 const int LAYER_DEFAULT_TILESET = -1;
 

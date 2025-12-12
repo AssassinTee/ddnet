@@ -6,6 +6,7 @@
 #include <game/client/component.h>
 #include <game/client/components/envelope_state.h>
 #include <game/map/map_renderer.h>
+#include <game/map/render_params.h>
 
 class CCamera;
 class CLayers;

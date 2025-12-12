@@ -2575,10 +2575,31 @@ if(CLIENT)
     render_component.cpp
     render_component.h
     render_interfaces.h
-    render_layer.cpp
-    render_layer.h
     render_map.cpp
     render_map.h
+    render_params.h
+    renderlayers/render_entities.cpp
+    renderlayers/render_entities.h
+    renderlayers/render_group.cpp
+    renderlayers/render_group.h
+    renderlayers/render_layer.cpp
+    renderlayers/render_layer.h
+    renderlayers/render_quads.cpp
+    renderlayers/render_quads.h
+    renderlayers/render_tilelayer.cpp
+    renderlayers/render_tilelayer.h
+    renderlayers/renderentities/render_front.cpp
+    renderlayers/renderentities/render_front.h
+    renderlayers/renderentities/render_game.cpp
+    renderlayers/renderentities/render_game.h
+    renderlayers/renderentities/render_speedtiles.cpp
+    renderlayers/renderentities/render_speedtiles.h
+    renderlayers/renderentities/render_switch.cpp
+    renderlayers/renderentities/render_switch.h
+    renderlayers/renderentities/render_tele.cpp
+    renderlayers/renderentities/render_tele.h
+    renderlayers/renderentities/render_tune.cpp
+    renderlayers/renderentities/render_tune.h
   )
   set(GAME_GENERATED_CLIENT
     src/generated/checksum.cpp
