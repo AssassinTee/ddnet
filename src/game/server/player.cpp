@@ -497,6 +497,9 @@ void CPlayer::Snap(int SnappingClient)
 		pDDNetPlayer->m_FinishTimeMillis = 0;
 	}
 
+	// add rank
+	pDDNetPlayer->m_Rank = !g_Config.m_SvHideScore || SnappingClient == m_ClientId ? GameServer()->Score()->PlayerData(m_ClientId)->m_Rank : PlayerRank::NOT_FINISHED;
+
 	if(Server()->IsSixup(SnappingClient) && m_pCharacter && m_pCharacter->m_DDRaceState == ERaceState::STARTED &&
 		GameServer()->m_apPlayers[SnappingClient]->m_TimerType == TIMERTYPE_SIXUP)
 	{
@@ -1002,7 +1005,7 @@ void CPlayer::ProcessScoreResult(CScorePlayerResult &Result)
 		{
 			if(Result.m_Data.m_Info.m_Time.has_value())
 			{
-				GameServer()->Score()->PlayerData(m_ClientId)->Set(Result.m_Data.m_Info.m_Time.value(), Result.m_Data.m_Info.m_aTimeCp);
+				GameServer()->Score()->PlayerData(m_ClientId)->Set(Result.m_Data.m_Info.m_Time.value(), Result.m_Data.m_Info.m_aTimeCp, Result.m_Data.m_Info.m_Rank.value_or(PlayerRank::NOT_FINISHED));
 				m_Score = Result.m_Data.m_Info.m_Time;
 			}
 			Server()->ExpireServerInfo();

@@ -468,8 +468,10 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 		FontSize = 5.0f;
 	}
 
+	const float RankSpace = 30.0f;
 	const float ScoreOffset = Scoreboard.x + 20.0f;
 	const float ScoreLength = TextRender()->TextWidth(FontSize, TimeScore ? "00:00:00" : "99999");
+	const float RankOffset = Scoreboard.x + 5.0f;
 	const float TeeOffset = ScoreOffset + ScoreLength + 10.0f;
 	const float TeeLength = 60.0f * TeeSizeMod;
 	const float NameOffset = TeeOffset + TeeLength;
@@ -486,6 +488,9 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 	CUIRect Headline;
 	Scoreboard.HSplitTop(HeadlineFontsize * 2.0f, &Headline, &Scoreboard);
 	const float HeadlineY = Headline.y + Headline.h / 2.0f - HeadlineFontsize / 2.0f;
+	const char *pRank = Localize("Rank");
+	if(GameClient()->m_ReceivedDDNetPlayerRank)
+		TextRender()->Text(RankOffset, HeadlineY, HeadlineFontsize, pRank);
 	const char *pScore = TimeScore ? Localize("Time") : Localize("Score");
 	TextRender()->Text(ScoreOffset + ScoreLength - TextRender()->TextWidth(HeadlineFontsize, pScore), HeadlineY, HeadlineFontsize, pScore);
 	TextRender()->Text(NameOffset, HeadlineY, HeadlineFontsize, Localize("Name"));
@@ -608,6 +613,22 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 				Row.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f), IGraphics::CORNER_ALL, RoundRadius);
 			}
 
+			const CGameClient::CClientData &ClientData = GameClient()->m_aClients[pInfo->m_ClientId];
+
+			// rank
+			if(GameClient()->m_ReceivedDDNetPlayerRank && (ClientData.m_Rank > PlayerRank::NOT_FINISHED))
+			{
+				int RankFontSize = FontSize;
+				str_format(aBuf, sizeof(aBuf), "#%d", ClientData.m_Rank == 2 ? 1000000 : ClientData.m_Rank);
+
+				// autoshrink
+				while(TextRender()->TextWidth(RankFontSize, aBuf) > RankSpace)
+				{
+					RankFontSize *= 0.8f;
+				}
+				TextRender()->Text(RankOffset, Row.y + (Row.h - RankFontSize) / 2.0f, RankFontSize, aBuf);
+			}
+
 			// score
 			if(Race7)
 			{
@@ -652,8 +673,6 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 				Graphics()->QuadsDrawTL(&QuadItem, 1);
 				Graphics()->QuadsEnd();
 			}
-
-			const CGameClient::CClientData &ClientData = GameClient()->m_aClients[pInfo->m_ClientId];
 
 			if(m_MouseUnlocked)
 			{

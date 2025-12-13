@@ -268,6 +268,7 @@ Objects = [
 		NetIntRange("m_AuthLevel", "AUTHED_NO", "AUTHED_ADMIN"),
 		NetIntRange("m_FinishTimeSeconds", 'FinishTime::UNSET', 'max_int', default='FinishTime::UNSET'),
 		NetIntRange("m_FinishTimeMillis", 0, 999, default=0),
+    NetIntRange("m_Rank", 'PlayerRank::UNSET', 'max_int', default='PlayerRank::UNSET'),
 	]),
 
 	NetObjectEx("GameInfoEx", "gameinfo@netobj.ddnet.tw", [

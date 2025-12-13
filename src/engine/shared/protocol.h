@@ -163,7 +163,13 @@ namespace FinishTime
 	inline constexpr int NOT_FINISHED_TIMESCORE = -9999;
 	inline constexpr int NOT_FINISHED_MILLIS = -1;
 	inline constexpr int UNSET = -2;
-}
+};
+
+namespace PlayerRank
+{
+	inline constexpr int NOT_FINISHED = 0;
+	inline constexpr int UNSET = -1;
+};
 
 typedef std::bitset<MAX_CLIENTS> CClientMask;
 

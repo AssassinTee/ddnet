@@ -52,6 +52,7 @@ struct CScorePlayerResult : ISqlResult
 			float m_aTimeCp[NUM_CHECKPOINTS];
 			int m_Birthday; // 0 indicates no birthday
 			char m_aRequestedPlayer[MAX_NAME_LENGTH];
+			std::optional<int> m_Rank;
 		} m_Info = {};
 		struct
 		{
@@ -241,11 +242,12 @@ public:
 		m_RecordStopTick = -1;
 	}
 
-	void Set(float Time, const float aTimeCp[NUM_CHECKPOINTS])
+	void Set(float Time, const float aTimeCp[NUM_CHECKPOINTS], int Rank)
 	{
 		m_BestTime = Time;
 		for(int i = 0; i < NUM_CHECKPOINTS; i++)
 			m_aBestTimeCp[i] = aTimeCp[i];
+		m_Rank = Rank;
 	}
 
 	void SetBestTimeCp(const float aTimeCp[NUM_CHECKPOINTS])
@@ -259,6 +261,7 @@ public:
 
 	int m_RecordStopTick;
 	float m_RecordFinishTime;
+	int m_Rank;
 };
 
 struct CTeamrank

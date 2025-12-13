@@ -44,12 +44,14 @@ void CScorePlayerResult::SetVariant(Variant v)
 		m_Data.m_Info.m_Time.reset();
 		for(float &TimeCp : m_Data.m_Info.m_aTimeCp)
 			TimeCp = 0;
+		m_Data.m_Info.m_Rank = PlayerRank::NOT_FINISHED;
 		break;
 	case PLAYER_TIMECP:
 		m_Data.m_Info.m_aRequestedPlayer[0] = '\0';
 		m_Data.m_Info.m_Time.reset();
 		for(float &TimeCp : m_Data.m_Info.m_aTimeCp)
 			TimeCp = 0;
+		m_Data.m_Info.m_Rank = PlayerRank::NOT_FINISHED;
 		break;
 	}
 }
@@ -178,30 +180,53 @@ bool CScoreWorker::LoadPlayerData(IDbConnection *pSqlServer, const ISqlData *pGa
 	auto *pResult = dynamic_cast<CScorePlayerResult *>(pGameData->m_pResult.get());
 	pResult->SetVariant(CScorePlayerResult::PLAYER_INFO);
 
-	char aBuf[1024];
+	char aBuf[2048];
 	// get best race time
 	str_format(aBuf, sizeof(aBuf),
-		"SELECT"
-		"  (SELECT Time FROM %s_race WHERE Map = ? AND Name = ? ORDER BY Time ASC LIMIT 1) AS minTime, "
-		"  cp1, cp2, cp3, cp4, cp5, cp6, cp7, cp8, cp9, cp10, cp11, cp12, cp13, cp14, "
-		"  cp15, cp16, cp17, cp18, cp19, cp20, cp21, cp22, cp23, cp24, cp25, "
-		"  (cp1 + cp2 + cp3 + cp4 + cp5 + cp6 + cp7 + cp8 + cp9 + cp10 + cp11 + cp12 + cp13 + cp14 + "
-		"  cp15 + cp16 + cp17 + cp18 + cp19 + cp20 + cp21 + cp22 + cp23 + cp24 + cp25 > 0) AS hasCP, Time "
+		"SELECT "
+		"pb.minTime, "
+		"r.cp1, r.cp2, r.cp3, r.cp4, r.cp5, r.cp6, r.cp7, r.cp8, r.cp9, r.cp10, "
+		"r.cp11, r.cp12, r.cp13, r.cp14, r.cp15, r.cp16, r.cp17, r.cp18, r.cp19, "
+		"r.cp20, r.cp21, r.cp22, r.cp23, r.cp24, r.cp25, "
+		"(r.cp1 + r.cp2 + r.cp3 + r.cp4 + r.cp5 + r.cp6 + r.cp7 + r.cp8 + r.cp9 + "
+		"r.cp10 + r.cp11 + r.cp12 + r.cp13 + r.cp14 + r.cp15 + r.cp16 + r.cp17 + "
+		"r.cp18 + r.cp19 + r.cp20 + r.cp21 + r.cp22 + r.cp23 + r.cp24 + r.cp25 > 0) AS hasCP, "
+		"r.Time, "
+		"rk.Ranking "
+		"FROM %s_race r "
+		"JOIN ( "
+		/* viewer-relative personal best */
+		"SELECT MIN(Time) AS minTime "
 		"FROM %s_race "
 		"WHERE Map = ? AND Name = ? "
-		"ORDER BY hasCP DESC, Time ASC "
-		"LIMIT 1",
-		pSqlServer->GetPrefix(), pSqlServer->GetPrefix());
+		") pb "
+		"JOIN ( "
+		/* global ranking by best time */
+		"SELECT Name, RANK() OVER (ORDER BY MIN(Time)) AS Ranking "
+		"FROM %s_race "
+		"WHERE Map = ? "
+		"GROUP BY Name "
+		") rk ON rk.Name = r.Name "
+		"WHERE r.Map = ? AND r.Name = ? "
+		"ORDER BY hasCP DESC, r.Time ASC "
+		"LIMIT 1;",
+		pSqlServer->GetPrefix(), pSqlServer->GetPrefix(), pSqlServer->GetPrefix());
 	if(!pSqlServer->PrepareStatement(aBuf, pError, ErrorSize))
 	{
 		return false;
 	}
 
 	const char *pPlayer = pData->m_aName[0] != '\0' ? pData->m_aName : pData->m_aRequestingPlayer;
+	// pb subquery (viewer-relative PB)
 	pSqlServer->BindString(1, pData->m_aMap);
 	pSqlServer->BindString(2, pData->m_aRequestingPlayer);
+
+	// rk subquery (global ranking)
 	pSqlServer->BindString(3, pData->m_aMap);
-	pSqlServer->BindString(4, pPlayer);
+
+	// main row selection (profile being viewed)
+	pSqlServer->BindString(4, pData->m_aMap);
+	pSqlServer->BindString(5, pPlayer);
 
 	bool End;
 	if(!pSqlServer->Step(&End, pError, ErrorSize))
@@ -220,6 +245,15 @@ bool CScoreWorker::LoadPlayerData(IDbConnection *pSqlServer, const ISqlData *pGa
 		for(int i = 0; i < NUM_CHECKPOINTS; i++)
 		{
 			pResult->m_Data.m_Info.m_aTimeCp[i] = pSqlServer->GetFloat(i + 2);
+		}
+
+		// 26: cp25, 27: hasCP, 28: Time, 29: Ranking
+		constexpr int RankIndex = NUM_CHECKPOINTS + 2 + 2;
+		if(!pSqlServer->IsNull(RankIndex) && pResult->m_Data.m_Info.m_Time.has_value())
+		{
+			// get the rank time
+			int Rank = pSqlServer->GetInt(RankIndex);
+			pResult->m_Data.m_Info.m_Rank = Rank;
 		}
 	}
 

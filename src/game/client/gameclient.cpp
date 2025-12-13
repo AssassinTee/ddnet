@@ -676,6 +676,7 @@ void CGameClient::OnReset()
 	m_DummyFire = 0;
 	m_ReceivedDDNetPlayer = false;
 	m_ReceivedDDNetPlayerFinishTimes = false;
+	m_ReceivedDDNetPlayerRank = false;
 
 	m_Teams.Reset();
 	m_GameWorld.Clear();
@@ -1745,9 +1746,13 @@ void CGameClient::OnNewSnapshot()
 					m_aClients[Item.m_Id].m_Spec = pInfo->m_Flags & EXPLAYERFLAG_SPEC;
 					m_aClients[Item.m_Id].m_FinishTimeSeconds = pInfo->m_FinishTimeSeconds;
 					m_aClients[Item.m_Id].m_FinishTimeMillis = pInfo->m_FinishTimeMillis;
+					m_aClients[Item.m_Id].m_Rank = pInfo->m_Rank;
 
 					if(m_aClients[Item.m_Id].m_FinishTimeSeconds != FinishTime::UNSET)
 						m_ReceivedDDNetPlayerFinishTimes = true;
+
+					if(m_aClients[Item.m_Id].m_Rank != PlayerRank::UNSET)
+						m_ReceivedDDNetPlayerRank = true;
 
 					if(Item.m_Id == m_Snap.m_LocalClientId && (m_aClients[Item.m_Id].m_Paused || m_aClients[Item.m_Id].m_Spec))
 					{
