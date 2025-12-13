@@ -43,6 +43,7 @@ namespace FontIcon
 	inline const char *const EYE_SLASH = "\uF070";
 	inline const char *const FILE = "\uF15B";
 	inline const char *const FILM = "\uF008";
+	inline const char *const FLAG = "\uF024";
 	inline const char *const FLAG_CHECKERED = "\uF11E";
 	inline const char *const FOLDER = "\uF07B";
 	inline const char *const FOLDER_OPEN = "\uF07C";

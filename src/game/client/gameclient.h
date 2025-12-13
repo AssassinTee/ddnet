@@ -515,6 +515,8 @@ public:
 		int m_FinishTimeSeconds;
 		int m_FinishTimeMillis;
 
+		int m_Rank;
+
 		// Editor allows 256 switches for now.
 		bool m_aSwitchStates[256];
 
@@ -693,6 +695,7 @@ public:
 	bool m_ReceivedDDNetPlayer;
 	bool m_ReceivedDDNetPlayerFinishTimes;
 	bool m_ReceivedDDNetPlayerFinishTimesMillis;
+	bool m_ReceivedDDNetPlayerRank;
 
 	CTeamsCore m_Teams;
 

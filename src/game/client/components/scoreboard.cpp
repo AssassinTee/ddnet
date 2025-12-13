@@ -10,6 +10,7 @@
 #include <engine/font_icons.h>
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
+#include <engine/shared/protocol.h>
 #include <engine/textrender.h>
 
 #include <generated/client_data7.h>
@@ -443,7 +444,7 @@ void CScoreboard::RenderSpectators(CUIRect Spectators)
 								     (Client()->DummyConnected() && GameClient()->m_aLocalIds[1] == pInfo->m_ClientId);
 				m_ScoreboardPopupContext.m_IsSpectating = true;
 
-				Ui()->DoPopupMenu(&m_ScoreboardPopupContext, Ui()->MouseX(), Ui()->MouseY(), 110.0f,
+				Ui()->DoPopupMenu(&m_ScoreboardPopupContext, Ui()->MouseX(), Ui()->MouseY(), 120.0f,
 					m_ScoreboardPopupContext.m_IsLocal ? 30.0f : 60.0f, &m_ScoreboardPopupContext, CScoreboardPopupContext::Render);
 			}
 
@@ -708,8 +709,9 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 									     (Client()->DummyConnected() && GameClient()->m_aLocalIds[1] == pInfo->m_ClientId);
 					m_ScoreboardPopupContext.m_IsSpectating = false;
 
-					Ui()->DoPopupMenu(&m_ScoreboardPopupContext, Ui()->MouseX(), Ui()->MouseY(), 110.0f,
-						m_ScoreboardPopupContext.m_IsLocal ? 58.5f : 87.5f, &m_ScoreboardPopupContext, CScoreboardPopupContext::Render);
+					float PopupHeight = (m_ScoreboardPopupContext.m_IsLocal ? 58.5f : 87.5f) + (GameClient()->m_ReceivedDDNetPlayerRank ? 18.0f : 0.0f);
+					Ui()->DoPopupMenu(&m_ScoreboardPopupContext, Ui()->MouseX(), Ui()->MouseY(), 120.0f,
+						PopupHeight, &m_ScoreboardPopupContext, CScoreboardPopupContext::Render);
 				}
 
 				if(Ui()->HotItem() == &Player.m_PlayerButtonId ||
@@ -1168,6 +1170,42 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 	View.HSplitTop(FontSize, &Label, &View);
 	pUi->DoLabel(&Label, Client.m_aName, FontSize, TEXTALIGN_ML);
 
+	// rank with finish indicator
+	if(pScoreboard->GameClient()->m_ReceivedDDNetPlayerRank && Client.m_Rank != PlayerRank::UNSET)
+	{
+		const float FlagSize = FontSize + 2 * ItemSpacing;
+		View.HSplitTop(FlagSize, &Container, &View);
+		Container.VSplitLeft(FlagSize, &Action, &Container);
+
+		ColorRGBA BackgroundColor = pScoreboard->TextRender()->DefaultTextSelectionColor();
+
+		if(Client.m_Rank == PlayerRank::NOT_FINISHED)
+		{
+			ColorRGBA ButtonColor(0.0f, 0.0f, 0.0f, 1.0f);
+			BackgroundColor = BackgroundColor.Multiply(ButtonColor);
+			pUi->DoButton_FontIcon(&pPopupContext->m_FinishFlagIcon, FontIcon::FLAG, 0, &Action, BUTTONFLAG_LEFT, IGraphics::CORNER_L, true, ButtonColor);
+			Container.Draw(pScoreboard->TextRender()->DefaultTextSelectionColor(), IGraphics::CORNER_R, 5.0f);
+			pUi->DoLabel(&Container, Localize("No rank yet"), FontSize, TEXTALIGN_CENTER | TEXTALIGN_MIDDLE);
+		}
+		else
+		{
+			ColorRGBA ButtonColor;
+			switch(Client.m_Rank)
+			{
+			case 1: ButtonColor = ColorRGBA(1.0f, 0.84f, 0.0f, 1.0f); break;
+			case 2: ButtonColor = ColorRGBA(0.51f, 0.54f, 0.59f, 1.0f); break;
+			case 3: ButtonColor = ColorRGBA(0.80f, 0.5f, 0.2f, 1.0f); break;
+			default: ButtonColor = ColorRGBA(0.0f, 1.0f, 0.0f, 1.0f); break;
+			}
+			BackgroundColor = BackgroundColor.Multiply(ButtonColor);
+			pUi->DoButton_FontIcon(&pPopupContext->m_FinishFlagIcon, FontIcon::FLAG_CHECKERED, 0, &Action, BUTTONFLAG_LEFT, IGraphics::CORNER_L, true, ButtonColor);
+			Container.Draw(BackgroundColor, IGraphics::CORNER_R, 5.0f);
+			char aRank[64];
+			str_format(aRank, sizeof(aRank), "%d", Client.m_Rank);
+			pUi->DoLabel(&Container, aRank, FontSize, TEXTALIGN_CENTER | TEXTALIGN_MIDDLE);
+		}
+	}
+
 	if(!pPopupContext->m_IsLocal)
 	{
 		const int ActionsNum = 3;
@@ -1177,7 +1215,6 @@ CUi::EPopupMenuFunctionResult CScoreboard::CScoreboardPopupContext::Render(void 
 
 		View.HSplitTop(ItemSpacing * 2, nullptr, &View);
 		View.HSplitTop(ActionSize, &Container, &View);
-
 		Container.VSplitLeft(ActionSize, &Action, &Container);
 
 		ColorRGBA FriendActionColor = Client.m_Friend ? ColorRGBA(0.95f, 0.3f, 0.3f, 0.85f * pUi->ButtonColorMul(&pPopupContext->m_FriendAction)) :

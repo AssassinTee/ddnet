@@ -475,6 +475,10 @@ void CPlayer::Snap(int SnappingClient)
 	IGameController::CFinishTime PlayerTime = GameServer()->m_pController->SnapPlayerTime(SnappingClient, this);
 	DDNetPlayer.m_FinishTimeSeconds = PlayerTime.m_Seconds;
 	DDNetPlayer.m_FinishTimeMillis = PlayerTime.m_Milliseconds;
+
+	// add rank
+	DDNetPlayer.m_Rank = !g_Config.m_SvHideScore || SnappingClient == m_ClientId ? GameServer()->Score()->PlayerData(m_ClientId)->m_Rank : PlayerRank::NOT_FINISHED;
+
 	Server()->SnapNewItem(TranslatedId, DDNetPlayer);
 
 	if(Server()->IsSixup(SnappingClient) && m_pCharacter && m_pCharacter->m_DDRaceState == ERaceState::STARTED &&
@@ -1061,7 +1065,7 @@ void CPlayer::ProcessScoreResult(CScorePlayerResult &Result)
 		{
 			if(Result.m_Data.m_Info.m_Time.has_value())
 			{
-				GameServer()->Score()->PlayerData(m_ClientId)->Set(Result.m_Data.m_Info.m_Time.value(), Result.m_Data.m_Info.m_aTimeCp);
+				GameServer()->Score()->PlayerData(m_ClientId)->Set(Result.m_Data.m_Info.m_Time.value(), Result.m_Data.m_Info.m_aTimeCp, Result.m_Data.m_Info.m_Rank.value_or(PlayerRank::UNSET));
 				Server()->SetClientScore(m_ClientId, Result.m_Data.m_Info.m_Time.value());
 				// update map best time if player's time is better
 				if(!GameServer()->m_pController->m_CurrentRecord.has_value() ||

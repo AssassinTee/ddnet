@@ -49,6 +49,7 @@ class CScoreboard : public CComponent
 	{
 	public:
 		CScoreboard *m_pScoreboard = nullptr;
+		CButtonContainer m_FinishFlagIcon;
 		CButtonContainer m_FriendAction;
 		CButtonContainer m_MuteAction;
 		CButtonContainer m_EmoticonAction;

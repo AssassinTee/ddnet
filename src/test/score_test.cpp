@@ -224,6 +224,7 @@ TEST_P(SingleScore, LoadPlayerData)
 	{
 		ASSERT_EQ(Time, 0);
 	}
+	ASSERT_TRUE(m_pPlayerResult->m_Data.m_Info.m_Rank == PlayerRank::NOT_FINISHED);
 
 	str_copy(m_PlayerRequest.m_aRequestingPlayer, "nameless tee");
 	str_copy(m_PlayerRequest.m_aName, "", sizeof(m_PlayerRequest.m_aRequestingPlayer));
@@ -236,6 +237,7 @@ TEST_P(SingleScore, LoadPlayerData)
 	{
 		ASSERT_EQ(m_pPlayerResult->m_Data.m_Info.m_aTimeCp[i], i);
 	}
+	ASSERT_TRUE(m_pPlayerResult->m_Data.m_Info.m_Rank == 1);
 
 	str_copy(m_PlayerRequest.m_aRequestingPlayer, "finishless");
 	str_copy(m_PlayerRequest.m_aName, "nameless tee", sizeof(m_PlayerRequest.m_aRequestingPlayer));
@@ -247,6 +249,7 @@ TEST_P(SingleScore, LoadPlayerData)
 	{
 		ASSERT_EQ(m_pPlayerResult->m_Data.m_Info.m_aTimeCp[i], i);
 	}
+	ASSERT_TRUE(m_pPlayerResult->m_Data.m_Info.m_Rank == PlayerRank::NOT_FINISHED);
 }
 
 TEST_P(SingleScore, TimesExists)

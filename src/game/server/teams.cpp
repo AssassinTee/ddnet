@@ -877,12 +877,14 @@ void CGameTeams::OnFinish(CPlayer *pPlayer, int TimeTicks, const char *pTimestam
 	GameServer()->SendFinish(ClientId, Time, pData->m_BestTime);
 	bool CallSaveScore = g_Config.m_SvSaveWorseScores;
 	bool NeedToSendNewPersonalRecord = false;
+	bool ReloadPlayerDataForRank = false;
 	if(!pData->m_BestTime || Time < pData->m_BestTime)
 	{
-		// update the score
-		pData->Set(Time, GetCurrentTimeCp(pPlayer));
+		// update the score, we don't have the new rank yet
+		pData->Set(Time, GetCurrentTimeCp(pPlayer), PlayerRank::UNSET);
 		CallSaveScore = true;
 		NeedToSendNewPersonalRecord = true;
+		ReloadPlayerDataForRank = true;
 	}
 
 	if(CallSaveScore)
@@ -895,6 +897,8 @@ void CGameTeams::OnFinish(CPlayer *pPlayer, int TimeTicks, const char *pTimestam
 	if(!GameServer()->m_pController->m_CurrentRecord.has_value())
 	{
 		GameServer()->Score()->LoadBestTime();
+		pData->Set(Time, GetCurrentTimeCp(pPlayer), 1);
+		ReloadPlayerDataForRank = false;
 	}
 	else if(Time < GameServer()->m_pController->m_CurrentRecord)
 	{
@@ -927,6 +931,11 @@ void CGameTeams::OnFinish(CPlayer *pPlayer, int TimeTicks, const char *pTimestam
 	if(!Score.has_value() || TTime < Score.value())
 	{
 		Server()->SetClientScore(ClientId, TTime);
+	}
+
+	if(ReloadPlayerDataForRank)
+	{
+		GameServer()->Score()->LoadPlayerData(ClientId, Server()->ClientName(ClientId));
 	}
 
 	// Confetti
