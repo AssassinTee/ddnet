@@ -8,6 +8,7 @@
 
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
+#include <engine/textrender.h>
 
 #include <generated/client_data.h>
 #include <generated/client_data7.h>
@@ -150,6 +151,28 @@ void CRenderTools::RenderIcon(int ImageId, int SpriteId, const CUIRect *pRect, c
 	IGraphics::CQuadItem QuadItem(pRect->x, pRect->y, pRect->w, pRect->h);
 	Graphics()->QuadsDrawTL(&QuadItem, 1);
 	Graphics()->QuadsEnd();
+}
+
+void CRenderTools::RenderTime(vec2 DotPos, float FontSize, int Seconds, bool NotFinished, int Millis, bool TrueMilliseconds) const
+{
+	if(NotFinished)
+		return;
+
+	char aBuf[32];
+	str_time(((int64_t)absolute(Seconds)) * 100, TIME_HOURS, aBuf, sizeof(aBuf));
+	TextRender()->Text(DotPos.x - TextRender()->TextWidth(FontSize, aBuf), DotPos.y, FontSize, aBuf);
+
+	// show milliseconds or centiseconds if we are under an hour
+	if(Millis >= 0 && Seconds < 60 * 60)
+	{
+		Millis %= 1000;
+		if(!TrueMilliseconds)
+			str_format(aBuf, sizeof(aBuf), "%02d", Millis / 10);
+		else
+			str_format(aBuf, sizeof(aBuf), "%03d", Millis);
+		const float CentisecondFontSize = FontSize * 0.61803398875f; // 1 / golden ratio
+		TextRender()->Text(DotPos.x - FontSize / 10.0f, DotPos.y + FontSize / 40.0f, CentisecondFontSize, aBuf);
+	}
 }
 
 void CRenderTools::GetRenderTeeAnimScaleAndBaseSize(const CTeeRenderInfo *pInfo, float &AnimScale, float &BaseSize)

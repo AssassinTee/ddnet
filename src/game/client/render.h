@@ -228,6 +228,7 @@ public:
 
 	void RenderCursor(vec2 Center, float Size) const;
 	void RenderIcon(int ImageId, int SpriteId, const CUIRect *pRect, const ColorRGBA *pColor = nullptr) const;
+	void RenderTime(vec2 DotPos, float FontSize, int Seconds, bool NotFinished, int Millis, bool TrueMilliseconds) const;
 
 	// larger rendering methods
 	static void GetRenderTeeBodySize(const CAnimState *pAnim, const CTeeRenderInfo *pInfo, vec2 &BodyOffset, float &Width, float &Height);

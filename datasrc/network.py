@@ -392,6 +392,12 @@ Objects = [
 		NetIntAny("m_Layer"),
 		NetIntAny("m_EntityClass"),
 	]),
+ 
+	# Server best time
+	NetObjectEx("ServerBestTime", "server-best-time@netobj.ddnet.org", [
+			NetIntRange("m_ServerRecordSeconds", 'FinishTime::UNSET', 'max_int', default='FinishTime::UNSET'),
+			NetIntRange("m_ServerRecordMillis", 0, 999, default=0),
+	]),
 
 	NetEventEx("MapSoundWorld:Common", "map-sound-world@netevent.ddnet.org", [
 		NetIntAny("m_SoundId"),
