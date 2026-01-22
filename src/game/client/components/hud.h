@@ -98,6 +98,8 @@ class CHud : public CComponent
 	void RenderPauseNotification();
 	void RenderSuddenDeath();
 
+	void RenderScoreHudTeamplay(bool ForceScoreInfoInit, float StartY, const float ScoreSingleBoxHeight);
+	void RenderScoreHudSolo(bool ForceScoreInfoInit, float StartY, const float ScoreSingleBoxHeight);
 	void RenderScoreHud();
 	int m_LastLocalClientId = -1;
 
