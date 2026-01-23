@@ -922,6 +922,17 @@ public:
 	int m_MapBestTimeMillis;
 	char m_aMapDescription[512];
 
+	class CPlayerDetail
+	{
+	public:
+		int m_Rank = 0;
+		int m_Points = 0;
+		char m_aText[64] = "";
+	};
+	// cached player extra info (points etc.)
+	CPlayerDetail m_aPlayerDetails[MAX_CLIENTS];
+	void RequestPlayerDetails(int ClientId) const;
+
 private:
 	std::unique_ptr<IMap> m_pMap;
 

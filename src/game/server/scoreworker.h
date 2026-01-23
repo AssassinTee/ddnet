@@ -84,6 +84,25 @@ struct CSqlLoadBestTimeRequest : ISqlData
 	char m_aMap[MAX_MAP_LENGTH];
 };
 
+struct CScorePlayerDetailsResult : ISqlResult
+{
+	int m_RequestingClientId = -1;
+	int m_TargetClientId = -1;
+	int m_PlayerRank = 0;
+	int m_PlayerPoints = 0;
+	char m_aMessage[512] = "";
+};
+
+struct CSqlPlayerDetailsRequest : ISqlData
+{
+	CSqlPlayerDetailsRequest(std::shared_ptr<CScorePlayerDetailsResult> pResult) :
+		ISqlData(std::move(pResult))
+	{
+	}
+
+	char m_aName[MAX_NAME_LENGTH];
+};
+
 struct CSqlPlayerRequest : ISqlData
 {
 	CSqlPlayerRequest(std::shared_ptr<CScorePlayerResult> pResult) :
@@ -316,6 +335,7 @@ struct CScoreWorker
 	static bool ShowTimes(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ShowPoints(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool ShowTopPoints(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
+	static bool PlayerDetails(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 	static bool GetSaves(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize);
 
 	static bool SaveTeam(IDbConnection *pSqlServer, const ISqlData *pGameData, Write w, char *pError, int ErrorSize);

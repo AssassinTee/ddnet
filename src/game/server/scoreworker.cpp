@@ -1971,6 +1971,39 @@ bool CScoreWorker::LoadTeam(IDbConnection *pSqlServer, const ISqlData *pGameData
 	return true;
 }
 
+bool CScoreWorker::PlayerDetails(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize)
+{
+	const auto *pData = dynamic_cast<const CSqlPlayerDetailsRequest *>(pGameData);
+	auto *pResult = dynamic_cast<CScorePlayerDetailsResult *>(pGameData->m_pResult.get());
+
+	char aBuf[512];
+	str_format(aBuf, sizeof(aBuf),
+		"SELECT ("
+		"  SELECT COUNT(Name) + 1 FROM %s_points WHERE Points > ("
+		"    SELECT Points FROM %s_points WHERE Name = ?"
+		")) as Ranking, Points, Name "
+		"FROM %s_points WHERE Name = ?",
+		pSqlServer->GetPrefix(), pSqlServer->GetPrefix(), pSqlServer->GetPrefix());
+	if(!pSqlServer->PrepareStatement(aBuf, pError, ErrorSize))
+	{
+		return false;
+	}
+	pSqlServer->BindString(1, pData->m_aName);
+	pSqlServer->BindString(2, pData->m_aName);
+
+	bool End;
+	if(!pSqlServer->Step(&End, pError, ErrorSize))
+	{
+		return false;
+	}
+	if(!End)
+	{
+		pResult->m_PlayerRank = pSqlServer->GetInt(1);
+		pResult->m_PlayerPoints = pSqlServer->GetInt(2);
+	}
+	return true;
+}
+
 bool CScoreWorker::GetSaves(IDbConnection *pSqlServer, const ISqlData *pGameData, char *pError, int ErrorSize)
 {
 	const auto *pData = dynamic_cast<const CSqlPlayerRequest *>(pGameData);

@@ -1296,6 +1296,17 @@ void CGameClient::OnMessage(int MsgId, CUnpacker *pUnpacker, int Conn, bool Dumm
 		CNetMsg_Sv_MapInfo *pMsg = static_cast<CNetMsg_Sv_MapInfo *>(pRawMsg);
 		str_copy(m_aMapDescription, pMsg->m_pDescription);
 	}
+	else if(MsgId == NETMSGTYPE_SV_PLAYERDETAILS)
+	{
+		CNetMsg_Sv_PlayerDetails *pMsg = static_cast<CNetMsg_Sv_PlayerDetails *>(pRawMsg);
+		if(pMsg->m_ClientId >= 0 && pMsg->m_ClientId < MAX_CLIENTS)
+		{
+			CPlayerDetail& PlayerDetail = m_aPlayerDetails[pMsg->m_ClientId];
+			PlayerDetail.m_Rank = pMsg->m_Rank;
+			PlayerDetail.m_Points = pMsg->m_Points;
+			str_copy(PlayerDetail.m_aText, pMsg->m_pText);
+		}
+	}
 }
 
 void CGameClient::OnStateChange(int NewState, int OldState)
@@ -3317,6 +3328,16 @@ void CGameClient::SendKill() const
 		CMsgPacker MsgP(NETMSGTYPE_CL_KILL, false);
 		Client()->SendMsg(!g_Config.m_ClDummy, &MsgP, MSGFLAG_VITAL);
 	}
+}
+
+void CGameClient::RequestPlayerDetails(int ClientId) const
+{
+	if(ClientId < 0 || ClientId >= MAX_CLIENTS)
+		return;
+
+	CNetMsg_Cl_RequestPlayerDetails Msg;
+	Msg.m_ClientId = ClientId;
+	Client()->SendPackMsgActive(&Msg, MSGFLAG_VITAL);
 }
 
 void CGameClient::SendReadyChange7() // NOLINT(readability-make-member-function-const)

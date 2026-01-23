@@ -1506,6 +1506,32 @@ void CGameContext::OnTick()
 		m_pLoadMapInfoResult = nullptr;
 	}
 
+	// check for player extra info results from database
+	for(auto It = m_vPlayerDetailsResults.begin(); It != m_vPlayerDetailsResults.end();)
+	{
+		const std::shared_ptr<CScorePlayerDetailsResult> &PlayerDetailsResult = *It;
+		if(PlayerDetailsResult->m_Completed)
+		{
+			if(PlayerDetailsResult->m_Success && PlayerDetailsResult->m_aMessage[0] != '\0')
+			{
+				int RequestingClientId = PlayerDetailsResult->m_RequestingClientId;
+				int TargetClientId = PlayerDetailsResult->m_TargetClientId;
+				if(m_apPlayers[RequestingClientId])
+				{
+					CNetMsg_Sv_PlayerDetails Msg;
+					Msg.m_ClientId = TargetClientId;
+					Msg.m_pText = PlayerDetailsResult->m_aMessage;
+					Server()->SendPackMsg(&Msg, MSGFLAG_VITAL | MSGFLAG_NORECORD, RequestingClientId);
+				}
+			}
+			It = m_vPlayerDetailsResults.erase(It);
+		}
+		else
+		{
+			++It;
+		}
+	}
+
 	// Record player position at the end of the tick
 	if(m_TeeHistorianActive)
 	{
@@ -2295,6 +2321,10 @@ void CGameContext::OnMessage(int MsgId, CUnpacker *pUnpacker, int ClientId)
 			break;
 		case NETMSGTYPE_CL_ENABLESPECTATORCOUNT:
 			OnEnableSpectatorCountNetMessage(static_cast<CNetMsg_Cl_EnableSpectatorCount *>(pRawMsg), ClientId);
+			break;
+		case NETMSGTYPE_CL_REQUESTPLAYERDETAILS:
+			OnRequestPlayerDetailsNetMessage(static_cast<CNetMsg_Cl_RequestPlayerDetails *>(pRawMsg), ClientId);
+			break;
 		default:
 			break;
 		}
@@ -3035,6 +3065,18 @@ void CGameContext::OnEnableSpectatorCountNetMessage(const CNetMsg_Cl_EnableSpect
 		return;
 
 	pPlayer->m_EnableSpectatorCount = pMsg->m_Enable;
+}
+
+void CGameContext::OnRequestPlayerDetailsNetMessage(const CNetMsg_Cl_RequestPlayerDetails *pMsg, int ClientId)
+{
+	if(pMsg->m_ClientId < 0 || pMsg->m_ClientId >= MAX_CLIENTS)
+		return;
+
+	CPlayer *pTargetPlayer = m_apPlayers[pMsg->m_ClientId];
+	if(!pTargetPlayer)
+		return;
+
+	Score()->ShowPointsForPlayerDetails(ClientId, pMsg->m_ClientId, Server()->ClientName(pMsg->m_ClientId));
 }
 
 void CGameContext::OnStartInfoNetMessage(const CNetMsg_Cl_StartInfo *pMsg, int ClientId)
