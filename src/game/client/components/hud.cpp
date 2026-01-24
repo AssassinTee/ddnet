@@ -1300,17 +1300,12 @@ void CHud::RenderSpectatorCount()
 	const float BoxWidth = 13.f + TextRender()->TextWidth(Fontsize, aBuf);
 
 	float StartX = m_Width - BoxWidth;
-	float StartY = 285.0f - BoxHeight - 4; // 4 units distance to the next display;
+	float StartY = 229.0f - BoxHeight - 4; // 4 units distance to the next display;
 	if(g_Config.m_ClShowhudPlayerPosition || g_Config.m_ClShowhudPlayerSpeed || g_Config.m_ClShowhudPlayerAngle)
 	{
 		StartY -= 4;
 	}
 	StartY -= GetMovementInformationBoxHeight();
-
-	if(g_Config.m_ClShowhudScore)
-	{
-		StartY -= 56;
-	}
 
 	if(g_Config.m_ClShowhudDummyActions && !(GameClient()->m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_GAMEOVER) && Client()->DummyConnected())
 	{
@@ -1339,17 +1334,12 @@ void CHud::RenderDummyActions()
 	const float BoxWidth = 16.0f;
 
 	float StartX = m_Width - BoxWidth;
-	float StartY = 285.0f - BoxHeight - 4; // 4 units distance to the next display;
+	float StartY = 229.0f - BoxHeight - 4; // 4 units distance to the next display;
 	if(g_Config.m_ClShowhudPlayerPosition || g_Config.m_ClShowhudPlayerSpeed || g_Config.m_ClShowhudPlayerAngle)
 	{
 		StartY -= 4;
 	}
 	StartY -= GetMovementInformationBoxHeight();
-
-	if(g_Config.m_ClShowhudScore)
-	{
-		StartY -= 56;
-	}
 
 	Graphics()->DrawRect(StartX, StartY, BoxWidth, BoxHeight, ColorRGBA(0.0f, 0.0f, 0.0f, 0.4f), IGraphics::CORNER_L, 5.0f);
 
@@ -1493,11 +1483,7 @@ void CHud::RenderMovementInformation()
 	const float BoxWidth = 62.0f;
 
 	float StartX = m_Width - BoxWidth;
-	float StartY = 285.0f - BoxHeight - 4.0f; // 4 units distance to the next display;
-	if(g_Config.m_ClShowhudScore)
-	{
-		StartY -= 56.0f;
-	}
+	float StartY = 229.0f - BoxHeight - 4.0f; // 4 units distance to the next display;
 
 	Graphics()->DrawRect(StartX, StartY, BoxWidth, BoxHeight, ColorRGBA(0.0f, 0.0f, 0.0f, 0.4f), IGraphics::CORNER_L, 5.0f);
 
