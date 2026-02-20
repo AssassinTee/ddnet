@@ -1080,6 +1080,7 @@ void CRenderLayerQuads::Init()
 	};
 
 	m_vQuadClusters.clear();
+	m_vQuadClusters.reserve(m_pLayerQuads->m_NumQuads / GRAPHICS_MAX_QUADS_RENDER_COUNT + 1);
 	CQuadCluster QuadCluster;
 
 	// create quad clusters
@@ -1128,7 +1129,7 @@ void CRenderLayerQuads::Init()
 
 		CalculateClipping(QuadCluster);
 
-		m_vQuadClusters.push_back(QuadCluster);
+		m_vQuadClusters.emplace_back(QuadCluster);
 		QuadStart += QuadOffset;
 	}
 
