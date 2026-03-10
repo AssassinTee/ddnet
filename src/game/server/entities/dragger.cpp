@@ -187,7 +187,7 @@ void CDragger::Reset()
 void CDragger::Snap(int SnappingClient)
 {
 	// Only players with the dragger in their field of view or who want to see everything will receive the snap
-	if(NetworkClipped(SnappingClient))
+	if(NetworkClipped(SnappingClient) || !GetId().has_value())
 		return;
 
 	// Send the dragger in its resting position if the player would not otherwise see a dragger beam within its own team
@@ -230,7 +230,7 @@ void CDragger::Snap(int SnappingClient)
 			StartTick = Server()->Tick();
 	}
 
-	GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Server()->IsSixup(SnappingClient), SnappingClient), GetId(),
+	GameServer()->SnapLaserObject(CSnapContext(SnappingClientVersion, Server()->IsSixup(SnappingClient), SnappingClient), GetId().value(),
 		m_Pos, m_Pos, StartTick, -1, LASERTYPE_DRAGGER, Subtype, m_Number);
 }
 

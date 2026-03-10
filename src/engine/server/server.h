@@ -477,7 +477,7 @@ public:
 
 	void RegisterCommands();
 
-	int SnapNewId() override;
+	std::optional<int> SnapNewId() override;
 	void SnapFreeId(int Id) override;
 	void *SnapNewItem(int Type, int Id, int Size) override;
 	void SnapSetStaticsize(int ItemType, int Size) override;
