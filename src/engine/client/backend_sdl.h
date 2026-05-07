@@ -7,7 +7,7 @@
 #include <engine/client/graphics_threaded.h>
 #include <engine/graphics.h>
 
-#include <SDL_video.h>
+#include <SDL.h>
 
 #include <atomic>
 #include <condition_variable>
@@ -255,6 +255,7 @@ public:
 	int GetWindowScreen() override;
 	int WindowActive() override;
 	int WindowOpen() override;
+
 	void SetWindowGrab(bool Grab) override;
 	bool ResizeWindow(int w, int h, int RefreshRate) override;
 	void GetViewportSize(int &w, int &h) override;

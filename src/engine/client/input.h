@@ -7,8 +7,7 @@
 #include <engine/input.h>
 #include <engine/keys.h>
 
-#include <SDL_events.h>
-#include <SDL_joystick.h>
+#include <SDL.h>
 
 #include <string>
 #include <vector>
@@ -64,11 +63,13 @@ private:
 	IEngineGraphics *Graphics() const { return m_pGraphics; }
 	IConsole *Console() const { return m_pConsole; }
 
+	SDL_Window *m_pWindow = nullptr;
+
 	// joystick
 	std::vector<CJoystick> m_vJoysticks;
 	CJoystick *m_pActiveJoystick = nullptr;
 	void InitJoysticks();
-	bool OpenJoystick(int JoystickIndex);
+	bool OpenJoystick(SDL_JoystickID JoystickID);
 	void CloseJoysticks();
 	void UpdateActiveJoystick();
 	static void ConchainJoystickGuidChanged(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
@@ -108,8 +109,6 @@ private:
 	void HandleTextEditingEvent(const char *pText, int Start, int Length);
 
 	char m_aDropFile[IO_MAX_PATH_LENGTH];
-
-	void ProcessSystemMessage(SDL_SysWMmsg *pMsg);
 
 public:
 	CInput();
