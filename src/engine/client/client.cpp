@@ -77,7 +77,7 @@
 #include <emscripten/emscripten.h>
 #endif
 
-#include "SDL.h"
+#include <SDL.h>
 #ifdef main
 #undef main
 #endif
@@ -4178,8 +4178,7 @@ void CClient::DemoRecorder_AddDemoMarker(int Recorder)
 	DemoRecorders()[Recorder].AddDemoMarker();
 }
 
-CDemoRecorder (&CClient::DemoRecorders())[RECORDER_MAX]
-{
+CDemoRecorder (&CClient::DemoRecorders()) [RECORDER_MAX] {
 	if(IsSixup())
 	{
 		return m_aDemoRecordersSixup;
@@ -5103,36 +5102,34 @@ int main(int argc, const char **argv)
 #endif
 
 	// Do not automatically translate touch events to mouse events and vice versa.
-	SDL_SetHint("SDL_TOUCH_MOUSE_EVENTS", "0");
-	SDL_SetHint("SDL_MOUSE_TOUCH_EVENTS", "0");
+	SDL_SetHintWithPriority(SDL_HINT_TOUCH_MOUSE_EVENTS, "0", SDL_HINT_OVERRIDE);
+	SDL_SetHintWithPriority(SDL_HINT_MOUSE_TOUCH_EVENTS, "0", SDL_HINT_OVERRIDE);
 
 	// Support longer IME composition strings (enables SDL_TEXTEDITING_EXT).
-#if SDL_VERSION_ATLEAST(2, 0, 22)
-	SDL_SetHint(SDL_HINT_IME_SUPPORT_EXTENDED_TEXT, "1");
-#endif
+	// SDL_HINT_IME_SUPPORT_EXTENDED_TEXT no longer exists in SDL3, IME extended text is enabled by default
 
 #if defined(CONF_PLATFORM_MACOS)
 	// Hints will not be set if there is an existing override hint or environment variable that takes precedence.
 	// So this respects cli environment overrides.
-	SDL_SetHint("SDL_MAC_OPENGL_ASYNC_DISPATCH", "1");
+	SDL_SetHintWithPriority(SDL_HINT_MACOS_OPENGL_DISPATCH, "1", SDL_HINT_OVERRIDE);
 #endif
 
 #if defined(CONF_FAMILY_WINDOWS)
-	SDL_SetHint("SDL_IME_SHOW_UI", g_Config.m_InpImeNativeUi ? "1" : "0");
+	// SDL_HINT_IME_SHOW_UI no longer exists in SDL3, IME UI is shown by default
 #else
-	SDL_SetHint("SDL_IME_SHOW_UI", "1");
+	// IME UI is shown by default in SDL3
 #endif
 
 #if defined(CONF_PLATFORM_ANDROID)
 	// Trap the Android back button so it can be handled in our code reliably
 	// instead of letting the system handle it.
-	SDL_SetHint("SDL_ANDROID_TRAP_BACK_BUTTON", "1");
+	SDL_SetHintWithPriority(SDL_HINT_ANDROID_TRAP_BACK_BUTTON, "1", SDL_HINT_OVERRIDE);
 	// Force landscape screen orientation.
-	SDL_SetHint("SDL_IOS_ORIENTATIONS", "LandscapeLeft LandscapeRight");
+	SDL_SetHintWithPriority(SDL_HINT_IOS_ORIENTATIONS, "LandscapeLeft LandscapeRight", SDL_HINT_OVERRIDE);
 #endif
 
 	// init SDL
-	if(SDL_Init(0) < 0)
+	if(!SDL_Init(0))
 	{
 		char aError[256];
 		str_format(aError, sizeof(aError), "Unable to initialize SDL base: %s", SDL_GetError());

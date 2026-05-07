@@ -7,6 +7,8 @@
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
 
+#include <SDL.h>
+
 #include <atomic>
 #include <cstddef>
 #include <mutex>
