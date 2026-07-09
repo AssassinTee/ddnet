@@ -1049,7 +1049,7 @@ void CMenus::RenderSettingsGraphics(CUIRect MainView)
 
 	MainView.HSplitTop(2.0f, nullptr, &MainView);
 	static CButtonContainer s_UiColorResetId;
-	DoLine_ColorPicker(&s_UiColorResetId, 25.0f, 13.0f, 2.0f, &MainView, Localize("UI Color"), &g_Config.m_UiColor, color_cast<ColorRGBA>(ColorHSLA(0xE4A046AFU, true)), false, nullptr, true);
+	DoLine_ColorPicker(&s_UiColorResetId, 25.0f, 13.0f, 2.0f, &MainView, Localize("UI Color"), &g_Config.m_UiColor, ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f), false, nullptr, true);
 
 	// Backend list
 	struct SMenuBackendInfo

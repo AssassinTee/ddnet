@@ -54,6 +54,7 @@ public:
 	int DoButton_CheckBox_Number(const void *pId, const char *pText, int Checked, const CUIRect *pRect);
 
 	bool DoLine_RadioMenu(CUIRect &View, const char *pLabel, std::vector<CButtonContainer> &vButtonContainers, const std::vector<const char *> &vLabels, const std::vector<int> &vValues, int &Value);
+	static ColorRGBA GetMenuColor(float Alpha) { return ms_GuiColor.WithAlpha(Alpha); }
 
 private:
 	CUi::SColorPickerPopupContext m_ColorPickerPopupContext;

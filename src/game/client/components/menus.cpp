@@ -779,7 +779,7 @@ void CMenus::RenderLoading(const char *pCaption, const char *pContent, int Incre
 	Ui()->Screen()->Margin(160.0f, &Box);
 
 	Graphics()->TextureClear();
-	Box.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f), IGraphics::CORNER_ALL, 15.0f);
+	Box.Draw(CMenus::GetMenuColor(0.5f), IGraphics::CORNER_ALL, 15.0f);
 	Box.Margin(20.0f, &Box);
 
 	CUIRect Label;
@@ -1224,7 +1224,7 @@ void CMenus::RenderPopupFullscreen(CUIRect Screen)
 	const char *pButtonText = "";
 	bool TopAlign = false;
 
-	ColorRGBA BgColor = ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f);
+	ColorRGBA BgColor = CMenus::GetMenuColor(0.5f);
 	if(m_Popup == POPUP_MESSAGE || m_Popup == POPUP_CONFIRM)
 	{
 		pTitle = m_aPopupTitle;
@@ -2116,7 +2116,7 @@ void CMenus::RenderPopupConnecting(CUIRect Screen)
 
 	CUIRect Box, Label;
 	Screen.Margin(150.0f, &Box);
-	Box.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f), IGraphics::CORNER_ALL, 15.0f);
+	Box.Draw(CMenus::GetMenuColor(0.5f), IGraphics::CORNER_ALL, 15.0f);
 	Box.Margin(20.0f, &Box);
 
 	Box.HSplitTop(24.0f, &Label, &Box);
@@ -2247,7 +2247,7 @@ void CMenus::RenderPopupLoading(CUIRect Screen)
 
 	CUIRect Box, Label;
 	Screen.Margin(150.0f, &Box);
-	Box.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f), IGraphics::CORNER_ALL, 15.0f);
+	Box.Draw(CMenus::GetMenuColor(0.5f), IGraphics::CORNER_ALL, 15.0f);
 	Box.Margin(20.0f, &Box);
 
 	Box.HSplitTop(24.0f, &Label, &Box);
@@ -2547,8 +2547,8 @@ void CMenus::UpdateColors()
 {
 	ms_GuiColor = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_UiColor, true));
 
-	ms_ColorTabbarInactiveOutgame = ColorRGBA(0.0f, 0.0f, 0.0f, 0.25f);
-	ms_ColorTabbarActiveOutgame = ColorRGBA(0.0f, 0.0f, 0.0f, 0.5f);
+	ms_ColorTabbarInactiveOutgame = CMenus::GetMenuColor(0.25f);
+	ms_ColorTabbarActiveOutgame = CMenus::GetMenuColor(0.5f);
 	ms_ColorTabbarHoverOutgame = ColorRGBA(1.0f, 1.0f, 1.0f, 0.25f);
 
 	const float ColorIngameScaleI = 0.5f;
@@ -2578,7 +2578,14 @@ void CMenus::RenderBackground()
 	// render background color
 	Graphics()->TextureClear();
 	Graphics()->QuadsBegin();
-	Graphics()->SetColor(ms_GuiColor.WithAlpha(1.0f));
+	ColorRGBA BackgroundColor = color_cast<ColorRGBA>(ColorHSVA(0xE4A046AF)).WithAlpha(1.0f);
+	ColorRGBA MenuColor = CMenus::GetMenuColor(1.0f);
+	const float ColorBackgroundScale = 0.5f;
+	BackgroundColor.Multiply(1.0f - ColorBackgroundScale);
+	BackgroundColor.r += ColorBackgroundScale * MenuColor.r;
+	BackgroundColor.g += ColorBackgroundScale * MenuColor.g;
+	BackgroundColor.b += ColorBackgroundScale * MenuColor.b;
+	Graphics()->SetColor(BackgroundColor);
 	const IGraphics::CQuadItem BackgroundQuadItem = IGraphics::CQuadItem(0, 0, ScreenWidth, ScreenHeight);
 	Graphics()->QuadsDrawTL(&BackgroundQuadItem, 1);
 	Graphics()->QuadsEnd();
