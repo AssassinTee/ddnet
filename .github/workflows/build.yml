@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        name: [ubuntu-latest-fancy, macOS-latest, windows-latest, ubuntu-22.04, windows-latest-mingw]
+        name: [ubuntu-latest-fancy, macOS-latest, windows-latest, ubuntu-22.04, windows-latest-mingw, windows-win7-mingw]
         include:
         - name: ubuntu-latest-fancy
           os: ubuntu-latest
@@ -41,6 +41,15 @@ jobs:
           package-file: "*-win64.zip"
           executable-suffix: .exe
         - name: windows-latest-mingw
+          os: windows-latest
+          cmake-args: -G Ninja -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DEXCEPTION_HANDLING=ON -DCMAKE_RC_COMPILER=windres -DCMAKE_AR=ar -DVULKAN=ON
+          cmake-init-env: CXXFLAGS=-Werror LDFLAGS=-Werror
+          package-file: "*-win64.zip"
+          executable-suffix: .exe
+          # Delete outdated libwinpthread-1.dll after configuring to workaround https://github.com/ddnet/ddnet/issues/10203 when using MinGW.
+          # Adding this condition into the individual steps is not possible without using bash shell consistently, which does not work for windows-latest.
+          workaround-issue10203-run-after-configure: rm libwinpthread-1.dll
+        - name: windows-win7-mingw
           os: windows-latest
           cmake-args: -G Ninja -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DEXCEPTION_HANDLING=ON -DCMAKE_RC_COMPILER=windres -DCMAKE_AR=ar -DVULKAN=ON
           cmake-init-env: CXXFLAGS=-Werror LDFLAGS=-Werror
@@ -130,10 +139,18 @@ jobs:
         sudo rm -rf /Library/Developer/CommandLineTools
 
     - name: Prepare Windows MinGW
-      if: contains(matrix.os, 'windows') && contains(matrix.name, 'mingw')
+      if: contains(matrix.os, 'windows') && contains(matrix.name, 'mingw') && contains(matrix.name, 'latest')
       run: |
         rustup toolchain install stable-x86_64-pc-windows-gnu
         rustup target add x86_64-pc-windows-gnu
+        rustup default stable-x86_64-pc-windows-gnu
+        rustup set default-host x86_64-pc-windows-gnu
+    
+    - name: Prepare Windows 7 MinGW
+      if: contains(matrix.os, 'windows') && contains(matrix.name, 'mingw') && contains(matrix.name, 'win7')
+      run: |
+        rustup toolchain install stable-x86_64-pc-windows-gnu
+        rustup target add x86_64-win7-windows-gnu
         rustup default stable-x86_64-pc-windows-gnu
         rustup set default-host x86_64-pc-windows-gnu
 
