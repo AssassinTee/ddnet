@@ -6,15 +6,17 @@
 #endif // __clang__
 
 extern "C" {
-void cxxbridge1$194$RustVersionPrint(::IConsole const &console) noexcept;
+void CXXBRIDGE_SYMBOL(RustVersionPrint)(::IConsole const &console) noexcept;
 
-void cxxbridge1$194$RustVersionRegister(::IConsole &console) noexcept;
+void CXXBRIDGE_SYMBOL(RustVersionRegister)(::IConsole &console) noexcept;
 } // extern "C"
 
-void RustVersionPrint(::IConsole const &console) noexcept {
-  cxxbridge1$194$RustVersionPrint(console);
+void RustVersionPrint(::IConsole const &console) noexcept
+{
+	CXXBRIDGE_SYMBOL(RustVersionPrint)(console);
 }
 
-void RustVersionRegister(::IConsole &console) noexcept {
-  cxxbridge1$194$RustVersionRegister(console);
+void RustVersionRegister(::IConsole &console) noexcept
+{
+	CXXBRIDGE_SYMBOL(RustVersionRegister)(console);
 }
