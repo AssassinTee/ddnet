@@ -1458,7 +1458,7 @@ void CMenus::RenderSettings(CUIRect MainView)
 	MainView.Draw(ms_ColorTabbarActive, IGraphics::CORNER_B, 10.0f);
 	MainView.Margin(20.0f, &MainView);
 
-	const bool NeedRestart = m_NeedRestartGraphics || m_NeedRestartSound || m_NeedRestartUpdate;
+	const bool NeedRestart = m_NeedRestartGraphics || m_NeedRestartSound || m_NeedRestartUpdate || m_NeedRestartDDNet;
 	if(NeedRestart)
 	{
 		MainView.HSplitBottom(20.0f, &MainView, &RestartBar);
@@ -2726,6 +2726,8 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 {
 	CUIRect Button, Left, Right, LeftLeft, Label;
 
+	static bool s_ClOnlyEntities = g_Config.m_ClOnlyEntities;
+
 #if defined(CONF_AUTOUPDATE)
 	CUIRect UpdaterRect;
 	MainView.HSplitBottom(20.0f, &MainView, &UpdaterRect);
@@ -2805,7 +2807,17 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 	Gameplay.VSplitMid(&Left, &Right, 20.0f);
 
 	Left.HSplitTop(20.0f, &Button, &Left);
-	Ui()->DoScrollbarOption(&g_Config.m_ClOverlayEntities, &g_Config.m_ClOverlayEntities, &Button, Localize("Overlay entities"), 0, 100);
+	Button.VSplitMid(&LeftLeft, &Button);
+
+	if(DoButton_CheckBox(&g_Config.m_ClOnlyEntities, Localize("Only load entity layers"), g_Config.m_ClOnlyEntities, &LeftLeft))
+		g_Config.m_ClOnlyEntities ^= 1;
+	GameClient()->m_Tooltips.DoToolTip(&g_Config.m_ClOnlyEntities, &Button, Localize("Only load physics layers on map load for lower CPU usage and lower map loading times"));
+
+	if(!g_Config.m_ClOnlyEntities)
+	{
+		Left.HSplitTop(20.0f, &Button, &Left);
+		Ui()->DoScrollbarOption(&g_Config.m_ClOverlayEntities, &g_Config.m_ClOverlayEntities, &Button, Localize("Overlay entities"), 0, 100);
+	}
 
 	Left.HSplitTop(20.0f, &Button, &Left);
 	Button.VSplitMid(&LeftLeft, &Button);
@@ -2836,12 +2848,15 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 		g_Config.m_ClShowOthers = g_Config.m_ClShowOthers != SHOW_OTHERS_ONLY_TEAM ? SHOW_OTHERS_ONLY_TEAM : SHOW_OTHERS_OFF;
 	}
 
-	Left.HSplitTop(20.0f, &Button, &Left);
-	if(DoButton_CheckBox(&g_Config.m_ClShowQuads, Localize("Show background quads"), g_Config.m_ClShowQuads, &Button))
+	if(!g_Config.m_ClOnlyEntities)
 	{
-		g_Config.m_ClShowQuads ^= 1;
+		Left.HSplitTop(20.0f, &Button, &Left);
+		if(DoButton_CheckBox(&g_Config.m_ClShowQuads, Localize("Show background quads"), g_Config.m_ClShowQuads, &Button))
+		{
+			g_Config.m_ClShowQuads ^= 1;
+		}
+		GameClient()->m_Tooltips.DoToolTip(&g_Config.m_ClShowQuads, &Button, Localize("Quads are used for background decoration"));
 	}
-	GameClient()->m_Tooltips.DoToolTip(&g_Config.m_ClShowQuads, &Button, Localize("Quads are used for background decoration"));
 
 	Left.HSplitTop(20.0f, &Button, &Left);
 	if(Ui()->DoScrollbarOption(&g_Config.m_ClDefaultZoom, &g_Config.m_ClDefaultZoom, &Button, Localize("Default zoom"), 0, 20))
@@ -2888,9 +2903,9 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 	MainView.VSplitMid(&Background, &Miscellaneous, 20.0f);
 
 	// background
-	Background.HSplitTop(30.0f, &Label, &Background);
+	Background.HSplitTop(50.0f, &Label, &Background);
 	Background.HSplitTop(5.0f, nullptr, &Background);
-	Ui()->DoLabel(&Label, Localize("Background"), 20.0f, TEXTALIGN_ML);
+	Ui()->DoLabel(&Label, Localize("Background"), 20.0f, TEXTALIGN_BL);
 
 	ColorRGBA GreyDefault(0.5f, 0.5f, 0.5f, 1);
 
@@ -3018,6 +3033,8 @@ void CMenus::RenderSettingsDDNet(CUIRect MainView)
 		TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
 	}
 #endif
+
+	m_NeedRestartDDNet = s_ClOnlyEntities != g_Config.m_ClOnlyEntities;
 }
 
 CUi::EPopupMenuFunctionResult CMenus::PopupMapPicker(void *pContext, CUIRect View, bool Active)

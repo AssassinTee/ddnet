@@ -43,7 +43,8 @@ void CMapLayers::OnMapLoad()
 
 	m_EnvEvaluator = CEnvelopeState(m_pLayers->Map(), m_OnlineOnly);
 	m_EnvEvaluator.OnInterfacesInit(GameClient());
-	m_MapRenderer.Load(m_Type, m_pLayers, m_pImages, &m_EnvEvaluator, FRenderCallbackOptional);
+	bool OnlyRenderEntities = g_Config.m_ClOnlyEntities && m_OnlineOnly && m_Type != RENDERTYPE_FULL_DESIGN && m_Type != RENDERTYPE_BACKGROUND_FORCE;
+	m_MapRenderer.Load(m_Type, m_pLayers, m_pImages, &m_EnvEvaluator, OnlyRenderEntities, FRenderCallbackOptional);
 }
 
 void CMapLayers::OnRender()
@@ -52,7 +53,7 @@ void CMapLayers::OnRender()
 		return;
 
 	// dynamic parameters for ingame rendering
-	m_Params.m_EntityOverlayVal = m_Type == RENDERTYPE_FULL_DESIGN ? 0 : g_Config.m_ClOverlayEntities;
+	m_Params.m_EntityOverlayVal = m_Type == RENDERTYPE_FULL_DESIGN ? 0 : (g_Config.m_ClOnlyEntities ? 100 : g_Config.m_ClOverlayEntities);
 	m_Params.m_Center = GetCurCamera()->m_Center;
 	m_Params.m_Zoom = GetCurCamera()->m_Zoom;
 	m_Params.m_RenderText = g_Config.m_ClTextEntities;

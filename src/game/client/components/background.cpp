@@ -99,7 +99,7 @@ void CBackground::OnRender()
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return;
 
-	if(g_Config.m_ClOverlayEntities != 100)
+	if(g_Config.m_ClOverlayEntities != 100 && !g_Config.m_ClOnlyEntities)
 		return;
 
 	CMapLayers::OnRender();

@@ -14,9 +14,12 @@ void CMapRenderer::Clear()
 	m_vpRenderLayers.clear();
 }
 
-void CMapRenderer::Load(ERenderType Type, CLayers *pLayers, IMapImages *pMapImages, IEnvelopeEval *pEnvelopeEval, std::optional<FRenderUploadCallback> RenderCallbackOptional)
+void CMapRenderer::Load(ERenderType Type, CLayers *pLayers, IMapImages *pMapImages, IEnvelopeEval *pEnvelopeEval, bool OnlyEntities, std::optional<FRenderUploadCallback> RenderCallbackOptional)
 {
 	Clear();
+
+	if(OnlyEntities && Type == RENDERTYPE_BACKGROUND)
+		return;
 
 	std::shared_ptr<CEnvelopeManager> pEnvelopeManager = std::make_shared<CEnvelopeManager>(pEnvelopeEval, pLayers->Map());
 	bool PassedGameLayer = false;
@@ -59,6 +62,10 @@ void CMapRenderer::Load(ERenderType Type, CLayers *pLayers, IMapImages *pMapImag
 			if(pLayer->m_Type == LAYERTYPE_TILES)
 			{
 				CMapItemLayerTilemap *pTileLayer = (CMapItemLayerTilemap *)pLayer;
+
+				// don't add anything but physics layers to the render pipeline in only-entities-mode
+				if(OnlyEntities && LayerType == LAYER_DEFAULT_TILESET)
+					continue;
 
 				switch(LayerType)
 				{
@@ -115,7 +122,7 @@ void CMapRenderer::Load(ERenderType Type, CLayers *pLayers, IMapImages *pMapImag
 					dbg_assert_failed("Unknown LayerType %d", LayerType);
 				}
 			}
-			else if(pLayer->m_Type == LAYERTYPE_QUADS)
+			else if(pLayer->m_Type == LAYERTYPE_QUADS && !OnlyEntities)
 			{
 				CMapItemLayerQuads *pQLayer = (CMapItemLayerQuads *)pLayer;
 
@@ -137,6 +144,9 @@ void CMapRenderer::Load(ERenderType Type, CLayers *pLayers, IMapImages *pMapImag
 				}
 			}
 		}
+
+		if(OnlyEntities && Type == RENDERTYPE_FOREGROUND && PassedGameLayer)
+			return;
 	}
 }
 

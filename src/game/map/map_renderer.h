@@ -13,12 +13,11 @@ public:
 	CMapRenderer() = default;
 
 	void Clear();
-	void Load(ERenderType Type, CLayers *pLayers, IMapImages *pMapImages, IEnvelopeEval *pEnvelopeEval, std::optional<FRenderUploadCallback> RenderCallbackOptional);
+	void Load(ERenderType Type, CLayers *pLayers, IMapImages *pMapImages, IEnvelopeEval *pEnvelopeEval, bool OnlyEntities, std::optional<FRenderUploadCallback> RenderCallbackOptional);
 	void Render(const CRenderLayerParams &Params);
 
 private:
 	int GetLayerType(const CMapItemLayer *pLayer, const CLayers *pLayers) const;
-
 	std::vector<std::unique_ptr<CRenderLayer>> m_vpRenderLayers;
 };
 
