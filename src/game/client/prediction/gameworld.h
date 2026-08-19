@@ -148,6 +148,18 @@ public:
 	const std::optional<EEnvelopeTriggerType> &GetEnvelopeOnSpawn() { return m_EnvelopeTriggerSpawn; }
 	int NumEnvelopes() const { return m_NumEnvelopes; }
 
+	// pending envelope trigger items for demo recording
+	struct SPendingDemoTrigger
+	{
+		int m_EnvelopeId;
+		int m_StartTick;
+		int m_Type;
+		int m_ClientId;
+		int m_Flags;
+	};
+	std::vector<SPendingDemoTrigger> &PendingDemoTriggers() { return m_vPendingDemoTriggers; }
+	void ClearPendingDemoTriggers() { m_vPendingDemoTriggers.clear(); }
+
 private:
 	void RemoveEntities();
 
@@ -166,6 +178,7 @@ private:
 	std::unordered_map<int, int> m_TuneZoneToEnvelopeZone;
 	std::optional<EEnvelopeTriggerType> m_EnvelopeTriggerSpawn;
 	int m_NumEnvelopes = 0;
+	std::vector<SPendingDemoTrigger> m_vPendingDemoTriggers;
 };
 
 class CCharOrder

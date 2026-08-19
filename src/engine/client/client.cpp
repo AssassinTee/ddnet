@@ -2225,11 +2225,23 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket, int Conn, bool Dummy)
 					{
 						GameClient()->ProcessDemoSnapshot(TmpBuffer3.AsSnapshot());
 
-						CSnapshotBuffer SnapSeven;
+						// try to inject pending envelope trigger items into the snapshot for demo recording
+						CSnapshotBuffer TriggerSnapBuffer;
+						const CSnapshot *pDemoSnap = TmpBuffer3.AsSnapshot();
 						int DemoSnapSize = SnapSize;
+
+						int TriggerSnapSize = GameClient()->RebuildDemoSnapshotWithTriggers(TmpBuffer3.AsSnapshot(), &TriggerSnapBuffer);
+						if(TriggerSnapSize >= 0)
+						{
+							pDemoSnap = TriggerSnapBuffer.AsSnapshot();
+							DemoSnapSize = TriggerSnapSize;
+						}
+
+						CSnapshotBuffer SnapSeven;
 						if(IsSixup())
 						{
-							DemoSnapSize = GameClient()->OnDemoRecSnap7(TmpBuffer3.AsSnapshot(), &SnapSeven, Conn);
+							DemoSnapSize = GameClient()->OnDemoRecSnap7(const_cast<CSnapshot *>(pDemoSnap), &SnapSeven, Conn);
+							pDemoSnap = DemoSnapSize >= 0 ? SnapSeven.AsSnapshot() : pDemoSnap;
 							if(DemoSnapSize < 0)
 							{
 								dbg_msg("sixup", "demo snapshot failed. error=%d", DemoSnapSize);
@@ -2244,7 +2256,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket, int Conn, bool Dummy)
 								if(DemoRecorder.IsRecording())
 								{
 									// write snapshot
-									DemoRecorder.RecordSnapshot(GameTick, IsSixup() ? SnapSeven.AsSnapshot() : TmpBuffer3.AsSnapshot(), DemoSnapSize);
+									DemoRecorder.RecordSnapshot(GameTick, pDemoSnap, DemoSnapSize);
 								}
 							}
 						}

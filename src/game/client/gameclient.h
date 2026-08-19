@@ -642,6 +642,7 @@ public:
 
 	void RenderShutdownMessage() override;
 	void ProcessDemoSnapshot(CSnapshot *pSnap) override;
+	int RebuildDemoSnapshotWithTriggers(CSnapshot *pFrom, CSnapshotBuffer *pTo) override;
 
 	const char *GetItemName(int Type) const override;
 	const char *Version() const override;

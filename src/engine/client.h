@@ -421,6 +421,7 @@ public:
 	virtual int OnDemoRecSnap7(CSnapshot *pFrom, CSnapshotBuffer *pTo, int Conn) = 0;
 	virtual int TranslateSnap(CSnapshotBuffer *pSnapDstSix, CSnapshot *pSnapSrcSeven, int Conn, bool Dummy) = 0;
 	virtual void ProcessDemoSnapshot(CSnapshot *pSnap) = 0;
+	virtual int RebuildDemoSnapshotWithTriggers(CSnapshot *pFrom, CSnapshotBuffer *pTo) = 0;
 
 	virtual void InitializeLanguage() = 0;
 

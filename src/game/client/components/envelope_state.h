@@ -26,6 +26,7 @@ enum EEnvelopeTriggerBitFlags
 {
 	TRIGGER_FLAG_NONE = 0,
 	TRIGGER_FLAG_ALL = 1,
+	TRIGGER_FLAG_LOCAL = 2,
 };
 
 class CEnvelopeTrigger

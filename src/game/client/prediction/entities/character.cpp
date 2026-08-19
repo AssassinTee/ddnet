@@ -1113,6 +1113,15 @@ void CCharacter::HandleEnvelopeTriggerTiles(int MapIndex)
 					}
 					CEnvelopeTriggerState State(EnvelopeState.m_State, pOldState);
 					GameWorld()->EnvelopeTriggerState()[EnvelopeState.m_EnvelopeId] = State;
+
+					// store pending item for demo recording
+					CGameWorld::SPendingDemoTrigger DemoTrigger;
+					DemoTrigger.m_EnvelopeId = EnvelopeState.m_EnvelopeId;
+					DemoTrigger.m_StartTick = GameWorld()->GameTick();
+					DemoTrigger.m_Type = static_cast<int>(EnvelopeState.m_State);
+					DemoTrigger.m_ClientId = -1;
+					DemoTrigger.m_Flags = TRIGGER_FLAG_LOCAL;
+					GameWorld()->PendingDemoTriggers().push_back(DemoTrigger);
 				}
 			}
 		}
@@ -1416,6 +1425,15 @@ void CCharacter::ResetPrediction()
 		{
 			GameWorld()->EnvelopeTriggerState()[EnvelopeId] = State;
 		}
+
+		// store pending item for demo recording
+		CGameWorld::SPendingDemoTrigger DemoTrigger;
+		DemoTrigger.m_EnvelopeId = 0;
+		DemoTrigger.m_StartTick = GameWorld()->GameTick();
+		DemoTrigger.m_Type = static_cast<int>(m_pGameWorld->GetEnvelopeOnSpawn().value());
+		DemoTrigger.m_ClientId = -1;
+		DemoTrigger.m_Flags = TRIGGER_FLAG_ALL | TRIGGER_FLAG_LOCAL;
+		GameWorld()->PendingDemoTriggers().push_back(DemoTrigger);
 	}
 }
 

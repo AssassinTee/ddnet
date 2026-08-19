@@ -1447,6 +1447,42 @@ void CGameClient::ProcessDemoSnapshot(CSnapshot *pSnap)
 	}
 }
 
+int CGameClient::RebuildDemoSnapshotWithTriggers(CSnapshot *pFrom, CSnapshotBuffer *pTo)
+{
+	auto &PendingTriggers = m_GameWorld.PendingDemoTriggers();
+	if(PendingTriggers.empty())
+		return -1;
+
+	rust::Box<CSnapshotBuilder> pBuilder = CSnapshotBuilder::New();
+	pBuilder->Init(false);
+
+	// copy all existing items
+	const int Num = pFrom->NumItems();
+	for(int i = 0; i < Num; i++)
+	{
+		const int ItemType = pFrom->GetItemType(i);
+		if(ItemType <= 0)
+			continue;
+		const CSnapshotItem *pItem = pFrom->GetItem(i);
+		const size_t ItemDataLen = pFrom->GetItemSize(i) / sizeof(int32_t);
+		pBuilder->NewItem(ItemType, pItem->Id(), rust::Slice(pItem->Data(), ItemDataLen));
+	}
+
+	// add pending envelope trigger items
+	for(const auto &Trigger : PendingTriggers)
+	{
+		CNetObj_EnvelopeTrigger Obj;
+		Obj.m_StartTick = Trigger.m_StartTick;
+		Obj.m_Type = Trigger.m_Type;
+		Obj.m_ClientId = Trigger.m_ClientId;
+		Obj.m_Flags = Trigger.m_Flags;
+		pBuilder->NewItem(CNetObj_EnvelopeTrigger::ms_MsgId, Trigger.m_EnvelopeId, Obj.AsSlice());
+	}
+
+	PendingTriggers.clear();
+	return pBuilder->FinishIfNoDroppedItems(*pTo);
+}
+
 void CGameClient::OnRconType(bool UsernameReq)
 {
 	m_GameConsole.RequireUsername(UsernameReq);
@@ -2149,10 +2185,17 @@ void CGameClient::OnNewSnapshot(bool DummySwapped)
 							pOldState = &LastStateIt->second;
 						}
 
-						std::chrono::nanoseconds EnvelopeTime = (Client()->GameTick(g_Config.m_ClDummy) - pEnvelopeData->m_StartTick) * CEnvelopeState::NanosPerTick();
 						EEnvelopeTriggerType EnvelopeType = static_cast<EEnvelopeTriggerType>(pEnvelopeData->m_Type);
 						CEnvelopeTriggerState State(EnvelopeType, pOldState);
-						State.SetEnvelopeTime(EnvelopeTime);
+
+						// For locally recorded triggers (from tile detection), skip SetEnvelopeTime
+						// to preserve the constructor's time handling which matches tile detection semantics
+						if((Flags & TRIGGER_FLAG_LOCAL) == 0)
+						{
+							std::chrono::nanoseconds EnvelopeTime = (Client()->GameTick(g_Config.m_ClDummy) - pEnvelopeData->m_StartTick) * CEnvelopeState::NanosPerTick();
+							State.SetEnvelopeTime(EnvelopeTime);
+						}
+
 						m_GameWorld.EnvelopeTriggerState()[EnvelopeId] = State;
 					};
 
