@@ -857,6 +857,17 @@ void CScoreboard::RenderScoreboard(CUIRect Scoreboard, int Team, int CountStart,
 	}
 }
 
+void CScoreboard::RenderMouseHint(CUIRect MouseHint)
+{
+	constexpr float HintCut = 5.0f;
+	MouseHint.VMargin(HintCut, &MouseHint);
+	char aKey[64];
+	GameClient()->m_Binds.GetKey("toggle_scoreboard_cursor", aKey, sizeof(aKey));
+	char aHint[128];
+	str_format(aHint, sizeof(aHint), Localize("Enable cursor with %s"), aKey);
+	Ui()->DoLabel(&MouseHint, aHint, MouseHint.h, TEXTALIGN_ML);
+}
+
 void CScoreboard::RenderRecordingNotification(float x)
 {
 	char aBuf[512] = "";
@@ -1077,6 +1088,13 @@ void CScoreboard::OnRender()
 		RenderGoals(Goals);
 	}
 	RenderSpectators(Spectators);
+
+	if(!m_MouseUnlocked)
+	{
+		constexpr float MouseHintSize = 12.0f;
+		CUIRect MouseHint = {Spectators.x, Spectators.y + Spectators.h + 2.0f, ScoreboardSmallWidth, std::min(Screen.h - Scoreboard.y - Scoreboard.h, MouseHintSize)};
+		RenderMouseHint(MouseHint);
+	}
 
 	RenderRecordingNotification((Screen.w / 7) * 4 + 10);
 
