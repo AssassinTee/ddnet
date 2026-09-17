@@ -10,6 +10,7 @@
 
 #include <engine/storage.h>
 
+#include <game/editor/mapitems/layer_group.h>
 #include <game/gamecore.h>
 #include <game/mapitems.h>
 
@@ -450,6 +451,18 @@ static bool EnsureTileLayerProperties(int GroupIndex, int LayerIndex, CMapItemLa
 	EnsureUnsetPhysicsData(TILESLAYERFLAG_SWITCH, &LayerTilemap.m_Switch, "switch");
 	EnsureUnsetPhysicsData(TILESLAYERFLAG_TUNE, &LayerTilemap.m_Tune, "tune");
 
+	const auto &&EnsureValidPosEnv = [&]() {
+		if(LayerTilemap.m_PosEnv < -1)
+		{
+			log_debug("map/load", "Layer %d in group %d has an invalid envelope id. Resetting to none.",
+				LayerIndex, GroupIndex);
+			LayerTilemap.m_PosEnv = -1;
+			LayerTilemap.m_PosEnvOffset = 0;
+		}
+	};
+
+	EnsureValidPosEnv();
+
 	return true;
 }
 
@@ -532,7 +545,7 @@ bool CMap::UpgradeAndValidateTilesLayerItem(
 			LayerIndex, GroupIndex, pLayerTilemapBase->m_Version, LayerItemSize);
 		return false;
 	}
-	else if(LayerItemSize < sizeof(CMapItemLayerTilemap))
+	else if(LayerItemSize < sizeof(CMapItemLayerTilemap_v1))
 	{
 		const CMapItemLayerTilemap *pLayerTilemapLegacy = static_cast<const CMapItemLayerTilemap *>(pLayerTilemapBase);
 		CMapItemLayerTilemap OverriddenLayerTilemap;
@@ -551,6 +564,17 @@ bool CMap::UpgradeAndValidateTilesLayerItem(
 			return false;
 		}
 		if(!NewDataFile.OverrideItemData(LayerItemIndex, &OverriddenLayerTilemap, sizeof(OverriddenLayerTilemap)))
+		{
+			return false;
+		}
+	}
+	else if(LayerItemSize < sizeof(CMapItemLayerTilemap_v4))
+	{
+		const CMapItemLayerTilemap *pLayerTilemapLegacy = static_cast<const CMapItemLayerTilemap *>(pLayerTilemapBase);
+		CMapItemLayerTilemap OverriddenLayerTilemap;
+		mem_copy(&OverriddenLayerTilemap, pLayerTilemapLegacy, sizeof(CMapItemLayerTilemap_v1));
+
+		if(!EnsureTileLayerProperties(GroupIndex, LayerIndex, *static_cast<CMapItemLayerTilemap *>(pLayerTilemapBase)))
 		{
 			return false;
 		}

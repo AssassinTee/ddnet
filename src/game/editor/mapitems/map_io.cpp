@@ -201,7 +201,7 @@ bool CEditorMap::Save(const char *pFilename, const FErrorHandler &ErrorHandler)
 				pLayerTiles->PrepareForSave();
 
 				CMapItemLayerTilemap Item;
-				Item.m_Version = 3;
+				Item.m_Version = 4;
 
 				Item.m_Layer.m_Version = 0; // was previously uninitialized, do not rely on it being 0
 				Item.m_Layer.m_Flags = pLayerTiles->m_Flags;
@@ -210,6 +210,9 @@ bool CEditorMap::Save(const char *pFilename, const FErrorHandler &ErrorHandler)
 				Item.m_Color = pLayerTiles->m_Color;
 				Item.m_ColorEnv = pLayerTiles->m_ColorEnv;
 				Item.m_ColorEnvOffset = pLayerTiles->m_ColorEnvOffset;
+
+				Item.m_PosEnv = pLayerTiles->m_PosEnv;
+				Item.m_PosEnvOffset = pLayerTiles->m_PosEnvOffset;
 
 				Item.m_Width = pLayerTiles->m_Width;
 				Item.m_Height = pLayerTiles->m_Height;
@@ -712,6 +715,7 @@ bool CEditorMap::Load(const char *pFilename, int StorageType, const FErrorHandle
 					CMapItemLayerTilemap *pTilemapItem = (CMapItemLayerTilemap *)pLayerItem;
 
 					std::shared_ptr<CLayerTiles> pTiles;
+
 					if(pTilemapItem->m_Flags & TILESLAYERFLAG_GAME)
 					{
 						pTiles = std::make_shared<CLayerGame>(this, pTilemapItem->m_Width, pTilemapItem->m_Height);
@@ -749,6 +753,12 @@ bool CEditorMap::Load(const char *pFilename, int StorageType, const FErrorHandle
 						pTiles->m_Color = pTilemapItem->m_Color;
 						pTiles->m_ColorEnv = pTilemapItem->m_ColorEnv;
 						pTiles->m_ColorEnvOffset = pTilemapItem->m_ColorEnvOffset;
+						if(pTilemapItem->m_Version >= 4)
+						{
+							pTiles->m_PosEnv = pTilemapItem->m_PosEnv;
+							pTiles->m_PosEnvOffset = pTilemapItem->m_PosEnvOffset;
+							dbg_msg("dbg", "PosEnv %d", pTiles->m_PosEnv);
+						}
 					}
 
 					pTiles->m_Flags = pLayerItem->m_Flags;

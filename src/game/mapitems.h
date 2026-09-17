@@ -464,7 +464,7 @@ public:
 };
 
 // DDRace added its own member variables to Teeworlds version 3 tiles layer items again.
-class CMapItemLayerTilemap : public CMapItemLayerTilemap_v3Teeworlds
+class CMapItemLayerTilemap_v1 : public CMapItemLayerTilemap_v3Teeworlds
 {
 public:
 	int m_Tele;
@@ -474,12 +474,25 @@ public:
 	int m_Tune;
 };
 
+// Support for moving tilelayers
+class CMapItemLayerTilemap_v4 : public CMapItemLayerTilemap_v1
+{
+public:
+	int m_PosEnv;
+	int m_PosEnvOffset;
+};
+
+class CMapItemLayerTilemap : public CMapItemLayerTilemap_v4
+{
+};
+
 // The tiles layer items are cast from the raw map file data, so the base classes
 // must not add any padding to the derived classes.
 static_assert(sizeof(CMapItemLayerTilemap_v2) == 60);
 static_assert(sizeof(CMapItemLayerTilemap_v2Legacy) == 80);
 static_assert(sizeof(CMapItemLayerTilemap_v3Teeworlds) == 72);
-static_assert(sizeof(CMapItemLayerTilemap) == 92);
+static_assert(sizeof(CMapItemLayerTilemap_v1) == 92);
+static_assert(sizeof(CMapItemLayerTilemap) == 100);
 
 class CMapItemLayerQuads
 {
