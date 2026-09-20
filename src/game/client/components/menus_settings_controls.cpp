@@ -6,6 +6,7 @@
 
 #include <engine/font_icons.h>
 #include <engine/graphics.h>
+#include <engine/keys.h>
 #include <engine/shared/config.h>
 #include <engine/shared/localization.h>
 #include <engine/textrender.h>
@@ -15,6 +16,7 @@
 #include <game/client/components/menus.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
+#include <game/client/ui_rect.h>
 #include <game/client/ui_scrollregion.h>
 #include <game/localization.h>
 
@@ -180,9 +182,9 @@ void CMenusSettingsControls::Render(CUIRect MainView)
 
 	// Left column
 	RenderSettingsBlock(MeasureSettingsMouseHeight(), &LeftColumn,
-		Localize("Mouse"), nullptr, nullptr, std::bind_front(&CMenusSettingsControls::RenderSettingsMouse, this));
+		Localize("Mouse"), false, nullptr, nullptr, std::bind_front(&CMenusSettingsControls::RenderSettingsMouse, this));
 	RenderSettingsBlock(MeasureSettingsJoystickHeight(), &LeftColumn,
-		Localize("Controller"), nullptr, nullptr, std::bind_front(&CMenusSettingsControls::RenderSettingsJoystick, this));
+		Localize("Controller"), false, nullptr, nullptr, std::bind_front(&CMenusSettingsControls::RenderSettingsJoystick, this));
 	RenderSettingsBindsBlock(EBindOptionGroup::MOVEMENT, &LeftColumn, Localize("Movement"));
 	RenderSettingsBindsBlock(EBindOptionGroup::WEAPON, &LeftColumn, Localize("Weapon"));
 
@@ -368,17 +370,30 @@ void CMenusSettingsControls::UpdateSearchMatches()
 	}
 }
 
-void CMenusSettingsControls::RenderSettingsBlock(float Height, CUIRect *pParentRect, const char *pTitle,
+void CMenusSettingsControls::RenderSettingsBlock(float Height, CUIRect *pParentRect, const char *pTitle, bool BindingHelper,
 	bool *pExpanded, CButtonContainer *pExpandButton, const std::function<void(CUIRect Rect)> &RenderContentFunction)
 {
 	const bool WasExpanded = pExpanded == nullptr || *pExpanded;
 	float FullHeight = WasExpanded ? Height : 0.0f; // Content
-	FullHeight += pTitle == nullptr ? 0.0f : HEADER_FONT_SIZE + (WasExpanded ? MARGIN : 0.0f); // Title and spacing
+	float TitleHeight = pTitle == nullptr ? 0.0f : HEADER_FONT_SIZE + (WasExpanded ? MARGIN : 0.0f); // Title and spacing;
+	float BindingHelperHeight = BindingHelper ? BUTTON_HEIGHT + 2.0f * MARGIN : 0.0f;
+	FullHeight += TitleHeight;
+	FullHeight += BindingHelperHeight;
 	FullHeight += 2.0f * MARGIN; // Margin
 
 	CUIRect SettingsBlock;
 	pParentRect->HSplitTop(FullHeight, &SettingsBlock, pParentRect);
 	pParentRect->HSplitTop(MARGIN, nullptr, pParentRect);
+	if(BindingHelper)
+	{
+		CUIRect BindingHelperBlock;
+
+		SettingsBlock.HSplitTop(TitleHeight + BIND_OPTION_SPACING + (WasExpanded ? 0.0f : MARGIN), nullptr, &BindingHelperBlock);
+		BindingHelperBlock.HSplitTop(BindingHelperHeight, &BindingHelperBlock, nullptr);
+		BindingHelperBlock.VMargin(MARGIN, &BindingHelperBlock);
+		BindingHelperBlock.HSplitTop(MARGIN, nullptr, &BindingHelperBlock);
+		RenderBindingHelper(BindingHelperBlock);
+	}
 	if(m_SettingsScrollRegion.AddRect(SettingsBlock) || m_SearchMatchReveal)
 	{
 		SettingsBlock.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, pExpandButton == nullptr || Ui()->HotItem() != pExpandButton ? 0.25f : 0.3f), IGraphics::CORNER_ALL, 10.0f);
@@ -388,6 +403,10 @@ void CMenusSettingsControls::RenderSettingsBlock(float Height, CUIRect *pParentR
 		{
 			CUIRect Label;
 			SettingsBlock.HSplitTop(HEADER_FONT_SIZE, &Label, &SettingsBlock);
+			if(BindingHelper)
+			{
+				SettingsBlock.HSplitTop(BindingHelperHeight, nullptr, &SettingsBlock);
+			}
 			if(WasExpanded)
 			{
 				SettingsBlock.HSplitTop(MARGIN, nullptr, &SettingsBlock);
@@ -433,7 +452,7 @@ void CMenusSettingsControls::RenderSettingsBlock(float Height, CUIRect *pParentR
 
 void CMenusSettingsControls::RenderSettingsBindsBlock(EBindOptionGroup Group, CUIRect *pParentRect, const char *pTitle)
 {
-	RenderSettingsBlock(MeasureSettingsBindsHeight(Group), pParentRect, pTitle,
+	RenderSettingsBlock(MeasureSettingsBindsHeight(Group), pParentRect, pTitle, Group == EBindOptionGroup::CUSTOM,
 		&m_aBindGroupExpanded[(int)Group], &m_aBindGroupExpandButtons[(int)Group],
 		[&](CUIRect Rect) { RenderSettingsBinds(Group, Rect); });
 }
@@ -553,6 +572,54 @@ void CMenusSettingsControls::RenderSettingsBinds(EBindOptionGroup Group, CUIRect
 		{
 			BindOption.m_AddNewBind = true;
 			BindOption.m_AddNewBindActivate = true;
+		}
+	}
+}
+
+void CMenusSettingsControls::RenderBindingHelper(const CUIRect &ParentRect)
+{
+	ParentRect.Draw(ColorRGBA(0.0f, 0.0f, 0.0f, 0.1f), IGraphics::CORNER_ALL, 5.0f);
+
+	CUIRect Label, KeyReader, Text, Button;
+	ParentRect.VSplitLeft(60.0f, &Label, &Text);
+	Text.VSplitRight(ParentRect.h, &Text, &Button);
+	Text.VSplitMid(&KeyReader, &Text);
+
+	// label
+	Label.VMargin(2.0f, &Label);
+	Ui()->DoLabel(&Label, Localize("bind"), FONT_SIZE, TEXTALIGN_ML);
+
+	// key selection
+	{
+		KeyReader.Margin((KeyReader.h - BUTTON_HEIGHT) / 2.0f, &KeyReader);
+		const bool ActivateKeyReader = m_BindingHelperAddNewBindActivate && m_BindingHelperBindSlot.m_Bind == EMPTY_BIND_SLOT;
+		const CKeyBinder::CKeyReaderResult KeyReaderResult = GameClient()->m_KeyBinder.DoKeyReader(
+			&m_BindingHelperBindSlot.m_KeyReaderButton, &m_BindingHelperBindSlot.m_KeyResetButton,
+			&KeyReader, m_BindingHelperBindSlot.m_Bind, ActivateKeyReader);
+		if(KeyReaderResult.m_Aborted)
+		{
+			m_BindingHelperBindSlot.m_Bind = CBindSlot(KEY_UNKNOWN, KeyModifier::NONE);
+		}
+		else if(KeyReaderResult.m_Bind != m_BindingHelperBindSlot.m_Bind)
+		{
+			m_BindingHelperBindSlot.m_Bind = KeyReaderResult.m_Bind;
+		}
+	}
+
+	// bind description
+	{
+		Text.Margin((Text.h - BUTTON_HEIGHT) / 2.0f, &Text);
+		static CLineInput s_BackgroundEntitiesInput(g_Config.m_ClBackgroundEntities, sizeof(g_Config.m_ClBackgroundEntities));
+		Ui()->DoEditBox(&s_BackgroundEntitiesInput, &Text, 14.0f);
+	}
+
+	// Add button
+	{
+		Button.Margin((Button.w - BUTTON_HEIGHT) / 2.0f, &Button);
+		if(Ui()->DoButton_FontIcon(&m_BindingHelperAddButton, FontIcon::PLUS, 1, &Button, BUTTONFLAG_RIGHT))
+		{
+			//CLineInput LineInput;
+			//Ui()->DoEditBox(&LineInput, &Key, FONT_SIZE);
 		}
 	}
 }

@@ -26,7 +26,7 @@ enum class EBindOptionGroup
 class CBindSlotUiElement
 {
 public:
-	CBindSlot m_Bind;
+	CBindSlot m_Bind = EMPTY_BIND_SLOT;
 	CButtonContainer m_KeyReaderButton;
 	CButtonContainer m_KeyResetButton;
 	bool m_ToBeDeleted = false;
@@ -72,12 +72,17 @@ private:
 	bool m_SearchMatchReveal = false;
 	void UpdateSearchMatches();
 
-	void RenderSettingsBlock(float Height, CUIRect *pParentRect, const char *pTitle,
+	void RenderSettingsBlock(float Height, CUIRect *pParentRect, const char *pTitle, bool BindingHelper,
 		bool *pExpanded, CButtonContainer *pExpandButton, const std::function<void(CUIRect Rect)> &RenderContentFunction);
 
 	void RenderSettingsBindsBlock(EBindOptionGroup Group, CUIRect *pParentRect, const char *pTitle);
 	float MeasureSettingsBindsHeight(EBindOptionGroup Group) const;
+
+	CButtonContainer m_BindingHelperAddButton;
+	CBindSlotUiElement m_BindingHelperBindSlot;
+	bool m_BindingHelperAddNewBindActivate = false;
 	void RenderSettingsBinds(EBindOptionGroup Group, CUIRect View);
+	void RenderBindingHelper(const CUIRect &pParentRect);
 
 	float MeasureSettingsMouseHeight() const;
 	void RenderSettingsMouse(CUIRect View);
