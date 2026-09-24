@@ -744,6 +744,10 @@ void CMenus::RenderLoadingDirect(const char *pCaption, const char *pContent, std
 
 	Graphics()->SetColor(1.0, 1.0, 1.0, 1.0);
 
+	// Draw streamed text before presenting the loading frame: this frame is swapped
+	// directly via UpdateAndSwap and never reaches the regular end-of-frame text flush.
+	TextRender()->FlushStreamedText();
+
 	Client()->UpdateAndSwap();
 }
 

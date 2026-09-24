@@ -9,6 +9,7 @@
 
 #include <engine/graphics.h>
 #include <engine/shared/config.h>
+#include <engine/textrender.h>
 
 #include <generated/client_data.h>
 #include <generated/client_data7.h>
@@ -131,6 +132,8 @@ void CRenderTools::Init(IGraphics *pGraphics, ITextRender *pTextRender)
 
 void CRenderTools::RenderCursor(vec2 Center, float Size) const
 {
+	// make sure to render buffered text before the cursor
+	TextRender()->FlushStreamedText();
 	Graphics()->WrapClamp();
 	Graphics()->TextureSet(g_pData->m_aImages[IMAGE_CURSOR].m_Id);
 	Graphics()->QuadsBegin();

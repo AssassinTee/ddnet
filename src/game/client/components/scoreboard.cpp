@@ -1170,7 +1170,9 @@ void CScoreboard::OnRender()
 		Ui()->RenderPopupMenus();
 
 		if(m_MouseUnlocked)
+		{
 			RenderTools()->RenderCursor(Ui()->MousePos(), 24.0f);
+		}
 
 		Ui()->FinishCheck();
 	}

@@ -176,6 +176,29 @@ void CGraphics_Threaded::WrapClamp()
 	m_State.m_WrapMode = EWrapMode::CLAMP;
 }
 
+EBlendMode CGraphics_Threaded::GetBlendMode() const
+{
+	return m_State.m_BlendMode;
+}
+
+EWrapMode CGraphics_Threaded::GetWrapMode() const
+{
+	return m_State.m_WrapMode;
+}
+
+bool CGraphics_Threaded::IsClippingEnabled() const
+{
+	return m_State.m_ClipEnable;
+}
+
+void CGraphics_Threaded::GetClipRect(int &X, int &Y, int &W, int &H) const
+{
+	X = m_State.m_ClipX;
+	Y = ScreenHeight() - (m_State.m_ClipY + m_State.m_ClipH);
+	W = m_State.m_ClipW;
+	H = m_State.m_ClipH;
+}
+
 uint64_t CGraphics_Threaded::TextureMemoryUsage() const
 {
 	return m_pBackend->TextureMemoryUsage();
@@ -2029,6 +2052,11 @@ void CGraphics_Threaded::RecreateBufferObject(int BufferIndex, size_t UploadData
 			}
 		}
 	}
+}
+
+void CGraphics_Threaded::UpdateBufferObject(int BufferIndex, size_t UploadDataSize, void *pUploadData, void *pOffset, bool IsMovedPointer)
+{
+	UpdateBufferObjectInternal(BufferIndex, UploadDataSize, pUploadData, pOffset, IsMovedPointer);
 }
 
 void CGraphics_Threaded::UpdateBufferObjectInternal(int BufferIndex, size_t UploadDataSize, void *pUploadData, void *pOffset, bool IsMovedPointer)

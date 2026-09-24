@@ -243,6 +243,10 @@ public:
 	virtual ColorRGBA GetTextOutlineColor() const = 0;
 	virtual ColorRGBA GetTextSelectionColor() const = 0;
 
+	// Flushes all one-shot text that was accumulated in the current frame into
+	// batched GPU buffers. Call this once per frame after all rendering.
+	virtual void FlushStreamedText() = 0;
+
 	virtual void OnPreWindowResize() = 0;
 	virtual void OnWindowResize() = 0;
 };

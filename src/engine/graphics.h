@@ -236,6 +236,19 @@ public:
 	vec2 m_BottomRight;
 };
 
+enum class EBlendMode
+{
+	NONE,
+	ALPHA,
+	ADDITIVE,
+};
+
+enum class EWrapMode
+{
+	REPEAT,
+	CLAMP,
+};
+
 class IGraphics : public IInterface
 {
 	MACRO_INTERFACE("graphics")
@@ -343,6 +356,12 @@ public:
 	virtual void WrapNormal() = 0;
 	virtual void WrapClamp() = 0;
 
+	// current state getters, mainly used to capture and replay render state
+	virtual EBlendMode GetBlendMode() const = 0;
+	virtual EWrapMode GetWrapMode() const = 0;
+	virtual bool IsClippingEnabled() const = 0;
+	virtual void GetClipRect(int &X, int &Y, int &W, int &H) const = 0;
+
 	virtual uint64_t TextureMemoryUsage() const = 0;
 	virtual uint64_t BufferMemoryUsage() const = 0;
 	virtual uint64_t StreamedMemoryUsage() const = 0;
@@ -393,6 +412,7 @@ public:
 	// if a pointer is passed as moved pointer, it requires to be allocated with malloc()
 	virtual int CreateBufferObject(size_t UploadDataSize, void *pUploadData, int CreateFlags, bool IsMovedPointer = false) = 0;
 	virtual void RecreateBufferObject(int BufferIndex, size_t UploadDataSize, void *pUploadData, int CreateFlags, bool IsMovedPointer = false) = 0;
+	virtual void UpdateBufferObject(int BufferIndex, size_t UploadDataSize, void *pUploadData, void *pOffset = nullptr, bool IsMovedPointer = false) = 0;
 	virtual void DeleteBufferObject(int BufferIndex) = 0;
 
 	virtual int CreateBufferContainer(struct SBufferContainerInfo *pContainerInfo) = 0;

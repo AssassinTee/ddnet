@@ -17,9 +17,11 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <limits>
+#include <string>
 #include <tuple>
 #include <unordered_map>
 #include <vector>
@@ -926,6 +928,131 @@ struct STextContainer
 	}
 };
 
+// The render state under which a one-shot text string was created. Streamed text is
+// grouped by this state so that all strings with identical state can be drawn in a
+// single render call.
+struct STextStreamedTextState
+{
+	CScreenRect m_ScreenRect = CScreenRect(0.0f, 0.0f, 0.0f, 0.0f);
+	EBlendMode m_BlendMode = EBlendMode::ALPHA;
+	EWrapMode m_WrapMode = EWrapMode::REPEAT;
+	bool m_ClipEnable = false;
+	int m_ClipX = 0;
+	int m_ClipY = 0;
+	int m_ClipW = 0;
+	int m_ClipH = 0;
+
+	bool operator==(const STextStreamedTextState &Other) const
+	{
+		return m_ScreenRect.m_TopLeft == Other.m_ScreenRect.m_TopLeft &&
+		       m_ScreenRect.m_BottomRight == Other.m_ScreenRect.m_BottomRight &&
+		       m_BlendMode == Other.m_BlendMode &&
+		       m_WrapMode == Other.m_WrapMode &&
+		       m_ClipEnable == Other.m_ClipEnable &&
+		       m_ClipX == Other.m_ClipX &&
+		       m_ClipY == Other.m_ClipY &&
+		       m_ClipW == Other.m_ClipW &&
+		       m_ClipH == Other.m_ClipH;
+	}
+};
+
+// Holds an ordered group of streamed text quads and the persistent GPU buffers
+// they are uploaded into. The buffers are reused across frames, only being
+// (re)allocated when the group holds more quads than fit into the current buffer.
+struct STextStreamGroup
+{
+	STextStreamedTextState m_State;
+	std::vector<STextCharQuad> m_vQuads;
+	int m_QuadBufferObjectIndex = -1;
+	int m_QuadBufferContainerIndex = -1;
+	size_t m_QuadBufferCapacity = 0;
+};
+
+// The key for a cached text layout. Only values that influence the layout are part
+// of the key, the render position is deliberately excluded so that the same layout
+// can be shared between measuring (TextWidth) and rendering (Text/TextEx).
+struct STextLayoutCacheKey
+{
+	std::string m_Text;
+	float m_FontSize;
+	float m_LineWidth;
+	float m_LineSpacing;
+	int m_MaxLines;
+	// flags that affect the layout (TEXTFLAG_RENDER is excluded, it does not affect the layout)
+	int m_CursorFlags;
+	// render flags that affect the layout (ONE_TIME_USE and NO_AUTOMATIC_QUAD_UPLOAD are excluded)
+	unsigned m_RenderFlags;
+	// bumped whenever the used font or the screen layout changes, invalidating old cache entries
+	int m_Generation;
+	vec2 m_ScreenSize;
+	vec2 m_ScreenRectTL;
+	vec2 m_ScreenRectBR;
+
+	bool operator==(const STextLayoutCacheKey &Other) const
+	{
+		return m_Text == Other.m_Text &&
+		       m_FontSize == Other.m_FontSize &&
+		       m_LineWidth == Other.m_LineWidth &&
+		       m_LineSpacing == Other.m_LineSpacing &&
+		       m_MaxLines == Other.m_MaxLines &&
+		       m_CursorFlags == Other.m_CursorFlags &&
+		       m_RenderFlags == Other.m_RenderFlags &&
+		       m_Generation == Other.m_Generation &&
+		       m_ScreenSize == Other.m_ScreenSize &&
+		       m_ScreenRectTL == Other.m_ScreenRectTL &&
+		       m_ScreenRectBR == Other.m_ScreenRectBR;
+	}
+};
+
+struct STextLayoutCacheKeyHash
+{
+	size_t operator()(const STextLayoutCacheKey &Key) const
+	{
+		const auto HashCombine = [](size_t &Seed, size_t Value) {
+			Seed ^= Value + 0x9e3779b9u + (Seed << 6) + (Seed >> 2);
+		};
+		const auto HashVec2 = [&](const vec2 &Vec) {
+			size_t Result = std::hash<float>()(Vec.x);
+			HashCombine(Result, std::hash<float>()(Vec.y));
+			return Result;
+		};
+
+		size_t Hash = std::hash<std::string>()(Key.m_Text);
+		HashCombine(Hash, std::hash<float>()(Key.m_FontSize));
+		HashCombine(Hash, std::hash<float>()(Key.m_LineWidth));
+		HashCombine(Hash, std::hash<float>()(Key.m_LineSpacing));
+		HashCombine(Hash, std::hash<int>()(Key.m_MaxLines));
+		HashCombine(Hash, std::hash<int>()(Key.m_CursorFlags));
+		HashCombine(Hash, std::hash<unsigned>()(Key.m_RenderFlags));
+		HashCombine(Hash, std::hash<int>()(Key.m_Generation));
+		HashCombine(Hash, HashVec2(Key.m_ScreenSize));
+		HashCombine(Hash, HashVec2(Key.m_ScreenRectTL));
+		HashCombine(Hash, HashVec2(Key.m_ScreenRectBR));
+		return Hash;
+	}
+};
+
+struct STextLayoutCacheEntry
+{
+	// quads built at position (0,0), always with a white vertex color
+	// (the color is applied when the quads are copied into the text stream)
+	std::vector<STextCharQuad> m_vQuads;
+	float m_LongestLineWidth = 0.0f;
+	float m_AlignedFontSize = 0.0f;
+	float m_AlignedLineSpacing = 0.0f;
+	float m_MaxCharacterHeight = 0.0f;
+	float m_EndX = 0.0f;
+	float m_EndY = 0.0f;
+	int m_LineCount = 1;
+	int m_GlyphCount = 0;
+	int m_CharCount = 0;
+	bool m_Truncated = false;
+	// render flags the layout was created with (used for the pixel alignment shift)
+	unsigned m_RenderFlags = 0;
+	// monotonic counter for LRU eviction
+	int m_LastUsedCounter = 0;
+};
+
 float CTextCursor::Height() const
 {
 	return m_LineCount * (m_AlignedFontSize + m_AlignedLineSpacing);
@@ -980,6 +1107,17 @@ class CTextRender : public IEngineTextRender
 
 	std::chrono::nanoseconds m_CursorRenderTime;
 
+	// one-shot text is accumulated here per frame and flushed into batched GPU buffers
+	// by FlushStreamedText() at the end of the frame
+	std::vector<STextStreamGroup> m_vTextStreamGroups;
+
+	// layouts of one-shot strings cached position independently, shared between
+	// measuring (TextWidth) and rendering (Text/TextEx)
+	std::unordered_map<STextLayoutCacheKey, STextLayoutCacheEntry, STextLayoutCacheKeyHash> m_LayoutCache;
+	int m_LayoutCacheCounter = 0;
+	int m_CacheGeneration = 0;
+	static constexpr size_t LAYOUT_CACHE_MAX_SIZE = 2048;
+
 	int GetFreeTextContainerIndex()
 	{
 		if(m_FirstFreeTextContainerIndex == -1)
@@ -1008,6 +1146,186 @@ class CTextRender : public IEngineTextRender
 	{
 		m_vpTextContainers[Index.m_Index]->Reset();
 		FreeTextContainerIndex(Index);
+	}
+
+	STextStreamGroup &GetOrCreateStreamGroup(const STextStreamedTextState &State)
+	{
+		auto It = std::find_if(m_vTextStreamGroups.begin(), m_vTextStreamGroups.end(), [State](const STextStreamGroup &Group) { return Group.m_State == State; });
+		if(It != m_vTextStreamGroups.end())
+		{
+			return *It;
+		}
+		m_vTextStreamGroups.emplace_back();
+		m_vTextStreamGroups.back().m_State = State;
+		return m_vTextStreamGroups.back();
+	}
+
+	// Returns the render flags that affect the layout of a string with the given
+	// line width. These are also the flags the layout cache is keyed on.
+	unsigned GetLayoutRenderFlags(float LineWidth) const
+	{
+		unsigned RenderFlags = m_RenderFlags;
+		if(LineWidth <= 0.0f)
+			RenderFlags |= ETextRenderFlags::TEXT_RENDER_FLAG_NO_FIRST_CHARACTER_X_BEARING | ETextRenderFlags::TEXT_RENDER_FLAG_NO_LAST_CHARACTER_ADVANCE;
+		// these flags don't affect the layout, only the GPU handling
+		RenderFlags &= ~(ETextRenderFlags::TEXT_RENDER_FLAG_ONE_TIME_USE | ETextRenderFlags::TEXT_RENDER_FLAG_NO_AUTOMATIC_QUAD_UPLOAD);
+		return RenderFlags;
+	}
+
+	// Returns the shift applied to a cached layout (which was created at position
+	// (0,0)) so that it ends up at the position of the given cursor. For pixel
+	// aligned layouts the shift is rounded like the layout code rounds the start
+	// position, reproducing the original render exactly.
+	vec2 ComputeStreamedTextShift(const CTextCursor *pCursor, const STextLayoutCacheEntry *pEntry)
+	{
+		if((pEntry->m_RenderFlags & ETextRenderFlags::TEXT_RENDER_FLAG_NO_PIXEL_ALIGNMENT) != 0)
+			return vec2(pCursor->m_X, pCursor->m_Y);
+
+		const CScreenRect ScreenRect = Graphics()->GetScreen();
+		const vec2 FakeToScreen = Graphics()->ScreenSize() / ScreenRect.Size();
+		const vec2 AlignedStart = vec2(
+			round_to_int(pCursor->m_X * FakeToScreen.x) / FakeToScreen.x,
+			round_to_int(pCursor->m_Y * FakeToScreen.y) / FakeToScreen.y);
+		return AlignedStart;
+	}
+
+	// Looks up (and if necessary creates) the cached layout for the given cursor and
+	// text. Returns nullptr if the text cannot be cached (buffering disabled, color
+	// splits used).
+	const STextLayoutCacheEntry *GetCachedLayout(CTextCursor *pCursor, const char *pText, int Length)
+	{
+		if(!Graphics()->IsTextBufferingEnabled() || !pCursor->m_vColorSplits.empty())
+			return nullptr;
+
+		const CScreenRect ScreenRect = Graphics()->GetScreen();
+
+		STextLayoutCacheKey Key;
+		Key.m_Text = std::string(pText, Length < 0 ? str_length(pText) : std::min(Length, str_length(pText)));
+		Key.m_FontSize = pCursor->m_FontSize;
+		Key.m_LineWidth = pCursor->m_LineWidth;
+		Key.m_LineSpacing = pCursor->m_LineSpacing;
+		Key.m_MaxLines = pCursor->m_MaxLines;
+		Key.m_CursorFlags = pCursor->m_Flags & (TEXTFLAG_DISALLOW_NEWLINE | TEXTFLAG_STOP_AT_END | TEXTFLAG_ELLIPSIS_AT_END);
+		Key.m_RenderFlags = GetLayoutRenderFlags(pCursor->m_LineWidth);
+		Key.m_Generation = m_CacheGeneration;
+		Key.m_ScreenSize = Graphics()->ScreenSize();
+		Key.m_ScreenRectTL = ScreenRect.m_TopLeft;
+		Key.m_ScreenRectBR = ScreenRect.m_BottomRight;
+
+		const auto It = m_LayoutCache.find(Key);
+		if(It != m_LayoutCache.end())
+		{
+			It->second.m_LastUsedCounter = ++m_LayoutCacheCounter;
+			return &It->second;
+		}
+
+		// The layout didn't exist yet, create it by laying out the text at position
+		// (0,0) with a forced white color and the render flag set, so all quads are
+		// generated. The color is applied later when the quads are copied into the
+		// text stream.
+		CTextCursor FillCursor = *pCursor;
+		FillCursor.SetPosition(vec2(0.0f, 0.0f));
+		FillCursor.m_Flags |= TEXTFLAG_RENDER;
+		FillCursor.m_CalculateSelectionMode = TEXT_CURSOR_SELECTION_MODE_NONE;
+		FillCursor.m_CursorMode = TEXT_CURSOR_CURSOR_MODE_NONE;
+		FillCursor.m_ForceCursorRendering = false;
+		FillCursor.m_vColorSplits.clear();
+
+		const ColorRGBA OldColor = m_Color;
+		TextColor(DefaultTextColor());
+		const unsigned OldRenderFlags = m_RenderFlags;
+		// don't create GPU buffers for the temporary container
+		m_RenderFlags = Key.m_RenderFlags | TEXT_RENDER_FLAG_NO_AUTOMATIC_QUAD_UPLOAD;
+
+		STextContainerIndex TextCont;
+		const bool Created = CreateTextContainer(TextCont, &FillCursor, pText, Length);
+
+		STextLayoutCacheEntry Entry;
+		if(Created)
+		{
+			const STextContainer &TextContainer = GetTextContainer(TextCont);
+			Entry.m_vQuads = TextContainer.m_StringInfo.m_vCharacterQuads;
+		}
+		Entry.m_LongestLineWidth = FillCursor.m_LongestLineWidth;
+		Entry.m_AlignedFontSize = FillCursor.m_AlignedFontSize;
+		Entry.m_AlignedLineSpacing = FillCursor.m_AlignedLineSpacing;
+		Entry.m_MaxCharacterHeight = FillCursor.m_MaxCharacterHeight;
+		Entry.m_EndX = FillCursor.m_X;
+		Entry.m_EndY = FillCursor.m_Y;
+		Entry.m_LineCount = FillCursor.m_LineCount;
+		Entry.m_GlyphCount = FillCursor.m_GlyphCount;
+		Entry.m_CharCount = FillCursor.m_CharCount;
+		Entry.m_Truncated = FillCursor.m_Truncated;
+		Entry.m_RenderFlags = Key.m_RenderFlags;
+		Entry.m_LastUsedCounter = ++m_LayoutCacheCounter;
+
+		DeleteTextContainer(TextCont);
+		m_RenderFlags = OldRenderFlags;
+		TextColor(OldColor);
+
+		if(m_LayoutCache.size() >= LAYOUT_CACHE_MAX_SIZE)
+		{
+			// evict the least recently used entry
+			auto EvictIt = m_LayoutCache.begin();
+			for(auto CurrentIt = m_LayoutCache.begin(); CurrentIt != m_LayoutCache.end(); ++CurrentIt)
+			{
+				if(CurrentIt->second.m_LastUsedCounter < EvictIt->second.m_LastUsedCounter)
+					EvictIt = CurrentIt;
+			}
+			m_LayoutCache.erase(EvictIt);
+		}
+
+		return &m_LayoutCache.emplace(std::move(Key), std::move(Entry)).first->second;
+	}
+
+	// Appends the given cached layout to the text stream of the current frame,
+	// shifted to the position of the cursor and colored with the current text color.
+	void AddStreamedText(const CTextCursor *pCursor, const STextLayoutCacheEntry *pEntry)
+	{
+		const vec2 Shift = ComputeStreamedTextShift(pCursor, pEntry);
+
+		STextStreamedTextState State;
+		State.m_ScreenRect = Graphics()->GetScreen();
+		State.m_BlendMode = Graphics()->GetBlendMode();
+		State.m_WrapMode = Graphics()->GetWrapMode();
+		State.m_ClipEnable = Graphics()->IsClippingEnabled();
+		Graphics()->GetClipRect(State.m_ClipX, State.m_ClipY, State.m_ClipW, State.m_ClipH);
+
+		STextStreamGroup &Group = GetOrCreateStreamGroup(State);
+		Group.m_vQuads.reserve(Group.m_vQuads.size() + pEntry->m_vQuads.size());
+
+		const ColorRGBA &Color = m_Color;
+		for(const STextCharQuad &Quad : pEntry->m_vQuads)
+		{
+			STextCharQuad NewQuad = Quad;
+			for(auto &Vertice : NewQuad.m_aVertices)
+			{
+				Vertice.m_X += Shift.x;
+				Vertice.m_Y += Shift.y;
+				Vertice.m_Color.r = (unsigned char)(Color.r * 255.f);
+				Vertice.m_Color.g = (unsigned char)(Color.g * 255.f);
+				Vertice.m_Color.b = (unsigned char)(Color.b * 255.f);
+				Vertice.m_Color.a = (unsigned char)(Color.a * 255.f);
+			}
+			Group.m_vQuads.push_back(NewQuad);
+		}
+	}
+
+	// Applies the cached layout metrics to a cursor, as if the text had been laid
+	// out at the cursor's position.
+	void ApplyLayoutToCursor(CTextCursor *pCursor, const STextLayoutCacheEntry *pEntry)
+	{
+		const vec2 Shift = ComputeStreamedTextShift(pCursor, pEntry);
+		pCursor->m_X = Shift.x + pEntry->m_EndX;
+		pCursor->m_Y = Shift.y + pEntry->m_EndY;
+		pCursor->m_LineCount = pEntry->m_LineCount;
+		pCursor->m_GlyphCount = pEntry->m_GlyphCount;
+		pCursor->m_CharCount = pEntry->m_CharCount;
+		pCursor->m_MaxCharacterHeight = pEntry->m_MaxCharacterHeight;
+		pCursor->m_AlignedFontSize = pEntry->m_AlignedFontSize;
+		pCursor->m_AlignedLineSpacing = pEntry->m_AlignedLineSpacing;
+		pCursor->m_LongestLineWidth = pEntry->m_LongestLineWidth;
+		pCursor->m_Truncated = pEntry->m_Truncated;
 	}
 
 	STextContainer &GetTextContainer(const STextContainerIndex &Index)
@@ -1104,6 +1422,7 @@ public:
 
 		m_RenderFlags = 0;
 		m_CursorRenderTime = time_get_nanoseconds();
+		m_vTextStreamGroups.reserve(128);
 	}
 
 	void Init() override
@@ -1328,16 +1647,21 @@ public:
 		}
 
 		json_value_free(pJsonData);
+		if(Success)
+			++m_CacheGeneration;
 		return Success;
 	}
 
 	void SetFontPreset(EFontPreset FontPreset) override
 	{
 		m_pGlyphMap->SetFontPreset(FontPreset);
+		// the font preset changes which glyphs are used, so cached layouts may be stale
+		++m_CacheGeneration;
 	}
 
 	void SetFontLanguageVariant(const char *pLanguageFile) override
 	{
+		++m_CacheGeneration;
 		for(const auto &Variant : m_vVariants)
 		{
 			if(str_comp(pLanguageFile, Variant.m_aLanguageFile) == 0)
@@ -1364,6 +1688,23 @@ public:
 		Cursor.m_FontSize = FontSize;
 		Cursor.m_Flags = Flags;
 		Cursor.m_LineWidth = LineWidth;
+
+		// The layout cache is shared between measuring and rendering, so the
+		// measure-then-draw double pass only lays out each string once.
+		const STextLayoutCacheEntry *pEntry = GetCachedLayout(&Cursor, pText, StrLength);
+		if(pEntry != nullptr)
+		{
+			if(TextSizeProps.m_pHeight != nullptr)
+				*TextSizeProps.m_pHeight = pEntry->m_LineCount * (pEntry->m_AlignedFontSize + pEntry->m_AlignedLineSpacing);
+			if(TextSizeProps.m_pAlignedFontSize != nullptr)
+				*TextSizeProps.m_pAlignedFontSize = pEntry->m_AlignedFontSize;
+			if(TextSizeProps.m_pMaxCharacterHeightInLine != nullptr)
+				*TextSizeProps.m_pMaxCharacterHeightInLine = pEntry->m_MaxCharacterHeight;
+			if(TextSizeProps.m_pLineCount != nullptr)
+				*TextSizeProps.m_pLineCount = pEntry->m_LineCount;
+			return pEntry->m_LongestLineWidth;
+		}
+
 		TextEx(&Cursor, pText, StrLength);
 		if(TextSizeProps.m_pHeight != nullptr)
 			*TextSizeProps.m_pHeight = Cursor.Height();
@@ -1383,6 +1724,18 @@ public:
 		Cursor.m_Flags = Flags;
 		Cursor.m_LineWidth = LineWidth;
 		Cursor.m_LineSpacing = LineSpacing;
+
+		const STextLayoutCacheEntry *pEntry = GetCachedLayout(&Cursor, pText, StrLength);
+		if(pEntry != nullptr)
+		{
+			STextBoundingBox BoundingBox;
+			BoundingBox.m_X = 0;
+			BoundingBox.m_Y = 0;
+			BoundingBox.m_W = pEntry->m_LongestLineWidth;
+			BoundingBox.m_H = pEntry->m_LineCount * (pEntry->m_AlignedFontSize + pEntry->m_AlignedLineSpacing);
+			return BoundingBox;
+		}
+
 		TextEx(&Cursor, pText, StrLength);
 		return Cursor.BoundingBox();
 	}
@@ -1443,6 +1796,24 @@ public:
 
 	void TextEx(CTextCursor *pCursor, const char *pText, int Length = -1) override
 	{
+		const bool IsRendered = (pCursor->m_Flags & TEXTFLAG_RENDER) != 0;
+
+		// Batch one-shot text into the per-frame text stream (buffered backends only).
+		if(IsRendered &&
+			Graphics()->IsTextBufferingEnabled() &&
+			pCursor->m_vColorSplits.empty() &&
+			pCursor->m_CalculateSelectionMode == TEXT_CURSOR_SELECTION_MODE_NONE &&
+			pCursor->m_CursorMode == TEXT_CURSOR_CURSOR_MODE_NONE)
+		{
+			const STextLayoutCacheEntry *pEntry = GetCachedLayout(pCursor, pText, Length);
+			if(pEntry != nullptr)
+			{
+				AddStreamedText(pCursor, pEntry);
+				ApplyLayoutToCursor(pCursor, pEntry);
+				return;
+			}
+		}
+
 		const unsigned OldRenderFlags = m_RenderFlags;
 		m_RenderFlags |= TEXT_RENDER_FLAG_ONE_TIME_USE;
 		STextContainerIndex TextCont;
@@ -1450,7 +1821,7 @@ public:
 		m_RenderFlags = OldRenderFlags;
 		if(TextCont.Valid())
 		{
-			if((pCursor->m_Flags & TEXTFLAG_RENDER) != 0)
+			if(IsRendered)
 			{
 				ColorRGBA TextColor = DefaultTextColor();
 				ColorRGBA TextColorOutline = DefaultTextOutlineColor();
@@ -1458,6 +1829,9 @@ public:
 			}
 			DeleteTextContainer(TextCont);
 		}
+
+		if(m_vTextStreamGroups.size() >= 128)
+			FlushStreamedText();
 	}
 
 	bool CreateTextContainer(STextContainerIndex &TextContainerIndex, CTextCursor *pCursor, const char *pText, int Length = -1) override
@@ -2330,6 +2704,114 @@ public:
 		return WidthOfText;
 	}
 
+	void ClearTextStream()
+	{
+		m_LayoutCache.clear();
+		m_LayoutCacheCounter = 0;
+
+		for(STextStreamGroup &Group : m_vTextStreamGroups)
+		{
+			if(Group.m_QuadBufferContainerIndex != -1)
+				Graphics()->DeleteBufferContainer(Group.m_QuadBufferContainerIndex, true);
+			Group.m_QuadBufferObjectIndex = -1;
+			Group.m_QuadBufferCapacity = 0;
+			Group.m_vQuads.clear();
+		}
+		m_vTextStreamGroups.clear();
+
+		++m_CacheGeneration;
+	}
+
+	void FlushStreamedText() override
+	{
+		if(m_vTextStreamGroups.empty())
+			return;
+
+		// Do not leak the stream's render state: drawing temporarily switches the
+		// screen mapping, blend, wrap and clip per group, and the caller (e.g. the
+		// UI, which draws the cursor right after flushing) relies on the state it
+		// set up itself. Save the state at entry and restore it afterwards.
+		const CScreenRect RestoreScreenRect = Graphics()->GetScreen();
+		const EBlendMode RestoreBlendMode = Graphics()->GetBlendMode();
+		const EWrapMode RestoreWrapMode = Graphics()->GetWrapMode();
+		const bool RestoreClipEnable = Graphics()->IsClippingEnabled();
+		int RestoreClipX, RestoreClipY, RestoreClipW, RestoreClipH;
+		Graphics()->GetClipRect(RestoreClipX, RestoreClipY, RestoreClipW, RestoreClipH);
+
+		for(STextStreamGroup &Group : m_vTextStreamGroups)
+		{
+			if(Group.m_vQuads.empty())
+				continue;
+
+			const size_t QuadNum = Group.m_vQuads.size();
+			const size_t DataSize = QuadNum * sizeof(STextCharQuad);
+
+			if(Group.m_QuadBufferObjectIndex == -1)
+			{
+				Group.m_QuadBufferObjectIndex = Graphics()->CreateBufferObject(DataSize, Group.m_vQuads.data(), 0);
+				m_DefaultTextContainerInfo.m_VertBufferBindingIndex = Group.m_QuadBufferObjectIndex;
+				Group.m_QuadBufferContainerIndex = Graphics()->CreateBufferContainer(&m_DefaultTextContainerInfo);
+				Group.m_QuadBufferCapacity = QuadNum;
+				Graphics()->IndicesNumRequiredNotify(QuadNum * 6);
+			}
+			else if(QuadNum <= Group.m_QuadBufferCapacity)
+			{
+				Graphics()->UpdateBufferObject(Group.m_QuadBufferObjectIndex, DataSize, Group.m_vQuads.data(), nullptr);
+			}
+			else
+			{
+				// grow the persistent buffer with some headroom to amortize reallocations
+				const size_t NewCapacity = std::max(QuadNum, Group.m_QuadBufferCapacity * 2);
+				Group.m_vQuads.resize(NewCapacity);
+				Graphics()->RecreateBufferObject(Group.m_QuadBufferObjectIndex, NewCapacity * sizeof(STextCharQuad), Group.m_vQuads.data(), 0);
+				Group.m_QuadBufferCapacity = NewCapacity;
+				Graphics()->IndicesNumRequiredNotify(QuadNum * 6);
+			}
+
+			// replay the render state the text was created with
+			Graphics()->MapScreen(Group.m_State.m_ScreenRect);
+			switch(Group.m_State.m_BlendMode)
+			{
+			case EBlendMode::NONE: Graphics()->BlendNone(); break;
+			case EBlendMode::ALPHA: Graphics()->BlendNormal(); break;
+			case EBlendMode::ADDITIVE: Graphics()->BlendAdditive(); break;
+			}
+			switch(Group.m_State.m_WrapMode)
+			{
+			case EWrapMode::REPEAT: Graphics()->WrapNormal(); break;
+			case EWrapMode::CLAMP: Graphics()->WrapClamp(); break;
+			}
+			if(Group.m_State.m_ClipEnable)
+				Graphics()->ClipEnable(Group.m_State.m_ClipX, Group.m_State.m_ClipY, Group.m_State.m_ClipW, Group.m_State.m_ClipH);
+			else
+				Graphics()->ClipDisable();
+
+			Graphics()->TextureClear();
+			Graphics()->RenderText(Group.m_QuadBufferContainerIndex, (int)QuadNum, (int)m_pGlyphMap->TextureDimension(), m_pGlyphMap->Texture(CGlyphMap::FONT_TEXTURE_FILL).Id(), m_pGlyphMap->Texture(CGlyphMap::FONT_TEXTURE_OUTLINE).Id(), DefaultTextColor(), DefaultTextOutlineColor());
+
+			Group.m_vQuads.clear();
+		}
+
+		// Restore the caller's state, as if the text had been drawn inline
+		// (which never changed the surrounding state).
+		Graphics()->MapScreen(RestoreScreenRect);
+		switch(RestoreBlendMode)
+		{
+		case EBlendMode::NONE: Graphics()->BlendNone(); break;
+		case EBlendMode::ALPHA: Graphics()->BlendNormal(); break;
+		case EBlendMode::ADDITIVE: Graphics()->BlendAdditive(); break;
+		}
+		switch(RestoreWrapMode)
+		{
+		case EWrapMode::REPEAT: Graphics()->WrapNormal(); break;
+		case EWrapMode::CLAMP: Graphics()->WrapClamp(); break;
+		}
+		if(RestoreClipEnable)
+			Graphics()->ClipEnable(RestoreClipX, RestoreClipY, RestoreClipW, RestoreClipH);
+		else
+			Graphics()->ClipDisable();
+	}
+
 	void OnPreWindowResize() override
 	{
 		for(auto *pTextContainer : m_vpTextContainers)
@@ -2356,6 +2838,7 @@ public:
 		}
 
 		dbg_assert(!HasNonEmptyTextContainer, "text container was not empty");
+		ClearTextStream();
 	}
 };
 

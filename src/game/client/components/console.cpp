@@ -1208,6 +1208,10 @@ void CGameConsole::OnRender()
 
 	Ui()->MapScreen();
 
+	// Draw streamed text before the console background so that text drawn earlier in the frame
+	// (e.g. HUD, menus) stays below the console overlay, matching the original inline order.
+	TextRender()->FlushStreamedText();
+
 	// background
 	Graphics()->TextureSet(g_pData->m_aImages[IMAGE_BACKGROUND_NOISE].m_Id);
 	Graphics()->QuadsBegin();

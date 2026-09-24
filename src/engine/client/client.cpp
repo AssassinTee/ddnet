@@ -1224,6 +1224,7 @@ void CClient::Render()
 
 	RenderDebug();
 	RenderGraphs();
+	TextRender()->FlushStreamedText();
 }
 
 const char *CClient::LoadMap(const char *pName, const char *pFilename, const std::optional<SHA256_DIGEST> &WantedSha256, unsigned WantedCrc)

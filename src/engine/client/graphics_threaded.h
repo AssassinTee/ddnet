@@ -31,19 +31,6 @@ enum class EPrimitiveType
 	TRIANGLES,
 };
 
-enum class EBlendMode
-{
-	NONE,
-	ALPHA,
-	ADDITIVE,
-};
-
-enum class EWrapMode
-{
-	REPEAT,
-	CLAMP,
-};
-
 class CCommandBuffer
 {
 	class CBuffer
@@ -916,6 +903,11 @@ public:
 	void WrapNormal() override;
 	void WrapClamp() override;
 
+	EBlendMode GetBlendMode() const override;
+	EWrapMode GetWrapMode() const override;
+	bool IsClippingEnabled() const override;
+	void GetClipRect(int &X, int &Y, int &W, int &H) const override;
+
 	uint64_t TextureMemoryUsage() const override;
 	uint64_t BufferMemoryUsage() const override;
 	uint64_t StreamedMemoryUsage() const override;
@@ -1192,6 +1184,7 @@ public:
 	// modern GL functions
 	int CreateBufferObject(size_t UploadDataSize, void *pUploadData, int CreateFlags, bool IsMovedPointer = false) override;
 	void RecreateBufferObject(int BufferIndex, size_t UploadDataSize, void *pUploadData, int CreateFlags, bool IsMovedPointer = false) override;
+	void UpdateBufferObject(int BufferIndex, size_t UploadDataSize, void *pUploadData, void *pOffset = nullptr, bool IsMovedPointer = false) override;
 	void UpdateBufferObjectInternal(int BufferIndex, size_t UploadDataSize, void *pUploadData, void *pOffset, bool IsMovedPointer = false);
 	void CopyBufferObjectInternal(int WriteBufferIndex, int ReadBufferIndex, size_t WriteOffset, size_t ReadOffset, size_t CopyDataSize);
 	void DeleteBufferObject(int BufferIndex) override;
