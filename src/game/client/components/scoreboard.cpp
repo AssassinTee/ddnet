@@ -19,6 +19,7 @@
 #include <game/client/components/countryflags.h>
 #include <game/client/components/motd.h>
 #include <game/client/components/statboard.h>
+#include <game/client/components/tooltips.h>
 #include <game/client/gameclient.h>
 #include <game/client/ui.h>
 #include <game/localization.h>

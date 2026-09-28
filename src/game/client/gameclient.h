@@ -196,7 +196,7 @@ public:
 	CRaceDemo m_RaceDemo;
 	CGhost m_Ghost;
 
-	CTooltips m_Tooltips;
+	CTooltipsComponent m_Tooltips;
 
 	CLocalServer m_LocalServer;
 

@@ -16,6 +16,7 @@
 #include <engine/keys.h>
 #include <engine/shared/config.h>
 
+#include <game/client/tooltips.h>
 #include <game/localization.h>
 
 #include <limits>

@@ -2786,6 +2786,8 @@ if(CLIENT)
     sixup_translate_snapshot.cpp
     skin.cpp
     skin.h
+    tooltips.cpp
+    tooltips.h
     ui.cpp
     ui.h
     ui_listbox.cpp
