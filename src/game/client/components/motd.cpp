@@ -95,8 +95,7 @@ void CMotd::OnRender()
 	{
 		CTextCursor Cursor;
 		Cursor.SetPosition(vec2(RectX + FontSize, RectY + FontSize));
-		// TODO: Set TEXTFLAG_ELLIPSIS_AT_END when https://github.com/ddnet/ddnet/issues/11419 is fixed
-		// Cursor.m_Flags |= TEXTFLAG_ELLIPSIS_AT_END;
+		Cursor.m_Flags |= TEXTFLAG_ELLIPSIS_AT_END;
 		Cursor.m_FontSize = FontSize;
 		Cursor.m_LineWidth = RectWidth - 2.0f * FontSize;
 		Cursor.m_MaxLines = MaxLines;

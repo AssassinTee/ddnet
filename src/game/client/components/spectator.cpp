@@ -544,6 +544,7 @@ void CSpectator::OnRender()
 		NameCursor.SetPosition(vec2(Width / 2.0f + x + 50.0f, Height / 2.0f + y + BoxMove + (LineHeight - FontSize) / 2.f));
 		NameCursor.m_FontSize = FontSize;
 		NameCursor.m_Flags |= TEXTFLAG_ELLIPSIS_AT_END;
+		NameCursor.m_MaxLines = 1;
 		NameCursor.m_LineWidth = 180.0f;
 		if(g_Config.m_ClShowIds)
 		{

@@ -16,6 +16,13 @@ enum
 	TEXTFLAG_RENDER = 1 << 0,
 	TEXTFLAG_DISALLOW_NEWLINE = 1 << 1,
 	TEXTFLAG_STOP_AT_END = 1 << 2,
+	/**
+	 * Append an ellipsis (U+2026) if the text is truncated by the line width and m_MaxLines.
+	 * The text is only ellipsized when it does not fit: with m_MaxLines == 1 the text is
+	 * truncated to a single line (traditional behavior), with m_MaxLines > 1 the text wraps
+	 * and the ellipsis is placed at the end of the last line, with m_MaxLines == 0 (unlimited
+	 * lines) the text is never truncated and no ellipsis is rendered.
+	 */
 	TEXTFLAG_ELLIPSIS_AT_END = 1 << 3,
 };
 
@@ -119,6 +126,8 @@ public:
 	int m_LineCount = 1;
 	int m_GlyphCount = 0;
 	int m_CharCount = 0;
+	// 0 = unlimited. Together with TEXTFLAG_ELLIPSIS_AT_END, limits the number of rendered
+	// lines and causes the ellipsis to be appended to the last line when the text is truncated
 	int m_MaxLines = 0;
 
 	float m_StartX = 0.0f;

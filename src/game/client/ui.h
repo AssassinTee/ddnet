@@ -319,6 +319,7 @@ class CCachedText
 	float m_FontSize = -1.0f;
 	float m_LineWidth = -1.0f;
 	int m_CursorFlags = 0;
+	int m_MaxLines = 0;
 	STextBoundingBox m_BoundingBox = {0.0f, 0.0f, 0.0f, 0.0f};
 	float m_MaxCharacterHeight = 0.0f;
 	float m_AlignedFontSize = 0.0f;
@@ -329,7 +330,7 @@ public:
 	CCachedText(const CCachedText &) = delete;
 	CCachedText &operator=(const CCachedText &) = delete;
 
-	void Update(ITextRender *pTextRender, const char *pText, float FontSize, float LineWidth = -1.0f, int CursorFlags = TEXTFLAG_RENDER);
+	void Update(ITextRender *pTextRender, const char *pText, float FontSize, float LineWidth = -1.0f, int CursorFlags = TEXTFLAG_RENDER, int MaxLines = 0);
 	void Render(ITextRender *pTextRender, vec2 Pos, ColorRGBA Color) const;
 	void Reset(ITextRender *pTextRender);
 

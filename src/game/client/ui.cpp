@@ -822,6 +822,9 @@ CLabelResult CUi::DoLabel(const CUIRect *pRect, const char *pText, float Size, i
 	Cursor.m_Flags |= Flags;
 	Cursor.m_vColorSplits = LabelProps.m_vColorSplits;
 	Cursor.m_LineWidth = (float)LabelProps.m_MaxWidth;
+	// Ellipsis labels are single line by default
+	if((Flags & TEXTFLAG_ELLIPSIS_AT_END) != 0)
+		Cursor.m_MaxLines = 1;
 	TextRender()->TextEx(&Cursor, pText, -1);
 	if(Cursor.m_Truncated && LabelProps.m_pTooltipId)
 	{
@@ -852,6 +855,9 @@ void CUi::DoLabel(CUIElement::SUIElementRect &RectEl, const CUIRect *pRect, cons
 		Cursor.m_Flags |= Flags;
 	}
 	Cursor.m_LineWidth = LabelProps.m_MaxWidth;
+	// Ellipsis labels are single line by default
+	if((Flags & TEXTFLAG_ELLIPSIS_AT_END) != 0 && Cursor.m_MaxLines == 0)
+		Cursor.m_MaxLines = 1;
 
 	RectEl.m_TextColor = TextRender()->GetTextColor();
 	RectEl.m_TextOutlineColor = TextRender()->GetTextOutlineColor();
@@ -1623,25 +1629,27 @@ void CUi::RenderProgressBar(CUIRect ProgressBar, float Progress)
 	ProgressBar.Draw(ColorRGBA(1.0f, 1.0f, 1.0f, 0.5f), IGraphics::CORNER_ALL, Rounding);
 }
 
-void CCachedText::Update(ITextRender *pTextRender, const char *pText, float FontSize, float LineWidth, int CursorFlags)
+void CCachedText::Update(ITextRender *pTextRender, const char *pText, float FontSize, float LineWidth, int CursorFlags, int MaxLines)
 {
-	if(m_FontSize == FontSize && m_LineWidth == LineWidth && m_CursorFlags == CursorFlags && m_Text == pText)
+	if(m_FontSize == FontSize && m_LineWidth == LineWidth && m_CursorFlags == CursorFlags && m_MaxLines == MaxLines && m_Text == pText)
 		return;
 
 	// The render flags of a text container are fixed when it is created and depend on the
 	// line width, so only text and font size changes can reuse the existing container and
 	// upload the new quads into its buffer instead of allocating a new one.
-	const bool ReuseContainer = m_TextContainerIndex.Valid() && m_LineWidth == LineWidth && m_CursorFlags == CursorFlags;
+	const bool ReuseContainer = m_TextContainerIndex.Valid() && m_LineWidth == LineWidth && m_CursorFlags == CursorFlags && m_MaxLines == MaxLines;
 
 	m_Text = pText;
 	m_FontSize = FontSize;
 	m_LineWidth = LineWidth;
 	m_CursorFlags = CursorFlags;
+	m_MaxLines = MaxLines;
 
 	CTextCursor Cursor;
 	Cursor.m_FontSize = FontSize;
 	Cursor.m_LineWidth = LineWidth;
 	Cursor.m_Flags = CursorFlags;
+	Cursor.m_MaxLines = MaxLines;
 
 	// The color is applied when rendering, so it must not be baked into the quads.
 	const ColorRGBA OldColor = pTextRender->GetTextColor();
